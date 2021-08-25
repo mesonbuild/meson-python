@@ -1,0 +1,37 @@
+[build-system]
+build-backend = 'mesonpy'
+backend-path = ['.']
+#requires = ['meson >= 0.60.0']
+requires = ['meson']
+
+[project]
+name = 'mesonpy'
+version = '0.1.0'
+description = 'Meson Python build backend (PEP 517)'
+readme = 'README.md'
+requires-python = '>=3.6'
+license = { file = 'LICENSE' }
+keywords = ['meson', 'build', 'backend', 'pep517', 'package']
+authors = [
+  { name = 'Filipe Laíns', email = 'lains@riseup.net' },
+]
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Programming Language :: Python',
+]
+
+[project.optional-dependencies]
+test = [
+  'pytest',
+  'pytest-cov',
+]
+docs = [
+  'furo>=2021.04.11b34',
+  'sphinx~=3.0',
+]
+
+[project.urls]
+homepage = 'https://github.com/FFY00/mesonpy'
+repository = 'https://github.com/FFY00/mesonpy'
+documentation = 'https://mesonpy.readthedocs.io'
+changelog = 'https://mesonpy.readthedocs.io/en/latest/changelog.html'
