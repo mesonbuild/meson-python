@@ -10,6 +10,7 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import email.message
 import functools
@@ -25,10 +26,11 @@ import sys
 import sysconfig
 import tarfile
 import tempfile
+import textwrap
 import typing
 import warnings
 
-from typing import Any, Dict, Iterator, Optional, TextIO, Type, Union
+from typing import Any, ClassVar, Dict, Iterator, List, Optional, TextIO, Tuple, Type, Union
 
 
 PathLike = Union[str, os.PathLike]
@@ -111,6 +113,111 @@ class MesonBuilderError(Exception):
     pass
 
 
+class _WheelBuilder():
+    _SCHEME_MAP: ClassVar[Dict[str, str]] = {
+        'scripts': '{bindir}',
+        'purelib': '{py_purelib}',
+        'platlib': '{py_platlib}',
+        'headers': '{include}',
+    }
+    # XXX: libdir - no match in wheel, we optionally bundle them via auditwheel
+    # XXX: data - no match in wheel
+
+    """Helper class to build wheels from projects."""
+    def __init__(self, project: Project) -> None:
+        self._project = project
+
+    @property
+    def basename(self) -> str:
+        return '{distribution}-{version}'.format(
+            distribution=self._project.name.replace('-', '_'),
+            version=self._project.version,
+        )
+
+    @property
+    def name(self) -> str:
+        return '{basename}-{python_tag}-{abi_tag}-{platform_tag}'.format(
+            basename=self.basename,
+            python_tag=self._project.python_tag,
+            abi_tag=self._project.abi_tag,
+            platform_tag=self._project.platform_tag,
+        )
+
+    @property
+    def distinfo_dir(self) -> str:
+        return f'{self.basename}.dist-info'
+
+    @property
+    def data_dir(self) -> str:
+        return f'{self.basename}.data'
+
+    @property
+    def wheel(self) -> bytes:
+        '''dist-info WHEEL.'''
+        return textwrap.dedent('''
+            Wheel-Version: 1.0
+            Generator: meson
+            Root-Is-Purelib: {is_purelib}
+            Tag: {tags}
+        ''').strip().format(
+            is_purelib='true' if self._project.is_pure else 'false',
+            tags=f'{self._project.python_tag}-{self._project.abi_tag}-{self._project.platform_tag}',
+        ).encode()
+
+    def _map_to_wheel(
+        self,
+        sources: Dict[str, Dict[str, Any]],
+        copy_files: Dict[str, str],
+    ) -> Dict[str, List[Tuple[str, str]]]:
+        wheel_files = collections.defaultdict(list)
+        for files in sources.values():
+            for file, details in files.items():
+                destination = details['destination']
+                for scheme, path in self._SCHEME_MAP.items():
+                    if destination.startswith(path):
+                        wheel_files[scheme].append((destination, file))
+                        break
+                else:
+                    warnings.warn(
+                        'File could not be mapped to an equivalent wheel directory: '
+                        '{} ({})'.format(copy_files[file], destination)
+                    )
+        return wheel_files
+
+    def build(
+        self,
+        sources: Dict[str, Dict[str, Any]],
+        copy_files: Dict[str, str],
+        directory: PathLike,
+    ) -> pathlib.Path:
+        import wheel.wheelfile
+
+        self._project.build()  # ensure project is built
+
+        wheel_file = pathlib.Path(directory, f'{self.name}.whl')
+
+        with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
+            # add metadata
+            whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata.as_bytes())
+            whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
+
+            wheel_files = self._map_to_wheel(sources, copy_files)
+
+            # install root scheme files
+            root_scheme = 'purelib' if self._project.is_pure else 'platlib'
+            for destination, origin in wheel_files[root_scheme]:
+                wheel_path = pathlib.Path(destination).relative_to(self._SCHEME_MAP[root_scheme])
+                whl.write(origin, os.fspath(wheel_path).replace(os.path.sep, '/'))
+            # install the other schemes
+            for scheme, path in self._SCHEME_MAP.items():
+                if root_scheme == scheme:
+                    continue
+                for destination, origin in wheel_files[scheme]:
+                    whl.write(origin, destination.replace(path, f'{self.data_dir}/{scheme}'))
+
+        return wheel_file
+
+
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
@@ -158,6 +265,16 @@ class Project():
         plan = self._info('intro-install_plan').copy()
         plan.pop('version')
         return plan
+
+    @property
+    def _copy_files(self) -> Dict[str, str]:
+        copy_files = {}
+        for origin, destination in self._info('intro-installed').items():
+            destination_path = pathlib.Path(destination)
+            copy_files[origin] = os.fspath(
+                self._install_dir / destination_path.relative_to(destination_path.root)
+            )
+        return copy_files
 
     @property
     def name(self) -> str:
@@ -236,6 +353,16 @@ class Project():
 
         return sdist
 
+    def wheel(self, directory: PathLike) -> pathlib.Path:
+        """Generates a wheel (binary distribution) in the specified directory."""
+        sources = self._info('intro-install_plan').copy()
+        sources_version = sources.pop('version')
+        if sources_version != 1:
+            raise MesonBuilderError(f'Unknown intro-install_plan.json schema version: {sources_version}')
+
+        wheel = _WheelBuilder(self).build(sources, self._copy_files, directory)
+        return pathlib.Path(directory, wheel.name)
+
 
 def build_sdist(
     sdist_directory: str,
@@ -248,9 +375,19 @@ def build_sdist(
         return project.sdist(out).name
 
 
+def get_requires_for_build_wheel(
+    config_settings: Optional[Dict[str, str]] = None,
+) -> List[str]:
+    return ['wheel >= 0.36.0']
+
+
 def build_wheel(
     wheel_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
     metadata_directory: Optional[str] = None,
 ) -> str:
-    raise NotImplementedError
+    _setup_cli()
+
+    out = pathlib.Path(wheel_directory)
+    with Project.with_temp_working_dir() as project:
+        return project.wheel(out).name
