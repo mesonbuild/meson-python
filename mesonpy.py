@@ -30,7 +30,7 @@ import textwrap
 import typing
 import warnings
 
-from typing import Any, ClassVar, Dict, Iterator, List, Optional, TextIO, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
 
 
 PathLike = Union[str, os.PathLike]
@@ -91,6 +91,19 @@ def _cd(path: PathLike) -> Iterator[None]:
         yield
     finally:
         os.chdir(old_cwd)
+
+
+@contextlib.contextmanager
+def _add_ld_path(paths: Iterable[str]) -> Iterator[None]:
+    """Context manager helper to add a path to LD_LIBRARY_PATH."""
+    old_value = os.environ.get('LD_LIBRARY_PATH')
+    old_paths = old_value.split(os.pathsep) if old_value else []
+    os.environ['LD_LIBRARY_PATH'] = os.pathsep.join([*paths, *old_paths])
+    try:
+        yield
+    finally:
+        if old_value is not None:
+            os.environ['LD_LIBRARY_PATH'] = old_value
 
 
 @contextlib.contextmanager
@@ -234,10 +247,13 @@ class Project():
         # configure the project
         self._meson('setup', os.fspath(source_dir), os.fspath(self._build_dir))
 
+    def _proc(self, *args: str) -> None:
+        print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
+        subprocess.check_call(list(args))
+
     def _meson(self, *args: str) -> None:
-        print('{cyan}{bold}+ meson {}{reset}'.format(' '.join(args), **_STYLES))
         with _cd(self._build_dir):
-            subprocess.check_call(['meson', *args])
+            return self._proc('meson', *args)
 
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
@@ -261,7 +277,7 @@ class Project():
         )
 
     @property
-    def _install_plan(self) -> Dict[str, Dict[str, Dict[str, Optional[str]]]]:
+    def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
         plan = self._info('intro-install_plan').copy()
         plan.pop('version')
         return plan
@@ -275,6 +291,16 @@ class Project():
                 self._install_dir / destination_path.relative_to(destination_path.root)
             )
         return copy_files
+
+    @property
+    def _lib_paths(self) -> Set[str]:
+        copy_files = self._copy_files
+        return {
+            os.path.dirname(copy_files[file])
+            for files in self._install_plan.values()
+            for file, details in files.items()
+            if details['destination'].startswith('{libdir_')
+        }
 
     @property
     def name(self) -> str:
@@ -353,15 +379,45 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: PathLike) -> pathlib.Path:
-        """Generates a wheel (binary distribution) in the specified directory."""
+    def wheel(self, directory: PathLike, skip_bundling: bool = False) -> pathlib.Path:
+        """Generates a wheel (binary distribution) in the specified directory.
+
+        Bundles the external binary dependencies by default, but can be skiped
+        via the ``skip_bundling`` parameter. This results in wheels that are
+        only garanteed to work on the current system as it may have external
+        dependencies.
+        This option is useful for users like Python distributions, which want
+        the artifacts to link the system libraries, unlike someone who is
+        distributing wheels on PyPI.
+        """
         sources = self._info('intro-install_plan').copy()
         sources_version = sources.pop('version')
         if sources_version != 1:
             raise MesonBuilderError(f'Unknown intro-install_plan.json schema version: {sources_version}')
 
-        wheel = _WheelBuilder(self).build(sources, self._copy_files, directory)
-        return pathlib.Path(directory, wheel.name)
+        wheel = _WheelBuilder(self).build(sources, self._copy_files, self._build_dir)
+
+        # return the wheel directly if pure or the user wants to skip the lib bundling step
+        if self.is_pure or skip_bundling:
+            final_wheel = pathlib.Path(directory, wheel.name)
+            shutil.move(wheel, final_wheel)
+            return final_wheel
+
+        # use auditwheel to select the correct platform tag based on the external dependencies
+        auditwheel_out = self._build_dir / 'auditwheel-output'
+        with _cd(self._build_dir), _add_ld_path(self._lib_paths):
+            self._proc('auditwheel', 'repair', '-w', os.fspath(auditwheel_out), os.fspath(wheel))
+
+        # get built wheel
+        out = list(auditwheel_out.glob('*.whl'))
+        assert len(out) == 1
+        repaired_wheel = out[0]
+
+        # move to the output directory
+        final_wheel = pathlib.Path(directory, repaired_wheel.name)
+        shutil.move(repaired_wheel, final_wheel)
+
+        return final_wheel
 
 
 def build_sdist(
@@ -378,7 +434,11 @@ def build_sdist(
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    return ['wheel >= 0.36.0']
+    dependencies = ['wheel >= 0.36.0']
+    with Project.with_temp_working_dir() as project:
+        if not project.is_pure:
+            dependencies.append('auditwheel >= 4.0.0')
+    return dependencies
 
 
 def build_wheel(
