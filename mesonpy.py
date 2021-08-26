@@ -278,9 +278,7 @@ class Project():
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
-        plan = self._info('intro-install_plan').copy()
-        plan.pop('version')
-        return plan
+        return self._info('intro-install_plan').copy()
 
     @property
     def _copy_files(self) -> Dict[str, str]:
@@ -390,12 +388,7 @@ class Project():
         the artifacts to link the system libraries, unlike someone who is
         distributing wheels on PyPI.
         """
-        sources = self._info('intro-install_plan').copy()
-        sources_version = sources.pop('version')
-        if sources_version != 1:
-            raise MesonBuilderError(f'Unknown intro-install_plan.json schema version: {sources_version}')
-
-        wheel = _WheelBuilder(self).build(sources, self._copy_files, self._build_dir)
+        wheel = _WheelBuilder(self).build(self._install_plan, self._copy_files, self._build_dir)
 
         # return the wheel directly if pure or the user wants to skip the lib bundling step
         if self.is_pure or skip_bundling:
