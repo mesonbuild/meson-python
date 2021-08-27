@@ -266,6 +266,9 @@ class _RFC822Message():
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
+    _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
+        'version',
+    ]
     _metadata: Optional[pep621.StandardMetadata]
 
     def __init__(self, source_dir: PathLike, working_dir: PathLike) -> None:
@@ -286,6 +289,17 @@ class Project():
                 '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
             )
             self._metadata = None
+
+        # check for unsupported dynamic fields
+        if self._metadata:
+            unsupported_dynamic = {
+                key for key in self._metadata.dynamic
+                if key not in self._ALLOWED_DYNAMIC_FIELDS
+            }
+            if unsupported_dynamic:
+                raise MesonBuilderError('Unsupported dynamic fields: {}'.format(
+                    ', '.join(unsupported_dynamic)),
+                )
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
