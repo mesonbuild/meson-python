@@ -21,8 +21,8 @@ classifiers = [
 ]
 
 dependencies = [
-  'packaging',
-  'tomli',
+  'packaging>=20.0',
+  'tomli>=1.0.0',
 ]
 
 [project.optional-dependencies]
