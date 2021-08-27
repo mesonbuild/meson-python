@@ -394,6 +394,9 @@ class Project():
         metadata['Metadata-Version'] = '2.1'
         metadata['Name'] = self.name
         metadata['Version'] = self.version
+        # the rest of the keys are only available when using PEP 621 metadata
+        if not self._metadata:
+            return metadata
         # skip 'Platform'
         # skip 'Supported-Platform'
         if self._metadata:
