@@ -1,8 +1,11 @@
 [build-system]
 build-backend = 'mesonpy'
 backend-path = ['.']
-#requires = ['meson >= 0.60.0']
-requires = ['meson']
+requires = [
+  'meson',  # meson >= 0.60.0
+  'packaging>=20.0',
+  'tomli>=1.0.0',
+]
 
 [project]
 name = 'mesonpy'
