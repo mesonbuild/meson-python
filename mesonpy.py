@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import email.message
 import functools
 import gzip
 import io
@@ -31,6 +30,14 @@ import typing
 import warnings
 
 from typing import Any, ClassVar, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
+
+import packaging.markers
+import packaging.requirements
+import tomli
+
+
+if typing.TYPE_CHECKING:
+    import pep621
 
 
 PathLike = Union[str, os.PathLike]
@@ -231,14 +238,54 @@ class _WheelBuilder():
         return wheel_file
 
 
+class _RFC822Message():
+    def __init__(self) -> None:
+        self._headers: Dict[str, List[str]] = {}
+        self.body: Optional[str] = None
+
+    def __setitem__(self, name: str, value: Optional[str]) -> None:
+        if not value:
+            return
+        if name not in self._headers:
+            self._headers[name] = []
+        self._headers[name].append(value)
+
+    def __str__(self) -> str:
+        text = ''
+        for name, entries in self._headers.items():
+            for entry in entries:
+                text += f'{name}: {entry}\n'
+        if self.body:
+            text += '\n' + self.body
+        return text
+
+    def as_bytes(self) -> bytes:
+        return str(self).encode()
+
+
 class Project():
     """Meson project wrapper to generate Python artifacts."""
+
+    _metadata: Optional[pep621.StandardMetadata]
 
     def __init__(self, source_dir: PathLike, working_dir: PathLike) -> None:
         self._source_dir = pathlib.Path(source_dir)
         self._working_dir = pathlib.Path(working_dir)
         self._build_dir = self._working_dir / 'build'
         self._install_dir = self._working_dir / 'build'
+
+        # load config -- PEP 621 support is optional
+        self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+        if 'project' in self._config:
+            import pep621
+
+            self._metadata = pep621.StandardMetadata(self._config, self._source_dir)
+        else:
+            print(
+                '{yellow}{bold}! Using Meson to generate the project metadata '
+                '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
+            )
+            self._metadata = None
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
@@ -303,25 +350,74 @@ class Project():
     @property
     def name(self) -> str:
         """Project name."""
-        name = self._info('intro-projectinfo')['descriptive_name']
+        if self._metadata:
+            name = self._metadata.name
+        else:
+            name = self._info('intro-projectinfo')['descriptive_name']
         assert isinstance(name, str)
         return name
 
     @property
     def version(self) -> str:
         """Project version."""
-        version = self._info('intro-projectinfo')['version']
+        if self._metadata and 'version' not in self._metadata.dynamic:
+            version = str(self._metadata.version)
+        else:
+            version = self._info('intro-projectinfo')['version']
         assert isinstance(version, str)
         return version
 
+    def _person_list(self, people: List[Tuple[str, str]]) -> str:
+        return ', '.join([
+            '{}{}'.format(name, f' <{_email}>' if _email else '')
+            for name, _email in people
+        ])
+
     @property
-    def metadata(self) -> email.message.Message:
+    def metadata(self) -> _RFC822Message:  # noqa: C901
         """Project metadata."""
-        metadata = email.message.Message()
+        metadata = _RFC822Message()
         metadata['Metadata-Version'] = '2.1'
         metadata['Name'] = self.name
         metadata['Version'] = self.version
-        # FIXME: add missing metadata
+        # skip 'Platform'
+        # skip 'Supported-Platform'
+        if self._metadata:
+            metadata['Summary'] = self._metadata.description
+        metadata['Keywords'] = ' '.join(self._metadata.keywords)
+        if 'homepage' in self._metadata.urls:
+            metadata['Home-page'] = self._metadata.urls['homepage']
+        # skip 'Download-URL'
+        metadata['Author'] = metadata['Author-Email'] = self._person_list(self._metadata.authors)
+        if self._metadata.maintainers != self._metadata.authors:
+            maintainers = self._person_list(self._metadata.maintainers)
+            metadata['Maintainer'] = metadata['Maintainer-Email'] = maintainers
+        # TODO: 'License'
+        for classifier in self._metadata.classifiers:
+            metadata['Classifier'] = classifier
+        # skip 'Provides-Dist'
+        # skip 'Obsoletes-Dist'
+        # skip 'Requires-External'
+        for name, url in self._metadata.urls.items():
+            metadata['Project-URL'] = f'{name.capitalize()}, {url}'
+        if self._metadata.requires_python:
+            metadata['Requires-Python'] = str(self._metadata.requires_python)
+        for dep in self._metadata.dependencies:
+            metadata['Requires-Dist'] = dep
+        for extra, requirements in self._metadata.optional_dependencies.items():
+            metadata['Provides-Extra'] = extra
+            for req_string in requirements:
+                req = packaging.requirements.Requirement(req_string)
+                if req.marker:  # append our extra to the marker
+                    req.marker = packaging.markers.Marker(
+                        str(req.marker) + f' and extra == "{extra}"'
+                    )
+                else:  # add our extra marker
+                    req.marker = packaging.markers.Marker(f'extra == "{extra}"')
+                metadata['Requires-Dist'] = str(req)
+        if self._metadata.readme_content_type:
+            metadata['Description-Content-Type'] = self._metadata.readme_content_type
+        metadata.body = self._metadata.readme_text
         return metadata
 
     @property
@@ -413,6 +509,19 @@ class Project():
         return final_wheel
 
 
+def get_requires_for_build_sdist(
+    config_settings: Optional[Dict[Any, Any]] = None,
+) -> List[str]:
+    try:
+        with Project.with_temp_working_dir():
+            pass
+    except ModuleNotFoundError as e:
+        if e.name == 'pep621':
+            return ['pep621']
+        raise
+    return []
+
+
 def build_sdist(
     sdist_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -428,9 +537,15 @@ def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     dependencies = ['wheel >= 0.36.0']
-    with Project.with_temp_working_dir() as project:
-        if not project.is_pure:
-            dependencies.append('auditwheel >= 4.0.0')
+    try:
+        with Project.with_temp_working_dir() as project:
+            if not project.is_pure:
+                dependencies.append('auditwheel >= 4.0.0')
+    except ModuleNotFoundError as e:
+        if e.name == 'pep621':
+            dependencies.append('pep621')
+        else:
+            raise
     return dependencies
 
 

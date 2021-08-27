@@ -20,6 +20,11 @@ classifiers = [
   'Programming Language :: Python',
 ]
 
+dependencies = [
+  'packaging',
+  'tomli',
+]
+
 [project.optional-dependencies]
 test = [
   'pytest',
