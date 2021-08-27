@@ -550,7 +550,7 @@ def build_sdist(
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    dependencies = ['wheel >= 0.36.0']
+    dependencies = ['wheel >= 0.36.0', 'ninja']
     try:
         with Project.with_temp_working_dir() as project:
             if not project.is_pure:
