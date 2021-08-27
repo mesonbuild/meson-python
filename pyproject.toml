@@ -21,6 +21,7 @@ classifiers = [
 ]
 
 dependencies = [
+  'meson',  # meson >= 0.60.0
   'packaging>=20.0',
   'tomli>=1.0.0',
 ]
