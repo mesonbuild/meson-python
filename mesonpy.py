@@ -109,7 +109,7 @@ def _add_ld_path(paths: Iterable[str]) -> Iterator[None]:
     try:
         yield
     finally:
-        if old_value is not None:
+        if old_value is not None:  # pragma: no cover
             os.environ['LD_LIBRARY_PATH'] = old_value
 
 
