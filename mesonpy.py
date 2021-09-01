@@ -36,7 +36,7 @@ import packaging.requirements
 import tomli
 
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     import pep621
 
 
