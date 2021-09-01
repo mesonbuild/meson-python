@@ -17,3 +17,15 @@ def test_contents(package_library, wheel_library):
         'library-1.0.0.dist-info/METADATA',
     ]))):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
+
+
+def test_purelib_and_platlib(wheel_purelib_and_platlib):
+    artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
+
+    assert artifact.namelist() == [
+        'purelib_and_platlib-1.0.0.dist-info/METADATA',
+        'purelib_and_platlib-1.0.0.dist-info/WHEEL',
+        'pure.py',
+        'purelib_and_platlib-1.0.0.data/platlib/plat.cpython-39-x86_64-linux-gnu.so',
+        'purelib_and_platlib-1.0.0.dist-info/RECORD',
+    ]
