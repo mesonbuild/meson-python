@@ -134,11 +134,11 @@ class MesonBuilderError(Exception):
 
 
 class _WheelBuilder():
-    _SCHEME_MAP: ClassVar[Dict[str, str]] = {
-        'scripts': '{bindir}',
-        'purelib': '{py_purelib}',
-        'platlib': '{py_platlib}',
-        'headers': '{include}',
+    _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
+        'scripts': ('{bindir}',),
+        'purelib': ('{py_purelib}',),
+        'platlib': ('{py_platlib}', '{moduledir_shared}'),
+        'headers': ('{include}',),
     }
     # XXX: libdir - no match in wheel, we optionally bundle them via auditwheel
     # XXX: data - no match in wheel
@@ -193,9 +193,14 @@ class _WheelBuilder():
         for files in sources.values():
             for file, details in files.items():
                 destination = details['destination']
-                for scheme, path in self._SCHEME_MAP.items():
+                for scheme, path in [
+                    (scheme, path)
+                    for scheme, paths in self._SCHEME_MAP.items()
+                    for path in paths
+                ]:
                     if destination.startswith(path):
-                        wheel_files[scheme].append((destination, file))
+                        relative_destination = pathlib.Path(destination).relative_to(path)
+                        wheel_files[scheme].append((relative_destination, file))
                         break
                 else:
                     warnings.warn(
@@ -226,14 +231,14 @@ class _WheelBuilder():
             # install root scheme files
             root_scheme = 'purelib' if self._project.is_pure else 'platlib'
             for destination, origin in wheel_files[root_scheme]:
-                wheel_path = pathlib.Path(destination).relative_to(self._SCHEME_MAP[root_scheme])
-                whl.write(origin, os.fspath(wheel_path).replace(os.path.sep, '/'))
+                whl.write(origin, os.fspath(destination).replace(os.path.sep, '/'))
             # install the other schemes
-            for scheme, path in self._SCHEME_MAP.items():
+            for scheme in self._SCHEME_MAP:
                 if root_scheme == scheme:
                     continue
                 for destination, origin in wheel_files[scheme]:
-                    whl.write(origin, destination.replace(path, f'{self.data_dir}/{scheme}'))
+                    wheel_path = pathlib.Path(f'{self.data_dir}/{scheme}') / destination
+                    whl.write(origin, os.fspath(wheel_path).replace(os.path.sep, '/'))
 
         return wheel_file
 
