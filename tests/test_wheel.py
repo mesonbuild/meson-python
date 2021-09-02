@@ -29,3 +29,14 @@ def test_purelib_and_platlib(wheel_purelib_and_platlib):
         'purelib_and_platlib-1.0.0.data/platlib/plat.cpython-39-x86_64-linux-gnu.so',
         'purelib_and_platlib-1.0.0.dist-info/RECORD',
     ]
+
+
+def test_pure(wheel_pure):
+    artifact = wheel.wheelfile.WheelFile(wheel_pure)
+
+    assert artifact.namelist() == [
+        'pure-1.0.0.dist-info/METADATA',
+        'pure-1.0.0.dist-info/WHEEL',
+        'pure.py',
+        'pure-1.0.0.dist-info/RECORD',
+    ]
