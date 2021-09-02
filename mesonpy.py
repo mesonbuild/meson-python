@@ -284,10 +284,14 @@ class Project():
 
         # load config -- PEP 621 support is optional
         self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
-        if 'project' in self._config:
-            import pep621
-
-            self._metadata = pep621.StandardMetadata(self._config, self._source_dir)
+        self._pep621 = 'project' in self._config
+        if self.pep621:
+            try:
+                import pep621
+            except ModuleNotFoundError:
+                self._metadata = None
+            else:
+                self._metadata = pep621.StandardMetadata(self._config, self._source_dir)
         else:
             print(
                 '{yellow}{bold}! Using Meson to generate the project metadata '
@@ -400,7 +404,11 @@ class Project():
         metadata['Name'] = self.name
         metadata['Version'] = self.version
         # the rest of the keys are only available when using PEP 621 metadata
-        if not self._metadata:
+        if self.pep621:
+            # raise ModuleNotFoundError if pep621 is missing
+            if not self._metadata:
+                import pep621  # noqa: F401
+        else:
             return metadata
         # skip 'Platform'
         # skip 'Supported-Platform'
@@ -456,6 +464,10 @@ class Project():
                 if any(key in entry['destination'] for key in not_pure):
                     return False
         return True
+
+    @property
+    def pep621(self) -> bool:
+        return self._pep621
 
     @property
     def python_tag(self) -> str:
@@ -534,14 +546,11 @@ class Project():
 def get_requires_for_build_sdist(
     config_settings: Optional[Dict[Any, Any]] = None,
 ) -> List[str]:
-    try:
-        with Project.with_temp_working_dir():
-            pass
-    except ModuleNotFoundError as e:
-        if e.name == 'pep621':
-            return ['pep621']
-        raise
-    return []
+    dependencies = []
+    with Project.with_temp_working_dir() as project:
+        if project.pep621:
+            dependencies.append('pep621')
+    return dependencies
 
 
 def build_sdist(
@@ -559,15 +568,11 @@ def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     dependencies = ['wheel >= 0.36.0', 'ninja']
-    try:
-        with Project.with_temp_working_dir() as project:
-            if not project.is_pure:
-                dependencies.append('auditwheel >= 4.0.0')
-    except ModuleNotFoundError as e:
-        if e.name == 'pep621':
+    with Project.with_temp_working_dir() as project:
+        if not project.is_pure:
+            dependencies.append('auditwheel >= 4.0.0')
+        if project.pep621:
             dependencies.append('pep621')
-        else:
-            raise
     return dependencies
 
 
