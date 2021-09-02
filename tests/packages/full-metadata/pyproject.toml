@@ -1,0 +1,51 @@
+[build-system]
+build-backend = 'mesonpy'
+backend-path = ['mesonpy']
+requires = ['meson']
+
+[project]
+name = 'full-metadata'
+version = '1.2.3'
+description = 'Some package with all of the PEP 621 metadata'
+readme = 'README.md'
+requires-python = '>=3.10'
+license = {file = 'LICENSE'}
+keywords = ['full', 'metadata']
+authors = [
+  {email = 'jhon.doe@example.com'},
+  {name = 'Jane Doe'}
+]
+maintainers = [
+  {name = 'Jane Doe', email = 'jane.doe@example.com'}
+]
+classifiers = [
+  'Development Status :: 4 - Beta',
+  'Programming Language :: Python',
+]
+
+dependencies = [
+  'a',
+  'b > 1',
+  'c > 2; os_name != "nt"',
+]
+
+[project.optional-dependencies]
+test = [
+  'd < 3',
+  'e[all]'
+]
+
+[project.urls]
+homepage = 'https://example.com'
+documentation = 'https://readthedocs.org'
+repository = 'https://github.com/FFY00/mesonpy'
+changelog = 'https://github.com/FFY00/mesonpy/blob/master/CHANGELOG.md'
+
+[project.scripts]
+example-cli = 'example:cli'
+
+[project.gui-scripts]
+example-gui = 'example:gui'
+
+[project.entry-points.'something.custom']
+example = 'example:custom'
