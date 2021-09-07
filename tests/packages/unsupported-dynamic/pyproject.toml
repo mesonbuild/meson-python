@@ -1,0 +1,10 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['mesonpy']
+
+[project]
+name = 'unsupported-dynamic'
+version = '1.0.0'
+dynamic = [
+    'dependencies',
+]
