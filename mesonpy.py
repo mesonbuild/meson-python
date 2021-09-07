@@ -85,7 +85,7 @@ def _setup_cli() -> None:
         import colorama
     except ModuleNotFoundError:
         pass
-    else:
+    else:  # pragma: no cover
         colorama.init()  # fix colors on windows
 
 
