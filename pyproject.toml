@@ -12,7 +12,7 @@ name = 'mesonpy'
 version = '0.1.0'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.md'
-requires-python = '>=3.6'
+requires-python = '>=3.7'
 license = { file = 'LICENSE' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
 authors = [
