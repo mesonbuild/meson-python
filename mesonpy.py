@@ -459,6 +459,8 @@ class Project():
 
     @property
     def platform_tag(self) -> str:
+        if self.is_pure:
+            return 'any'
         # Choose the sysconfig platform here and let auditwheel fix it later if
         # there are system dependencies (eg. replace it with a manylinux tag)
         return sysconfig.get_platform().replace('-', '_').replace('.', '_')
