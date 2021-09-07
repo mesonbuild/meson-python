@@ -33,6 +33,7 @@ dependencies = [
 test = [
   'pytest',
   'pytest-cov',
+  'GitPython',
 ]
 docs = [
   'furo>=2021.04.11b34',
