@@ -28,7 +28,7 @@ def test(session):
     session.run('python', '-m', 'build', '-nw', '-o', '.nox-dist')
     session.install(glob.glob('.nox-dist/mesonpy-*.whl')[0])
     # install test extras manually
-    session.install('pytest', 'pytest-cov', 'GitPython')
+    session.install('pytest', 'pytest-cov', 'GitPython', 'auditwheel')
 
     # session.install('.[test]')
 
