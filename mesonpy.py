@@ -29,7 +29,7 @@ import textwrap
 import typing
 import warnings
 
-from typing import Any, ClassVar, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
+from typing import Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
 
 import packaging.markers
 import packaging.requirements
@@ -188,7 +188,7 @@ class _WheelBuilder():
         self,
         sources: Dict[str, Dict[str, Any]],
         copy_files: Dict[str, str],
-    ) -> Dict[str, List[Tuple[str, str]]]:
+    ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
         wheel_files = collections.defaultdict(list)
         for files in sources.values():
             for file, details in files.items():
@@ -495,7 +495,7 @@ class Project():
         dist_filename = f'{dist_name}.tar.gz'
         meson_dist = pathlib.Path(self._build_dir, 'meson-dist', dist_filename)
         sdist = pathlib.Path(directory, dist_filename)
-        shutil.move(meson_dist, sdist)
+        shutil.move(os.fspath(meson_dist), sdist)
 
         # add PKG-INFO to dist file to make it a sdist
         metadata = self.metadata.as_bytes()
@@ -523,7 +523,7 @@ class Project():
         # return the wheel directly if pure or the user wants to skip the lib bundling step
         if self.is_pure or skip_bundling:
             final_wheel = pathlib.Path(directory, wheel.name)
-            shutil.move(wheel, final_wheel)
+            shutil.move(os.fspath(wheel), final_wheel)
             return final_wheel
 
         # use auditwheel to select the correct platform tag based on the external dependencies
@@ -538,7 +538,7 @@ class Project():
 
         # move to the output directory
         final_wheel = pathlib.Path(directory, repaired_wheel.name)
-        shutil.move(repaired_wheel, final_wheel)
+        shutil.move(os.fspath(repaired_wheel), final_wheel)
 
         return final_wheel
 
