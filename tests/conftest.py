@@ -28,7 +28,7 @@ def cd_package(package):
 
 
 @contextlib.contextmanager
-def in_git_repo_context(path = os.path.curdir):
+def in_git_repo_context(path=os.path.curdir):
     path = pathlib.Path(path)
     assert path.absolute().relative_to(package_dir)
     shutil.rmtree(path / '.git', ignore_errors=True)
