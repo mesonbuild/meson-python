@@ -223,7 +223,7 @@ class _WheelBuilder():
 
         with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
             # add metadata
-            whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata.as_bytes())
+            whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
 
             wheel_files = self._map_to_wheel(sources, copy_files)
@@ -241,31 +241,6 @@ class _WheelBuilder():
                     whl.write(origin, os.fspath(wheel_path).replace(os.path.sep, '/'))
 
         return wheel_file
-
-
-class _RFC822Message():
-    def __init__(self) -> None:
-        self._headers: Dict[str, List[str]] = {}
-        self.body: Optional[str] = None
-
-    def __setitem__(self, name: str, value: Optional[str]) -> None:
-        if not value:
-            return
-        if name not in self._headers:
-            self._headers[name] = []
-        self._headers[name].append(value)
-
-    def __str__(self) -> str:
-        text = ''
-        for name, entries in self._headers.items():
-            for entry in entries:
-                text += f'{name}: {entry}\n'
-        if self.body:
-            text += '\n' + self.body
-        return text
-
-    def as_bytes(self) -> bytes:
-        return str(self).encode()
 
 
 class Project():
@@ -397,19 +372,22 @@ class Project():
         ])
 
     @property
-    def metadata(self) -> _RFC822Message:  # noqa: C901
+    def metadata(self) -> bytes:  # noqa: C901
         """Project metadata."""
-        metadata = _RFC822Message()
+        # the rest of the keys are only available when using PEP 621 metadata
+        if not self.pep621:
+            return textwrap.dedent(f'''
+                Metadata-Version: 2.1
+                Name: {self.name}
+                version: {self.version}
+            ''').strip().encode()
+
+        import pep621  # noqa: F401
+
+        metadata = pep621.RFC822Message()
         metadata['Metadata-Version'] = '2.1'
         metadata['Name'] = self.name
         metadata['Version'] = self.version
-        # the rest of the keys are only available when using PEP 621 metadata
-        if self.pep621:
-            # raise ModuleNotFoundError if pep621 is missing
-            if not self._metadata:
-                import pep621  # noqa: F401
-        else:
-            return metadata
         # skip 'Platform'
         # skip 'Supported-Platform'
         if self._metadata:
@@ -448,7 +426,7 @@ class Project():
         if self._metadata.readme_content_type:
             metadata['Description-Content-Type'] = self._metadata.readme_content_type
         metadata.body = self._metadata.readme_text
-        return metadata
+        return bytes(metadata)
 
     @property
     def is_pure(self) -> bool:
@@ -498,7 +476,7 @@ class Project():
         shutil.move(os.fspath(meson_dist), sdist)
 
         # add PKG-INFO to dist file to make it a sdist
-        metadata = self.metadata.as_bytes()
+        metadata = self.metadata
         with _edit_targz(sdist) as tar:
             info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             info.size = len(metadata)
@@ -549,7 +527,7 @@ def get_requires_for_build_sdist(
     dependencies = []
     with Project.with_temp_working_dir() as project:
         if project.pep621:
-            dependencies.append('pep621')
+            dependencies.append('pep621 >= 0.2.0')
     return dependencies
 
 
@@ -572,7 +550,7 @@ def get_requires_for_build_wheel(
         if not project.is_pure:
             dependencies.append('auditwheel >= 4.0.0')
         if project.pep621:
-            dependencies.append('pep621')
+            dependencies.append('pep621 >= 0.2.0')
     return dependencies
 
 
