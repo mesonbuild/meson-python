@@ -37,7 +37,7 @@ import tomli
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    import pep621
+    import pep621 as _pep621  # noqa: F401
 
 
 PathLike = Union[str, os.PathLike]
@@ -274,7 +274,7 @@ class Project():
     _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
         'version',
     ]
-    _metadata: Optional[pep621.StandardMetadata]
+    _metadata: Optional[_pep621.StandardMetadata]
 
     def __init__(self, source_dir: PathLike, working_dir: PathLike) -> None:
         self._source_dir = pathlib.Path(source_dir)
@@ -287,7 +287,7 @@ class Project():
         self._pep621 = 'project' in self._config
         if self.pep621:
             try:
-                import pep621
+                import pep621  # noqa: F811
             except ModuleNotFoundError:
                 self._metadata = None
             else:
