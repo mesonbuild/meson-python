@@ -1,0 +1,7 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['mesonpy']
+
+[project]
+name = 'library-pep621'
+version = '1.0.0'
