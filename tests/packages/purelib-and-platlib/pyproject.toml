@@ -1,4 +1,3 @@
 [build-system]
 build-backend = 'mesonpy'
-backend-path = ['mesonpy']
-requires = ['meson']
+requires = ['mesonpy']
