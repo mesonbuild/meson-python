@@ -263,8 +263,8 @@ class Project():
         if self.pep621:
             try:
                 import pep621  # noqa: F811
-            except ModuleNotFoundError:
-                self._metadata = None
+            except ModuleNotFoundError:  # pragma: no cover
+                raise
             else:
                 self._metadata = pep621.StandardMetadata(self._config, self._source_dir)
         else:
