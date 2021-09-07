@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 import re
+import sysconfig
 
 import wheel.wheelfile
+
+
+EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 
 
 def test_contents(package_library, wheel_library):
@@ -26,7 +30,7 @@ def test_purelib_and_platlib(wheel_purelib_and_platlib):
         'purelib_and_platlib-1.0.0.dist-info/METADATA',
         'purelib_and_platlib-1.0.0.dist-info/WHEEL',
         'pure.py',
-        'purelib_and_platlib-1.0.0.data/platlib/plat.cpython-39-x86_64-linux-gnu.so',
+        f'purelib_and_platlib-1.0.0.data/platlib/plat{EXT_SUFFIX}',
         'purelib_and_platlib-1.0.0.dist-info/RECORD',
     ]
 
