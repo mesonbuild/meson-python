@@ -16,7 +16,7 @@ from .conftest import cd_package
 )
 def test_name(package):
     with cd_package(package), mesonpy.Project.with_temp_working_dir() as project:
-        assert project.name == package
+        assert project.name == package.replace('-', '_')
 
 
 @pytest.mark.parametrize(

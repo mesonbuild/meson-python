@@ -346,14 +346,23 @@ class Project():
         }
 
     @property
-    def name(self) -> str:
-        """Project name."""
-        if self._metadata:
-            name = self._metadata.name
-        else:
-            name = self._info('intro-projectinfo')['descriptive_name']
+    def _meson_name(self) -> str:
+        name = self._info('intro-projectinfo')['descriptive_name']
         assert isinstance(name, str)
         return name
+
+    @property
+    def _meson_version(self) -> str:
+        name = self._info('intro-projectinfo')['version']
+        assert isinstance(name, str)
+        return name
+
+    @property
+    def name(self) -> str:
+        """Project name."""
+        name = self._metadata.name if self._metadata else self._meson_name
+        assert isinstance(name, str)
+        return name.replace('-', '_')
 
     @property
     def version(self) -> str:
@@ -361,7 +370,7 @@ class Project():
         if self._metadata and 'version' not in self._metadata.dynamic:
             version = str(self._metadata.version)
         else:
-            version = self._info('intro-projectinfo')['version']
+            version = self._meson_version
         assert isinstance(version, str)
         return version
 
@@ -472,7 +481,7 @@ class Project():
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
-        dist_filename = f'{dist_name}.tar.gz'
+        dist_filename = f'{self._meson_name}-{self._meson_version}.tar.gz'
         meson_dist = pathlib.Path(self._build_dir, 'meson-dist', dist_filename)
         sdist = pathlib.Path(directory, dist_filename)
         shutil.move(os.fspath(meson_dist), sdist)
