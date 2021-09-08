@@ -81,9 +81,9 @@ def _showwarning(
 def _setup_cli() -> None:
     warnings.showwarning = _showwarning
 
-    try:
+    try:  # pragma: no cover
         import colorama
-    except ModuleNotFoundError:
+    except ModuleNotFoundError:  # pragma: no cover
         pass
     else:  # pragma: no cover
         colorama.init()  # fix colors on windows
