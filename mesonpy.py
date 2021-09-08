@@ -379,7 +379,7 @@ class Project():
             return textwrap.dedent(f'''
                 Metadata-Version: 2.1
                 Name: {self.name}
-                version: {self.version}
+                Version: {self.version}
             ''').strip().encode()
 
         import pep621  # noqa: F401
