@@ -446,7 +446,7 @@ class Project():
         not_pure = ('{bindir}', '{libdir_shared}', '{libdir_static}')
         for data_type, files in self._install_plan.items():
             for entry in files.values():
-                if entry['destination'] is None:
+                if entry['destination'] is None:  # pragma: no cover
                     continue
                 if any(key in entry['destination'] for key in not_pure):
                     return False
