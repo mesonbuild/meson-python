@@ -33,6 +33,7 @@ dependencies = [
 test = [
   'pytest',
   'pytest-cov',
+  'pytest-mock',
   'GitPython',
   'auditwheel',
   'pep621 >= 0.2.0',
