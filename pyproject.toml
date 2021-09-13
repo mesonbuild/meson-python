@@ -3,7 +3,6 @@ build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
   'meson',  # meson >= 0.60.0
-  'packaging>=20.0',
   'tomli>=1.0.0',
 ]
 
