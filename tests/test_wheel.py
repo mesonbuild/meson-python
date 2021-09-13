@@ -12,7 +12,6 @@ EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
-    print(sorted(artifact.namelist()))
     for name, regex in zip(sorted(artifact.namelist()), [
         re.escape('library-1.0.0.data/scripts/example'),
         re.escape('library-1.0.0.dist-info/METADATA'),
