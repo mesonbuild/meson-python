@@ -43,6 +43,13 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 PathLike = Union[str, os.PathLike]
 
 
+class _depstr:
+    auditwheel = 'auditwheel >= 4.0.0'
+    ninja = 'ninja >= 1.10.0'
+    pep621 = 'pep621 >= 0.3.0'
+    wheel = 'wheel >= 0.36.0'
+
+
 _COLORS = {
     'cyan': '\33[36m',
     'yellow': '\33[93m',
@@ -538,7 +545,7 @@ def get_requires_for_build_sdist(
     dependencies = []
     with Project.with_temp_working_dir() as project:
         if project.pep621:
-            dependencies.append('pep621 >= 0.2.0')
+            dependencies.append(_depstr.pep621)
     return dependencies
 
 
@@ -556,12 +563,12 @@ def build_sdist(
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    dependencies = ['wheel >= 0.36.0', 'ninja']
+    dependencies = [_depstr.wheel, _depstr.ninja]
     with Project.with_temp_working_dir() as project:
         if not project.is_pure:
-            dependencies.append('auditwheel >= 4.0.0')
+            dependencies.append(_depstr.auditwheel)
         if project.pep621:
-            dependencies.append('pep621 >= 0.2.0')
+            dependencies.append(_depstr.pep621)
     return dependencies
 
 
