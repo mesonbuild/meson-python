@@ -31,8 +31,6 @@ import warnings
 
 from typing import Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
 
-import packaging.markers
-import packaging.requirements
 import tomli
 
 
@@ -273,7 +271,7 @@ class Project():
             except ModuleNotFoundError:  # pragma: no cover
                 raise
             else:
-                self._metadata = pep621.StandardMetadata(self._config, self._source_dir)
+                self._metadata = pep621.StandardMetadata.from_pyproject(self._config, self._source_dir)
         else:
             print(
                 '{yellow}{bold}! Using Meson to generate the project metadata '
@@ -381,12 +379,6 @@ class Project():
         assert isinstance(version, str)
         return version
 
-    def _person_list(self, people: List[Tuple[str, str]]) -> str:
-        return ', '.join([
-            '{}{}'.format(name, f' <{_email}>' if _email else '')
-            for name, _email in people
-        ])
-
     @property
     def metadata(self) -> bytes:  # noqa: C901
         """Project metadata."""
@@ -397,52 +389,11 @@ class Project():
                 Name: {self.name}
                 Version: {self.version}
             ''').strip().encode()
-
-        import pep621  # noqa: F401
-
-        metadata = pep621.RFC822Message()
-        metadata['Metadata-Version'] = '2.1'
-        metadata['Name'] = self.name
-        metadata['Version'] = self.version
-        # skip 'Platform'
-        # skip 'Supported-Platform'
-        if self._metadata:
-            metadata['Summary'] = self._metadata.description
-        metadata['Keywords'] = ' '.join(self._metadata.keywords)
-        if 'homepage' in self._metadata.urls:
-            metadata['Home-page'] = self._metadata.urls['homepage']
-        # skip 'Download-URL'
-        metadata['Author'] = metadata['Author-Email'] = self._person_list(self._metadata.authors)
-        if self._metadata.maintainers != self._metadata.authors:
-            maintainers = self._person_list(self._metadata.maintainers)
-            metadata['Maintainer'] = metadata['Maintainer-Email'] = maintainers
-        # TODO: 'License'
-        for classifier in self._metadata.classifiers:
-            metadata['Classifier'] = classifier
-        # skip 'Provides-Dist'
-        # skip 'Obsoletes-Dist'
-        # skip 'Requires-External'
-        for name, url in self._metadata.urls.items():
-            metadata['Project-URL'] = f'{name.capitalize()}, {url}'
-        if self._metadata.requires_python:
-            metadata['Requires-Python'] = str(self._metadata.requires_python)
-        for dep in self._metadata.dependencies:
-            metadata['Requires-Dist'] = dep
-        for extra, requirements in self._metadata.optional_dependencies.items():
-            metadata['Provides-Extra'] = extra
-            for req_string in requirements:
-                req = packaging.requirements.Requirement(req_string)
-                if req.marker:  # append our extra to the marker
-                    req.marker = packaging.markers.Marker(
-                        str(req.marker) + f' and extra == "{extra}"'
-                    )
-                else:  # add our extra marker
-                    req.marker = packaging.markers.Marker(f'extra == "{extra}"')
-                metadata['Requires-Dist'] = str(req)
-        if self._metadata.readme_content_type:
-            metadata['Description-Content-Type'] = self._metadata.readme_content_type
-        metadata.body = self._metadata.readme_text
-        return bytes(metadata)
+        assert self._metadata
+        # use self.version as the version may be dynamic -- fetched from Meson
+        core_metadata = self._metadata.as_rfc822()
+        core_metadata.headers['Version'] = [self.version]
+        return bytes(core_metadata)
 
     @property
     def is_pure(self) -> bool:

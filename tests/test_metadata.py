@@ -19,7 +19,7 @@ def test_pep621(sdist_full_metadata):
 
     assert sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read().decode() == textwrap.dedent('''\
         Metadata-Version: 2.1
-        Name: full_metadata
+        Name: full-metadata
         Version: 1.2.3
         Summary: Some package with all of the PEP 621 metadata
         Keywords: full metadata
@@ -36,8 +36,8 @@ def test_pep621(sdist_full_metadata):
         Project-URL: Changelog, https://github.com/FFY00/mesonpy/blob/master/CHANGELOG.md
         Requires-Python: >=3.10
         Requires-Dist: a
-        Requires-Dist: b > 1
-        Requires-Dist: c > 2; os_name != "nt"
+        Requires-Dist: b>1
+        Requires-Dist: c>2; os_name != "nt"
         Requires-Dist: d<3; extra == "test"
         Requires-Dist: e[all]; extra == "test"
         Provides-Extra: test
