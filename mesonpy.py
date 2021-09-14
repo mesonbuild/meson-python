@@ -269,7 +269,7 @@ class Project():
             try:
                 import pep621  # noqa: F811
             except ModuleNotFoundError:  # pragma: no cover
-                raise
+                self._metadata = None
             else:
                 self._metadata = pep621.StandardMetadata.from_pyproject(self._config, self._source_dir)
         else:
@@ -389,6 +389,8 @@ class Project():
                 Name: {self.name}
                 Version: {self.version}
             ''').strip().encode()
+        # re-import pep621 to raise ModuleNotFoundError if it is really missing
+        import pep621  # noqa: F401, F811
         assert self._metadata
         # use self.version as the version may be dynamic -- fetched from Meson
         core_metadata = self._metadata.as_rfc822()
