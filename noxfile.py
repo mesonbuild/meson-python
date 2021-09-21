@@ -37,7 +37,9 @@ def test(session):
         session.install('pytest-github-actions-annotate-failures')
 
     session.run(
-        'pytest', '--cov', '--cov-config', 'setup.cfg',
+        'pytest',
+        '--showlocals', '-vv',
+        '--cov', '--cov-config', 'setup.cfg',
         f'--cov-report=html:{htmlcov_output}',
         f'--cov-report=xml:{xmlcov_output}',
         'tests/', *session.posargs
