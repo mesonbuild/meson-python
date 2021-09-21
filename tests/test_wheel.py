@@ -13,10 +13,14 @@ def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
     for name, regex in zip(sorted(artifact.namelist()), [
+        re.escape('library-1.0.0.data/'),
+        re.escape('library-1.0.0.data/scripts'),
         re.escape('library-1.0.0.data/scripts/example'),
+        re.escape('library-1.0.0.dist-info/'),
         re.escape('library-1.0.0.dist-info/METADATA'),
         re.escape('library-1.0.0.dist-info/RECORD'),
         re.escape('library-1.0.0.dist-info/WHEEL'),
+        re.escape('library.libs/'),
         r'library\.libs/libexample.*\.so',
     ]):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'

@@ -42,7 +42,7 @@ PathLike = Union[str, os.PathLike]
 
 
 class _depstr:
-    auditwheel = 'auditwheel >= 4.0.0'
+    auditwheel = 'auditwheel >= 5.0.0'
     ninja = 'ninja >= 1.10.0'
     pep621 = 'pep621 >= 0.3.0'
     wheel = 'wheel >= 0.36.0'
