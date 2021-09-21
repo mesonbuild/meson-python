@@ -1,0 +1,2 @@
+def message():
+    return 'meson says: @MSG@'
