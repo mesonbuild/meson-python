@@ -29,21 +29,21 @@ def test_contents(package_library, wheel_library):
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
-    assert sorted(artifact.namelist()) == [
+    assert set(artifact.namelist()) == {
         'pure.py',
         f'purelib_and_platlib-1.0.0.data/platlib/plat{EXT_SUFFIX}',
         'purelib_and_platlib-1.0.0.dist-info/METADATA',
         'purelib_and_platlib-1.0.0.dist-info/RECORD',
         'purelib_and_platlib-1.0.0.dist-info/WHEEL',
-    ]
+    }
 
 
 def test_pure(wheel_pure):
     artifact = wheel.wheelfile.WheelFile(wheel_pure)
 
-    assert sorted(artifact.namelist()) == [
+    assert set(artifact.namelist()) == {
         'pure-1.0.0.dist-info/METADATA',
         'pure-1.0.0.dist-info/RECORD',
         'pure-1.0.0.dist-info/WHEEL',
         'pure.py',
-    ]
+    }
