@@ -189,29 +189,62 @@ class _WheelBuilder():
             tags=f'{self._project.python_tag}-{self._project.abi_tag}-{self._project.platform_tag}',
         ).encode()
 
+    def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
+        sys_vars = sysconfig.get_config_vars()
+        sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
+        sys_paths = sysconfig.get_paths(vars=sys_vars)
+        # purelib or platlib -- go to wheel root
+        for scheme in ('purelib', 'platlib'):
+            try:  # is_relative_to is only in Python >= 3.9 :/
+                wheel_path = destination.relative_to(sys_paths[scheme])
+            except ValueError:
+                continue
+            if sys_paths['purelib'] == sys_paths['platlib']:
+                warnings.warn(
+                    'Could not tell if file was meant for purelib or platlib, '
+                    f'so it was mapped to platlib: {origin} ({destination})'
+                )
+            return 'platlib', wheel_path
+        return None
+
+    def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
+        for scheme, placeholder in [
+            (scheme, placeholder)
+            for scheme, placeholders in self._SCHEME_MAP.items()
+            for placeholder in placeholders
+        ]:  # scheme name, scheme path (see self._SCHEME_MAP)
+            if destination.startswith(placeholder):
+                relative_destination = pathlib.Path(destination).relative_to(placeholder)
+                return scheme, relative_destination
+        return None
+
     def _map_to_wheel(
         self,
         sources: Dict[str, Dict[str, Any]],
         copy_files: Dict[str, str],
     ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+        relative_destination: Optional[pathlib.Path]
         wheel_files = collections.defaultdict(list)
-        for files in sources.values():
-            for file, details in files.items():
-                destination = details['destination']
-                for scheme, path in [
-                    (scheme, path)
-                    for scheme, paths in self._SCHEME_MAP.items()
-                    for path in paths
-                ]:
-                    if destination.startswith(path):
-                        relative_destination = pathlib.Path(destination).relative_to(path)
-                        wheel_files[scheme].append((relative_destination, file))
-                        break
-                else:
-                    warnings.warn(
-                        'File could not be mapped to an equivalent wheel directory: '
-                        '{} ({})'.format(copy_files[file], destination)
-                    )
+        for files in sources.values():  # entries in intro-install_plan.json
+            for file, details in files.items():  # install path -> {destination, tag}
+                # try mapping to wheel location
+                meson_destination = details['destination']
+                install_details = (
+                    # using scheme map
+                    self._map_from_scheme_map(meson_destination)
+                    # using heuristics
+                    or self._map_from_heuristics(copy_files[file], pathlib.Path(meson_destination))
+                )
+                if install_details:
+                    scheme, destination = install_details
+                    wheel_files[scheme].append((destination, file))
+                    break
+                # not found
+                warnings.warn(
+                    'File could not be mapped to an equivalent wheel directory: '
+                    '{} ({})'.format(copy_files[file], meson_destination)
+                )
+
         return wheel_files
 
     def build(
@@ -295,7 +328,7 @@ class Project():
         self._install_dir.mkdir(exist_ok=True)
 
         # configure the project
-        self._meson('setup', os.fspath(source_dir), os.fspath(self._build_dir))
+        self._meson('setup', f'--prefix={sys.base_prefix}', os.fspath(source_dir), os.fspath(self._build_dir))
 
     def _proc(self, *args: str) -> None:
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
