@@ -32,6 +32,10 @@ def test(session):
 
     # session.install('.[test]')
 
+    # optional github actions integration
+    if os.environ.get('GITHUB_ACTIONS') == 'true':
+        session.install('pytest-github-actions-annotate-failures')
+
     session.run(
         'pytest', '--cov', '--cov-config', 'setup.cfg',
         f'--cov-report=html:{htmlcov_output}',
