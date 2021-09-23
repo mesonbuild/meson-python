@@ -418,7 +418,7 @@ class Project():
 
     @property
     def python_tag(self) -> str:
-        # FIXME: allow users to change this
+        # XXX: we could allow users to change this
         return 'py3'
 
     @property
