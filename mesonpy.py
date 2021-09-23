@@ -189,10 +189,35 @@ class _WheelBuilder():
             tags=f'{self._project.python_tag}-{self._project.abi_tag}-{self._project.platform_tag}',
         ).encode()
 
+    @property
+    def _debian_python(self) -> bool:
+        try:
+            import distutils
+            try:
+                import distutils.command.install
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
+            return 'deb_system' in distutils.command.install.INSTALL_SCHEMES  # type: ignore[attr-defined]
+        except ModuleNotFoundError:
+            return False
+
     def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
         sys_vars = sysconfig.get_config_vars()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
         sys_paths = sysconfig.get_paths(vars=sys_vars)
+        # Debian dist-packages
+        if self._debian_python:
+            search_path = destination
+            while search_path != search_path.parent:
+                search_path = search_path.parent
+                if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
+                    calculated_path = destination.relative_to(search_path)
+                    warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
+                    warnings.warn(
+                        'Could not tell if file was meant for purelib or platlib, '
+                        f'so it was mapped to platlib: {origin} ({destination})'
+                    )
+                    return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
             try:  # is_relative_to is only in Python >= 3.9 :/
