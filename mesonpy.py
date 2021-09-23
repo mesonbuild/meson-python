@@ -144,9 +144,9 @@ class _WheelBuilder():
         'purelib': ('{py_purelib}',),
         'platlib': ('{py_platlib}', '{moduledir_shared}'),
         'headers': ('{include}',),
+        'data': ('{datadir}',),
     }
     # XXX: libdir - no match in wheel, we optionally bundle them via auditwheel
-    # XXX: data - no match in wheel
 
     """Helper class to build wheels from projects."""
     def __init__(self, project: Project) -> None:
