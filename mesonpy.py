@@ -487,7 +487,7 @@ class Project():
         # non-pure, but I think it's better that we evaluate use-cases as they
         # arise and make sure allowing the user to override this is indeed the
         # best option for the use-case.
-        not_pure = ('{bindir}', '{libdir_shared}', '{libdir_static}')
+        not_pure = ('{bindir}', '{libdir_shared}', '{libdir_static}', '{py_platlib}', '{moduledir_shared}')
         for data_type, files in self._install_plan.items():
             for entry in files.values():
                 if entry['destination'] is None:  # pragma: no cover

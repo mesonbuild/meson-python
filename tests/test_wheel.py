@@ -30,11 +30,15 @@ def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
     assert set(artifact.namelist()) == {
-        'pure.py',
-        f'purelib_and_platlib-1.0.0.data/platlib/plat{EXT_SUFFIX}',
+        f'plat{EXT_SUFFIX}',
+        'purelib_and_platlib-1.0.0.data/',
+        'purelib_and_platlib-1.0.0.data/purelib/',
+        'purelib_and_platlib-1.0.0.data/purelib/pure.py',
+        'purelib_and_platlib-1.0.0.dist-info/',
         'purelib_and_platlib-1.0.0.dist-info/METADATA',
         'purelib_and_platlib-1.0.0.dist-info/RECORD',
         'purelib_and_platlib-1.0.0.dist-info/WHEEL',
+        'purelib_and_platlib.libs/',
     }
 
 
