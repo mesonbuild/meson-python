@@ -24,9 +24,8 @@ def test_pep621(sdist_full_metadata):
         Summary: Some package with all of the PEP 621 metadata
         Keywords: full metadata
         Home-page: https://example.com
-        Author: Unknown <jhon.doe@example.com>, Jane Doe
-        Author-Email: Unknown <jhon.doe@example.com>, Jane Doe
-        Maintainer: Jane Doe <jane.doe@example.com>
+        Author: Jane Doe
+        Author-Email: Unknown <jhon.doe@example.com>
         Maintainer-Email: Jane Doe <jane.doe@example.com>
         Classifier: Development Status :: 4 - Beta
         Classifier: Programming Language :: Python
