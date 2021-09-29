@@ -318,7 +318,7 @@ class Project():
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
         self._build_dir = self._working_dir / 'build'
-        self._install_dir = self._working_dir / 'build'
+        self._install_dir = self._working_dir / 'install'
 
         # load config -- PEP 621 support is optional
         self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
