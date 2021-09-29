@@ -315,8 +315,8 @@ class Project():
     _metadata: Optional[_pep621.StandardMetadata]
 
     def __init__(self, source_dir: PathLike, working_dir: PathLike) -> None:
-        self._source_dir = pathlib.Path(source_dir)
-        self._working_dir = pathlib.Path(working_dir)
+        self._source_dir = pathlib.Path(source_dir).absolute()
+        self._working_dir = pathlib.Path(working_dir).absolute()
         self._build_dir = self._working_dir / 'build'
         self._install_dir = self._working_dir / 'build'
 
@@ -353,7 +353,7 @@ class Project():
         self._install_dir.mkdir(exist_ok=True)
 
         # configure the project
-        self._meson('setup', f'--prefix={sys.base_prefix}', os.fspath(source_dir), os.fspath(self._build_dir))
+        self._meson('setup', f'--prefix={sys.base_prefix}', os.fspath(self._source_dir), os.fspath(self._build_dir))
 
     def _proc(self, *args: str) -> None:
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
@@ -373,7 +373,7 @@ class Project():
     def with_temp_working_dir(cls, source_dir: PathLike = os.path.curdir) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
-            yield cls(os.path.abspath(source_dir), tmpdir)
+            yield cls(source_dir, tmpdir)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
