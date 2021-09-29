@@ -314,10 +314,15 @@ class Project():
     ]
     _metadata: Optional[_pep621.StandardMetadata]
 
-    def __init__(self, source_dir: PathLike, working_dir: PathLike) -> None:
+    def __init__(
+        self,
+        source_dir: PathLike,
+        working_dir: PathLike,
+        build_dir: Optional[PathLike] = None,
+    ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
-        self._build_dir = self._working_dir / 'build'
+        self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
         self._install_dir = self._working_dir / 'install'
 
         # load config -- PEP 621 support is optional
@@ -352,8 +357,8 @@ class Project():
         self._build_dir.mkdir(exist_ok=True)
         self._install_dir.mkdir(exist_ok=True)
 
-        # configure the project
-        self._meson('setup', f'--prefix={sys.base_prefix}', os.fspath(self._source_dir), os.fspath(self._build_dir))
+        # configure the meson project; reconfigure if the user provided a build directory
+        self._configure(reconfigure=bool(build_dir))
 
     def _proc(self, *args: str) -> None:
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
@@ -363,6 +368,23 @@ class Project():
         with _cd(self._build_dir):
             return self._proc('meson', *args)
 
+    def _configure(self, reconfigure: bool = False) -> None:
+        setup_args = [
+            f'--prefix={sys.base_prefix}',
+            os.fspath(self._source_dir),
+            os.fspath(self._build_dir),
+        ]
+        if reconfigure:
+            setup_args.insert(0, '--reconfigure')
+
+        try:
+            self._meson('setup', *setup_args)
+        except subprocess.CalledProcessError:
+            if reconfigure:  # if failed reconfiguring, try a normal configure
+                self._configure()
+            else:
+                raise
+
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
         self._meson('compile')
@@ -370,10 +392,14 @@ class Project():
 
     @classmethod
     @contextlib.contextmanager
-    def with_temp_working_dir(cls, source_dir: PathLike = os.path.curdir) -> Iterator[Project]:
+    def with_temp_working_dir(
+        cls,
+        source_dir: PathLike = os.path.curdir,
+        build_dir: Optional[PathLike] = None,
+    ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
-            yield cls(source_dir, tmpdir)
+            yield cls(source_dir, tmpdir, build_dir)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -550,11 +576,22 @@ class Project():
         return final_wheel
 
 
+@contextlib.contextmanager
+def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
+    if config_settings is None:
+        config_settings = {}
+
+    with Project.with_temp_working_dir(
+        build_dir=config_settings.get('builddir'),
+    ) as project:
+        yield project
+
+
 def get_requires_for_build_sdist(
     config_settings: Optional[Dict[Any, Any]] = None,
 ) -> List[str]:
     dependencies = []
-    with Project.with_temp_working_dir() as project:
+    with _project(config_settings) as project:
         if project.pep621:
             dependencies.append(_depstr.pep621)
     return dependencies
@@ -567,7 +604,7 @@ def build_sdist(
     _setup_cli()
 
     out = pathlib.Path(sdist_directory)
-    with Project.with_temp_working_dir() as project:
+    with _project(config_settings) as project:
         return project.sdist(out).name
 
 
@@ -575,7 +612,7 @@ def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     dependencies = [_depstr.wheel, _depstr.ninja]
-    with Project.with_temp_working_dir() as project:
+    with _project(config_settings) as project:
         if not project.is_pure:
             dependencies.append(_depstr.auditwheel)
         if project.pep621:
@@ -591,5 +628,5 @@ def build_wheel(
     _setup_cli()
 
     out = pathlib.Path(wheel_directory)
-    with Project.with_temp_working_dir() as project:
+    with _project(config_settings) as project:
         return project.wheel(out).name
