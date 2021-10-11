@@ -15,6 +15,7 @@ import contextlib
 import functools
 import gzip
 import io
+import itertools
 import json
 import os
 import os.path
@@ -51,6 +52,7 @@ class _depstr:
 _COLORS = {
     'cyan': '\33[36m',
     'yellow': '\33[93m',
+    'light_blue': '\33[94m',
     'bold': '\33[1m',
     'dim': '\33[2m',
     'underline': '\33[4m',
@@ -132,6 +134,34 @@ def _edit_targz(path: PathLike) -> Iterator[tarfile.TarFile]:
     memory.seek(0)
     with gzip.open(path, 'wb') as new_compressed:
         new_compressed.write(memory.read())  # type: ignore
+
+
+class _CLICounter:
+    def __init__(self, total: int) -> None:
+        self._total = total - 1
+        self._count = -1
+        self._current_line = ''
+
+    def update(self, description: str) -> None:
+        self._count += 1
+        new_line = f'[{self._count}/{self._total}] {description}'
+        if sys.stdout.isatty():
+            pad_size = abs(len(self._current_line) - len(new_line))
+            print(' ' + new_line + ' ' * pad_size, end='\r', flush=True)
+        else:
+            print(new_line)
+        self._current_line = new_line
+
+    def finish(self) -> None:
+        if sys.stdout.isatty():
+            print(f'\r{self._current_line}')
+
+
+@contextlib.contextmanager
+def _cli_counter(total: int) -> Iterator[_CLICounter]:
+    counter = _CLICounter(total)
+    yield counter
+    counter.finish()
 
 
 class MesonBuilderError(Exception):
@@ -291,17 +321,25 @@ class _WheelBuilder():
 
             wheel_files = self._map_to_wheel(sources, copy_files)
 
-            # install root scheme files
-            root_scheme = 'purelib' if self._project.is_pure else 'platlib'
-            for destination, origin in wheel_files[root_scheme]:
-                whl.write(origin, os.fspath(destination).replace(os.path.sep, '/'))
-            # install the other schemes
-            for scheme in self._SCHEME_MAP:
-                if root_scheme == scheme:
-                    continue
-                for destination, origin in wheel_files[scheme]:
-                    wheel_path = pathlib.Path(f'{self.data_dir}/{scheme}') / destination
-                    whl.write(origin, os.fspath(wheel_path).replace(os.path.sep, '/'))
+            print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
+            with _cli_counter(
+                len(list(itertools.chain.from_iterable(wheel_files.values()))),
+            ) as counter:
+                # install root scheme files
+                root_scheme = 'purelib' if self._project.is_pure else 'platlib'
+                for destination, origin in wheel_files[root_scheme]:
+                    location = os.fspath(destination).replace(os.path.sep, '/')
+                    counter.update(location)
+                    whl.write(origin, location)
+                # install the other schemes
+                for scheme in self._SCHEME_MAP:
+                    if root_scheme == scheme:
+                        continue
+                    for destination, origin in wheel_files[scheme]:
+                        wheel_path = pathlib.Path(f'{self.data_dir}/{scheme}') / destination
+                        location = os.fspath(wheel_path).replace(os.path.sep, '/')
+                        counter.update(location)
+                        whl.write(origin, location)
 
         return wheel_file
 
