@@ -263,7 +263,7 @@ class _WheelBuilder():
                 if install_details:
                     scheme, destination = install_details
                     wheel_files[scheme].append((destination, file))
-                    break
+                    continue
                 # not found
                 warnings.warn(
                     'File could not be mapped to an equivalent wheel directory: '
