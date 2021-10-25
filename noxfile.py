@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
 
-import glob
 import os
 import os.path
 
@@ -23,14 +22,7 @@ def test(session):
     htmlcov_output = os.path.join(session.virtualenv.location, 'htmlcov')
     xmlcov_output = os.path.join(session.virtualenv.location, f'coverage-{session.python}.xml')
 
-    # install from locally built wheel
-    session.install('build', 'git+https://github.com/mesonbuild/meson.git', 'ninja', 'packaging', 'tomli', 'pep621')
-    session.run('python', '-m', 'build', '-nw', '-o', '.nox-dist')
-    session.install(glob.glob('.nox-dist/mesonpy-*.whl')[0])
-    # install test extras manually
-    session.install('pytest', 'pytest-cov', 'pytest-mock', 'GitPython', 'auditwheel', 'pep621 >= 0.2.0')
-
-    # session.install('.[test]')
+    session.install('.[test]')
 
     # optional github actions integration
     if os.environ.get('GITHUB_ACTIONS') == 'true':

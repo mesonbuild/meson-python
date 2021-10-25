@@ -2,7 +2,8 @@
 build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
-  'meson',  # meson >= 0.60.0
+  'meson >= 0.60.0',
+  'ninja',
   'tomli>=1.0.0',
 ]
 
@@ -23,7 +24,8 @@ classifiers = [
 ]
 
 dependencies = [
-  'meson',  # meson >= 0.60.0
+  'meson >= 0.60.0',
+  'ninja',
   'tomli>=1.0.0',
 ]
 
