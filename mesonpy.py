@@ -42,6 +42,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 PathLike = Union[str, os.PathLike]
 
 
+__version__ = '0.1.0'
+
+
 class _depstr:
     auditwheel = 'auditwheel >= 5.0.0'
     ninja = 'ninja >= 1.10.0'
