@@ -41,7 +41,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 PathLike = Union[str, os.PathLike]
 
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 class _depstr:
