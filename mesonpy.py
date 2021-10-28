@@ -231,6 +231,19 @@ class _WheelBuilder():
         except ModuleNotFoundError:
             return False
 
+    def _is_elf(self, file: str) -> bool:
+        with open(file, 'rb') as f:
+            return f.read(4) == b'\x7fELF'
+
+    def _warn_unsure_platlib(self, origin: str, destination: pathlib.Path) -> None:
+        if self._is_elf(origin):
+            return
+        warnings.warn(
+            'Could not tell if file was meant for purelib or platlib, '
+            f'so it was mapped to platlib: {origin} ({destination})',
+            stacklevel=2,
+        )
+
     def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
         sys_vars = sysconfig.get_config_vars()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
@@ -243,10 +256,7 @@ class _WheelBuilder():
                 if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
                     calculated_path = destination.relative_to(search_path)
                     warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
-                    warnings.warn(
-                        'Could not tell if file was meant for purelib or platlib, '
-                        f'so it was mapped to platlib: {origin} ({destination})'
-                    )
+                    self._warn_unsure_platlib(origin, destination)
                     return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
@@ -255,10 +265,7 @@ class _WheelBuilder():
             except ValueError:
                 continue
             if sys_paths['purelib'] == sys_paths['platlib']:
-                warnings.warn(
-                    'Could not tell if file was meant for purelib or platlib, '
-                    f'so it was mapped to platlib: {origin} ({destination})'
-                )
+                self._warn_unsure_platlib(origin, destination)
             return 'platlib', wheel_path
         return None
 
