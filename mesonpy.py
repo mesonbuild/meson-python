@@ -14,7 +14,6 @@ import collections
 import contextlib
 import functools
 import gzip
-import io
 import itertools
 import json
 import os
@@ -30,7 +29,7 @@ import textwrap
 import typing
 import warnings
 
-from typing import Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
+from typing import IO, Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
 
 import tomli
 
@@ -124,19 +123,35 @@ def _add_ld_path(paths: Iterable[str]) -> Iterator[None]:
 
 
 @contextlib.contextmanager
-def _edit_targz(path: PathLike) -> Iterator[tarfile.TarFile]:
-    """Opens a .tar.gz file in memory for edition."""
-    memory = io.BytesIO()
-    with gzip.open(path) as compressed:
-        memory.write(compressed.read())
+def _edit_targz(path: PathLike, new_path: PathLike) -> Iterator[pathlib.Path]:
+    """Opens a .tar.gz file in the file system for edition.."""
+    with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
+        workdir = pathlib.Path(tmpdir)
+        with tarfile.open(path, 'r:gz') as tar:
+            tar.extractall(tmpdir)
 
-    memory.seek(0)
-    with tarfile.open(fileobj=memory, mode='a') as tar:
-        yield tar
+        yield workdir
 
-    memory.seek(0)
-    with gzip.open(path, 'wb') as new_compressed:
-        new_compressed.write(memory.read())  # type: ignore
+        # reproducibility
+        source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
+        mtime = int(source_date_epoch) if source_date_epoch else None
+
+        file = typing.cast(IO[bytes], gzip.GzipFile(
+            os.path.join(path, new_path),
+            mode='wb',
+            mtime=mtime,
+        ))
+        with contextlib.closing(file), tarfile.TarFile(
+            mode='w',
+            fileobj=file,
+            format=tarfile.PAX_FORMAT,  # changed in 3.8 to GNU
+        ) as tar:
+            for path in workdir.rglob('*'):
+                if path.is_file():
+                    tar.add(
+                        name=path,
+                        arcname=path.relative_to(workdir).as_posix(),
+                    )
 
 
 class _CLICounter:
@@ -574,18 +589,17 @@ class Project():
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
-        dist_filename = f'{self._meson_name}-{self._meson_version}.tar.gz'
-        meson_dist = pathlib.Path(self._build_dir, 'meson-dist', dist_filename)
-        sdist = pathlib.Path(directory, dist_filename)
-        shutil.move(os.fspath(meson_dist), sdist)
+        meson_dist_name = f'{self._meson_name}-{self._meson_version}'
+        meson_dist = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
+        sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')
 
-        # add PKG-INFO to dist file to make it a sdist
-        metadata = self.metadata
-        with _edit_targz(sdist) as tar:
-            info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
-            info.size = len(metadata)
-            with io.BytesIO(metadata) as data:
-                tar.addfile(info, data)
+        with _edit_targz(meson_dist, sdist) as content:
+            # rename from meson name to sdist name if necessary
+            if dist_name != meson_dist_name:
+                shutil.move(content / meson_dist_name, content / dist_name)
+
+            # add PKG-INFO to dist file to make it a sdist
+            content.joinpath(dist_name, 'PKG-INFO').write_bytes(self.metadata)
 
         return sdist
 
