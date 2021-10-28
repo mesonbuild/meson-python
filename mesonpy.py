@@ -596,14 +596,14 @@ class Project():
         with _edit_targz(meson_dist, sdist) as content:
             # rename from meson name to sdist name if necessary
             if dist_name != meson_dist_name:
-                shutil.move(content / meson_dist_name, content / dist_name)
+                shutil.move(str(content / meson_dist_name), str(content / dist_name))
 
             # add PKG-INFO to dist file to make it a sdist
             content.joinpath(dist_name, 'PKG-INFO').write_bytes(self.metadata)
 
         return sdist
 
-    def wheel(self, directory: PathLike, skip_bundling: bool = False) -> pathlib.Path:
+    def wheel(self, directory: PathLike, skip_bundling: bool = True) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory.
 
         Bundles the external binary dependencies by default, but can be skiped
