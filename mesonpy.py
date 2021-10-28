@@ -245,6 +245,7 @@ class _WheelBuilder():
         )
 
     def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
+        warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
         sys_vars = sysconfig.get_config_vars()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
         sys_paths = sysconfig.get_paths(vars=sys_vars)
