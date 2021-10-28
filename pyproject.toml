@@ -8,7 +8,7 @@ requires = [
 ]
 
 [project]
-name = 'mesonpy'
+name = 'meson-python'
 version = '0.1.0'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.md'
