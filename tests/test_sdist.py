@@ -7,7 +7,6 @@ def test_contents(sdist_library):
     sdist = tarfile.open(sdist_library, 'r:gz')
 
     assert set(sdist.getnames()) == {
-        'library-1.0.0',
         'library-1.0.0/example.c',
         'library-1.0.0/examplelib.c',
         'library-1.0.0/meson.build',
