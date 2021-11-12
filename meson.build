@@ -1,4 +1,4 @@
-project('mesonpy', version: '0.1.0')
+project('mesonpy', version: '0.1.2')
 
 py_mod = import('python')
 py = py_mod.find_installation()
