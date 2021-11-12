@@ -603,7 +603,7 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: PathLike, skip_bundling: bool = True) -> pathlib.Path:
+    def wheel(self, directory: PathLike, skip_bundling: bool = False) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory.
 
         Bundles the external binary dependencies by default, but can be skiped
