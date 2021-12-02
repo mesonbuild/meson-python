@@ -10,6 +10,7 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
+import abc
 import collections
 import contextlib
 import functools
@@ -19,6 +20,7 @@ import json
 import os
 import os.path
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -29,9 +31,24 @@ import textwrap
 import typing
 import warnings
 
-from typing import IO, Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional, Set, TextIO, Tuple, Type, Union
+from typing import (
+    IO, Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional,
+    Set, TextIO, Tuple, Type, Union
+)
 
 import tomli
+
+
+if sys.version_info >= (3, 9):
+    from collections.abc import Collection, Mapping, Sequence
+else:
+    from typing import Collection, Mapping, Sequence
+
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -76,6 +93,11 @@ def _init_colors() -> Dict[str, str]:
 _STYLES = _init_colors()
 
 
+_LINUX_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.so$')
+_WINDOWS_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.pyd$')
+_STABLE_ABI_TAG_REGEX = re.compile(r'^abi(?P<abi_number>[0-9]+)$')
+
+
 def _showwarning(
     message: Union[Warning, str],
     category: Type[Warning],
@@ -96,6 +118,15 @@ def _setup_cli() -> None:
         pass
     else:  # pragma: no cover
         colorama.init()  # fix colors on windows
+
+
+# backport og pathlib.Path.is_relative_to
+def is_relative_to(path: pathlib.Path, other: Union[pathlib.Path, str]) -> bool:
+    try:
+        path.relative_to(other)
+    except ValueError:
+        return False
+    return True
 
 
 @contextlib.contextmanager
@@ -184,6 +215,160 @@ def _cli_counter(total: int) -> Iterator[_CLICounter]:
 
 class MesonBuilderError(Exception):
     pass
+
+
+class _Tag(abc.ABC):
+    @abc.abstractmethod
+    def __init__(self, value: str) -> None: ...
+
+    @abc.abstractmethod
+    def __str__(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def python(self) -> Optional[str]:
+        """Python tag."""
+
+    @property
+    @abc.abstractmethod
+    def abi(self) -> str:
+        """ABI tag."""
+
+
+class _StableABITag(_Tag):
+    _REGEX = re.compile(r'^abi(?P<abi_number>[0-9]+)$')
+
+    def __init__(self, value: str) -> None:
+        match = self._REGEX.match(value)
+        if not match:
+            raise ValueError(f'Invalid PEP 3149 stable ABI tag, expecting pattern `{self._REGEX.pattern}`')
+        self._abi_number = int(match.group('abi_number'))
+
+    @property
+    def abi_number(self) -> int:
+        return self._abi_number
+
+    def __str__(self) -> str:
+        return f'abi{self.abi_number}'
+
+    @property
+    def python(self) -> Literal[None]:
+        return None
+
+    @property
+    def abi(self) -> str:
+        return f'abi{self.abi_number}'
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, self.__class__) and other.abi_number == self.abi_number
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
+class _LinuxInterpreterTag(_Tag):
+    def __init__(self, value: str) -> None:
+        parts = value.split('-')
+        if len(parts) < 2:
+            raise ValueError(
+                'Invalid PEP 3149 interpreter tag, expected at '
+                f'least 2 parts but got {len(parts)}'
+            )
+
+        self._implementation = parts[0]
+        self._interpreter_version = parts[1]
+        self._additional_information = parts[2:]
+
+        if self.implementation not in ('cpython', 'pypy', 'pypy3'):
+            raise NotImplementedError(
+                f'Unknown Python implementation: {self.implementation}. '
+                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'and include information about the Python distribution you are using.'
+            )
+
+    @property
+    def implementation(self) -> str:
+        return self._implementation
+
+    @property
+    def interpreter_version(self) -> str:
+        return self._interpreter_version
+
+    @property
+    def additional_information(self) -> Sequence[str]:
+        return tuple(self._additional_information)
+
+    def __str__(self) -> str:
+        return '-'.join((
+            self.implementation,
+            self.interpreter_version,
+            *self.additional_information,
+        ))
+
+    @property
+    def python(self) -> str:
+        if self.implementation == 'cpython':
+            return f'cp{self.interpreter_version}'
+        elif self.implementation in ('pypy', 'pypy3'):
+            interpreter_version = f'{sys.version_info[0]}{sys.version_info[1]}'
+            return f'pp{interpreter_version}'
+        raise ValueError(f'Unknown implementation: {self.implementation}')
+
+    @property
+    def abi(self) -> str:
+        # XXX: This is a bit flimsy and needs custom logic to support each case,
+        #      but currently there's no better way to do it.
+        if self.implementation == 'cpython':
+            return f'cp{self.interpreter_version}'
+        elif self.implementation == 'pypy':
+            return f'pypy_{self.interpreter_version}'
+        elif self.implementation == 'pypy3':
+            return f'pypy3_{self.interpreter_version}'
+        raise ValueError(f'Unknown implementation: {self.implementation}')
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, self.__class__)
+            and other.implementation == self.implementation
+            and other.interpreter_version == self.interpreter_version
+        )
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
+class _WindowsInterpreterTag(_Tag):
+    def __init__(self, value: str) -> None:
+        # XXX: This is not actually standardized, so our implementation relies
+        #      on observing how the current software behaves!
+        self._parts = value.split('-')
+        if len(self.parts) != 2:
+            warnings.warn(
+                'Unexpected native module tag name, the ABI dectection might be broken. '
+                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'and include information about the Python distribution you are using.'
+            )
+
+    @property
+    def parts(self) -> Sequence[str]:
+        return tuple(self._parts)
+
+    def __str__(self) -> str:
+        return '-'.join(self.parts)
+
+    @property
+    def python(self) -> str:
+        return self.abi
+
+    @property
+    def abi(self) -> str:
+        return self._parts[0]
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, self.__class__) and other.parts == self.parts
+
+    def __hash__(self) -> int:
+        return hash(str(self))
 
 
 class _WheelBuilder():
@@ -279,7 +464,7 @@ class _WheelBuilder():
                     return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
-            try:  # is_relative_to is only in Python >= 3.9 :/
+            try:
                 wheel_path = destination.relative_to(sys_paths[scheme])
             except ValueError:
                 continue
@@ -571,7 +756,21 @@ class Project():
 
     @property
     def abi_tag(self) -> str:
-        # FIXME: select an ABI if there are native modules
+        files_by_tag: Dict[_Tag, List[str]] = collections.defaultdict(list)
+        for file, details in self._install_plan.get('targets', {}).items():
+            destination = pathlib.Path(details['destination'])
+            # if in platlib, calculate the ABI tag
+            if (
+                not is_relative_to(destination, '{py_platlib}')
+                and not is_relative_to(destination, '{moduledir_shared}')
+            ):
+                continue
+            tag = self._calculate_file_abi_tag_heuristic(file)
+            if tag:
+                files_by_tag[tag] += file
+        selected_tag = self._select_abi_tag(files_by_tag)
+        if selected_tag:
+            return selected_tag.abi
         return 'none'
 
     @property
@@ -581,6 +780,108 @@ class Project():
         # Choose the sysconfig platform here and let auditwheel fix it later if
         # there are system dependencies (eg. replace it with a manylinux tag)
         return sysconfig.get_platform().replace('-', '_').replace('.', '_')
+
+    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[_Tag]:
+        match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
+        if not match:
+            return None
+        tag = match.group('tag')
+
+        try:
+            return _StableABITag(tag)
+        except ValueError:
+            return _LinuxInterpreterTag(tag)
+
+    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[_Tag]:
+        # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
+        # preventive and check its value to make sure it matches our expectations
+        try:
+            extension = sysconfig.get_config_vars().get('SHLIB_SUFFIX', '.so')
+            if extension != '.so':
+                raise NotImplementedError(
+                    f"We don't currently support the {extension}. "
+                    'Please report this to https://github.com/FFY00/mesonpy/issues '
+                    'and include information about your operating system.'
+                )
+        except KeyError:
+            warnings.warn(
+                'sysconfig does not export SHLIB_SUFFIX, so we are unable to '
+                'perform the sanity check regarding the extension suffix. '
+                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'and include the output of `python -m sysconfig`.'
+            )
+        match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
+        if not match:  # this file does not appear to be a native module
+            return None
+        tag = match.group('tag')
+
+        try:
+            return _StableABITag(tag)
+        except ValueError:
+            return _LinuxInterpreterTag(tag)
+
+    def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[_Tag]:
+        if os.name == 'nt':
+            return self._calculate_file_abi_tag_heuristic_windows(filename)
+        # everything else *should* follow the POSIX way, at least to my knowledge
+        return self._calculate_file_abi_tag_heuristic_posix(filename)
+
+    def _file_list_repr(self, files: Collection[str], prefix: str = '\t\t', max_count: int = 3) -> str:
+        if len(files) > max_count:
+            files = list(itertools.islice(files, max_count)) + [f'(... +{len(files)}))']
+        return ''.join(f'{prefix}- {file}\n' for file in files)
+
+    def _select_abi_tag(self, tags: Mapping[_Tag, Collection[str]]) -> Optional[_Tag]:  # noqa: C901
+        """Given a list of ABI tags, selects the most specific one.
+
+        Raises an error if there are incompatible tags.
+        """
+        # Possibilities:
+        #   - interpreter specific (cpython/pypy/etc, version)
+        #   - stable abi (abiX)
+        selected_tag = None
+        for tag, files in tags.items():
+            if __debug__:  # sanity check
+                if os.name == 'nt':
+                    assert not isinstance(tag, _LinuxInterpreterTag)
+                else:
+                    assert not isinstance(tag, _WindowsInterpreterTag)
+            # no selected tag yet, let's assign this one
+            if not selected_tag:
+                selected_tag = tag
+            # interpreter tags
+            elif isinstance(tag, _LinuxInterpreterTag):
+                if tag != selected_tag:
+                    if isinstance(selected_tag, _LinuxInterpreterTag):
+                        raise ValueError(
+                            'Found files with incompatible ABI tags:\n'
+                            + self._file_list_repr(tags[selected_tag])
+                            + '\tand\n'
+                            + self._file_list_repr(files)
+                        )
+                    selected_tag = tag
+            elif isinstance(tag, _WindowsInterpreterTag):
+                if tag != selected_tag:
+                    if isinstance(selected_tag, _WindowsInterpreterTag):
+                        warnings.warn(
+                            'Found files with different ABI tags but couldn\'t tell '
+                            'if they are incompatible:\n'
+                            + self._file_list_repr(tags[selected_tag])
+                            + '\tand\n'
+                            + self._file_list_repr(files)
+                            + 'Please report this to https://github.com/FFY00/mesonpy/issues.'
+                        )
+                    selected_tag = tag
+            # stable ABI
+            elif isinstance(tag, _StableABITag):
+                if isinstance(selected_tag, _StableABITag) and tag != selected_tag:
+                    raise ValueError(
+                        'Found files with incompatible ABI tags:\n'
+                        + self._file_list_repr(tags[selected_tag])
+                        + '\tand\n'
+                        + self._file_list_repr(files)
+                    )
+        return selected_tag
 
     def sdist(self, directory: PathLike) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
@@ -603,7 +904,7 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: PathLike, skip_bundling: bool = False) -> pathlib.Path:
+    def wheel(self, directory: PathLike, skip_bundling: bool = True) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory.
 
         Bundles the external binary dependencies by default, but can be skiped

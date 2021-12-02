@@ -1,12 +1,37 @@
 # SPDX-License-Identifier: EUPL-1.2
 
+import platform
 import re
+import sys
 import sysconfig
 
 import wheel.wheelfile
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
+
+
+if platform.python_implementation() == 'CPython':
+    INTERPRETER_TAG = f'cp{sys.version_info[0]}{sys.version_info[1]}'
+    # Py_UNICODE_SIZE has been a runtime option since Python 3.3,
+    # so the u suffix no longer exists
+    if sysconfig.get_config_var('Py_DEBUG'):
+        INTERPRETER_TAG += 'd'
+    # https://github.com/pypa/packaging/blob/5984e3b25f4fdee64aad20e98668c402f7ed5041/packaging/tags.py#L147-L150
+    if sys.version_info < (3, 8):
+        pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
+        if pymalloc or pymalloc is None:  # none is the default value, which is enable
+            INTERPRETER_TAG += 'm'
+elif platform.python_implementation() == 'PyPy':
+    INTERPRETER_TAG = f'pypy3_{sys.version_info[0]}{sys.version_info[1]}'
+else:
+    raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
+
+
+if platform.system() == 'Linux':
+    PLATFORM_TAG = f'linux_{platform.machine()}'
+else:
+    raise NotImplementedError(f'Unknown system: {platform.system()}')
 
 
 def wheel_contents(artifact):
@@ -62,3 +87,7 @@ def test_configure_data(wheel_configure_data):
         'configure_data-1.0.0.dist-info/RECORD',
         'configure_data-1.0.0.dist-info/WHEEL',
     }
+
+
+def test_interpreter_abi_tag(wheel_purelib_and_platlib):
+    assert wheel_purelib_and_platlib.name == f'purelib_and_platlib-1.0.0-py3-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
