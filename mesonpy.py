@@ -430,7 +430,7 @@ class _WheelBuilder():
                 import distutils.command.install
             except ModuleNotFoundError:
                 raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
-            return 'deb_system' in distutils.command.install.INSTALL_SCHEMES  # type: ignore[attr-defined]
+            return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
         except ModuleNotFoundError:
             return False
 
