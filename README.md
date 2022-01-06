@@ -17,7 +17,7 @@ It works on both pure Python and compiled projects, and has *optional*
   - Don't link aginst anything :+1:
   - Link aginst external libraries :+1:
   - Link aginst libraries from the Meson project :+1:
-  - Detect the ABI :hammer:
+  - Detect the ABI :+1:
 - Scripts (executables in Meson)
   - Don't link aginst anything :+1:
   - Link against external libraries :+1:
