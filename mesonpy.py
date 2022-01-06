@@ -751,24 +751,14 @@ class Project():
 
     @property
     def python_tag(self) -> str:
-        # XXX: we could allow users to change this
+        selected_tag = self._select_abi_tag()
+        if selected_tag and selected_tag.python:
+            return selected_tag.python
         return 'py3'
 
     @property
     def abi_tag(self) -> str:
-        files_by_tag: Dict[_Tag, List[str]] = collections.defaultdict(list)
-        for file, details in self._install_plan.get('targets', {}).items():
-            destination = pathlib.Path(details['destination'])
-            # if in platlib, calculate the ABI tag
-            if (
-                not is_relative_to(destination, '{py_platlib}')
-                and not is_relative_to(destination, '{moduledir_shared}')
-            ):
-                continue
-            tag = self._calculate_file_abi_tag_heuristic(file)
-            if tag:
-                files_by_tag[tag] += file
-        selected_tag = self._select_abi_tag(files_by_tag)
+        selected_tag = self._select_abi_tag()
         if selected_tag:
             return selected_tag.abi
         return 'none'
@@ -831,7 +821,22 @@ class Project():
             files = list(itertools.islice(files, max_count)) + [f'(... +{len(files)}))']
         return ''.join(f'{prefix}- {file}\n' for file in files)
 
-    def _select_abi_tag(self, tags: Mapping[_Tag, Collection[str]]) -> Optional[_Tag]:  # noqa: C901
+    def _files_by_tag(self) -> Mapping[_Tag, Collection[str]]:
+        files_by_tag: Dict[_Tag, List[str]] = collections.defaultdict(list)
+        for file, details in self._install_plan.get('targets', {}).items():
+            destination = pathlib.Path(details['destination'])
+            # if in platlib, calculate the ABI tag
+            if (
+                not is_relative_to(destination, '{py_platlib}')
+                and not is_relative_to(destination, '{moduledir_shared}')
+            ):
+                continue
+            tag = self._calculate_file_abi_tag_heuristic(file)
+            if tag:
+                files_by_tag[tag] += file
+        return files_by_tag
+
+    def _select_abi_tag(self) -> Optional[_Tag]:  # noqa: C901
         """Given a list of ABI tags, selects the most specific one.
 
         Raises an error if there are incompatible tags.
@@ -839,6 +844,7 @@ class Project():
         # Possibilities:
         #   - interpreter specific (cpython/pypy/etc, version)
         #   - stable abi (abiX)
+        tags = self._files_by_tag()
         selected_tag = None
         for tag, files in tags.items():
             if __debug__:  # sanity check

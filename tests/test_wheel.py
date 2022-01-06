@@ -9,10 +9,11 @@ import wheel.wheelfile
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
+INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
 
 if platform.python_implementation() == 'CPython':
-    INTERPRETER_TAG = f'cp{sys.version_info[0]}{sys.version_info[1]}'
+    INTERPRETER_TAG = f'cp{INTERPRETER_VERSION}'
     # Py_UNICODE_SIZE has been a runtime option since Python 3.3,
     # so the u suffix no longer exists
     if sysconfig.get_config_var('Py_DEBUG'):
@@ -22,8 +23,11 @@ if platform.python_implementation() == 'CPython':
         pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
         if pymalloc or pymalloc is None:  # none is the default value, which is enable
             INTERPRETER_TAG += 'm'
+
+    PYTHON_TAG = INTERPRETER_TAG
 elif platform.python_implementation() == 'PyPy':
-    INTERPRETER_TAG = f'pypy3_{sys.version_info[0]}{sys.version_info[1]}'
+    INTERPRETER_TAG = f'pypy3_{INTERPRETER_VERSION}'
+    PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
 else:
     raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
 
@@ -90,4 +94,5 @@ def test_configure_data(wheel_configure_data):
 
 
 def test_interpreter_abi_tag(wheel_purelib_and_platlib):
-    assert wheel_purelib_and_platlib.name == f'purelib_and_platlib-1.0.0-py3-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
+    expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
+    assert wheel_purelib_and_platlib.name == expected
