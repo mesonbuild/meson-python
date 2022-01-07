@@ -103,6 +103,14 @@ This is not recommended. Please consider specifying the Python package metadata.
   - Link against external libraries :+1:
   - Link against libraries from the Meson project :hammer:
 
+#### Platform Support
+
+- Linux :+1:
+- Windows :soon:
+- MacOS :soon:
+- Other UNIX-like :warning:
+  - Most platforms should work, but currently that is not tested or guaranteed
+
 ### Limitations
 
 #### No data
