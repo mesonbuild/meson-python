@@ -813,7 +813,7 @@ class Project():
             extension = sysconfig.get_config_vars().get('SHLIB_SUFFIX', '.so')
             if extension != '.so':
                 raise NotImplementedError(
-                    f"We don't currently support the {extension}. "
+                    f"We don't currently support the {extension} extension. "
                     'Please report this to https://github.com/FFY00/mesonpy/issues '
                     'and include information about your operating system.'
                 )
