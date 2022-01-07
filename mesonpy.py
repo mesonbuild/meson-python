@@ -573,6 +573,7 @@ class Project():
         self._working_dir = pathlib.Path(working_dir).absolute()
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
         self._install_dir = self._working_dir / 'install'
+        self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
 
         # load config -- PEP 621 support is optional
         self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
@@ -606,8 +607,27 @@ class Project():
         self._build_dir.mkdir(exist_ok=True)
         self._install_dir.mkdir(exist_ok=True)
 
+        # write the native file
+        native_file_data = textwrap.dedent(f'''
+            [binaries]
+            python3 = '{sys.executable}'
+        ''')
+        native_file_mismatch = (
+            not self._meson_native_file.exists()
+            or self._meson_native_file.read_text() != native_file_data
+        )
+        if native_file_mismatch:
+            try:
+                self._meson_native_file.write_text(native_file_data)
+            except OSError:
+                # if there are permission errors or something else in the source
+                # directory, put the native file in the working directory instead
+                # (this won't survive multiple calls -- Meson will have to be reconfigured)
+                self._meson_native_file = self._working_dir / '.mesonpy-native-file.ini'
+                self._meson_native_file.write_text(native_file_data)
+
         # configure the meson project; reconfigure if the user provided a build directory
-        self._configure(reconfigure=bool(build_dir))
+        self._configure(reconfigure=bool(build_dir) and not native_file_mismatch)
 
     def _proc(self, *args: str) -> None:
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
@@ -627,7 +647,11 @@ class Project():
             setup_args.insert(0, '--reconfigure')
 
         try:
-            self._meson('setup', *setup_args)
+            self._meson(
+                'setup',
+                f'--native-file={os.fspath(self._meson_native_file)}',
+                *setup_args,
+            )
         except subprocess.CalledProcessError:
             if reconfigure:  # if failed reconfiguring, try a normal configure
                 self._configure()
@@ -904,6 +928,11 @@ class Project():
             # rename from meson name to sdist name if necessary
             if dist_name != meson_dist_name:
                 shutil.move(str(content / meson_dist_name), str(content / dist_name))
+
+            # remove .mesonpy-native-file.ini if it exists
+            native_file = content / meson_dist_name / '.mesonpy-native-file.ini'
+            if native_file.exists():
+                native_file.unlink()
 
             # add PKG-INFO to dist file to make it a sdist
             content.joinpath(dist_name, 'PKG-INFO').write_bytes(self.metadata)
