@@ -23,7 +23,7 @@ else:
     from typing_extensions import Literal
 
 
-PathLike = Union[str, os.PathLike]
+Path = Union[str, os.PathLike]
 
 
 # backport og pathlib.Path.is_relative_to
@@ -42,6 +42,6 @@ __all__ = [
     'Iterator',
     'Literal',
     'Mapping',
-    'PathLike',
+    'Path',
     'Sequence',
 ]

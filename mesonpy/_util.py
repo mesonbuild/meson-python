@@ -13,11 +13,11 @@ import typing
 
 from typing import IO
 
-from mesonpy._compat import Iterable, Iterator, PathLike
+from mesonpy._compat import Iterable, Iterator, Path
 
 
 @contextlib.contextmanager
-def cd(path: PathLike) -> Iterator[None]:
+def cd(path: Path) -> Iterator[None]:
     """Context manager helper to change the current working directory -- cd."""
     old_cwd = os.getcwd()
     os.chdir(os.fspath(path))
@@ -41,7 +41,7 @@ def add_ld_path(paths: Iterable[str]) -> Iterator[None]:
 
 
 @contextlib.contextmanager
-def edit_targz(path: PathLike, new_path: PathLike) -> Iterator[pathlib.Path]:
+def edit_targz(path: Path, new_path: Path) -> Iterator[pathlib.Path]:
     """Opens a .tar.gz file in the file system for edition.."""
     with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
         workdir = pathlib.Path(tmpdir)

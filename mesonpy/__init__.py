@@ -38,7 +38,7 @@ import mesonpy._compat
 import mesonpy._tags
 import mesonpy._util
 
-from mesonpy._compat import Collection, Iterator, Mapping, PathLike
+from mesonpy._compat import Collection, Iterator, Mapping, Path
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -257,7 +257,7 @@ class _WheelBuilder():
         self,
         sources: Dict[str, Dict[str, Any]],
         copy_files: Dict[str, str],
-        directory: PathLike,
+        directory: Path,
     ) -> pathlib.Path:
         import wheel.wheelfile
 
@@ -305,9 +305,9 @@ class Project():
 
     def __init__(
         self,
-        source_dir: PathLike,
-        working_dir: PathLike,
-        build_dir: Optional[PathLike] = None,
+        source_dir: Path,
+        working_dir: Path,
+        build_dir: Optional[Path] = None,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
@@ -407,8 +407,8 @@ class Project():
     @contextlib.contextmanager
     def with_temp_working_dir(
         cls,
-        source_dir: PathLike = os.path.curdir,
-        build_dir: Optional[PathLike] = None,
+        source_dir: Path = os.path.curdir,
+        build_dir: Optional[Path] = None,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
@@ -653,7 +653,7 @@ class Project():
                     )
         return selected_tag
 
-    def sdist(self, directory: PathLike) -> pathlib.Path:
+    def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
         self._meson('dist', '--no-tests', '--formats', 'gztar')
@@ -679,7 +679,7 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: PathLike, skip_bundling: bool = True) -> pathlib.Path:
+    def wheel(self, directory: Path, skip_bundling: bool = True) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory.
 
         Bundles the external binary dependencies by default, but can be skiped
