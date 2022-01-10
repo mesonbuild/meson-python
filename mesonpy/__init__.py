@@ -10,52 +10,39 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
-import abc
 import collections
 import contextlib
 import functools
-import gzip
 import itertools
 import json
 import os
-import os.path
 import pathlib
 import re
 import shutil
 import subprocess
 import sys
 import sysconfig
-import tarfile
 import tempfile
 import textwrap
 import typing
 import warnings
 
 from typing import (
-    IO, Any, ClassVar, DefaultDict, Dict, Iterable, Iterator, List, Optional,
-    Set, TextIO, Tuple, Type, Union
+    Any, ClassVar, DefaultDict, Dict, List, Optional, Set, TextIO, Tuple, Type,
+    Union
 )
 
 import tomli
 
+import mesonpy._compat
+import mesonpy._tags
+import mesonpy._util
 
-if sys.version_info >= (3, 9):
-    from collections.abc import Collection, Mapping, Sequence
-else:
-    from typing import Collection, Mapping, Sequence
-
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from mesonpy._compat import Collection, Iterator, Mapping, PathLike
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import pep621 as _pep621  # noqa: F401
-
-
-PathLike = Union[str, os.PathLike]
 
 
 __version__ = '0.1.2'
@@ -120,255 +107,8 @@ def _setup_cli() -> None:
         colorama.init()  # fix colors on windows
 
 
-# backport og pathlib.Path.is_relative_to
-def is_relative_to(path: pathlib.Path, other: Union[pathlib.Path, str]) -> bool:
-    try:
-        path.relative_to(other)
-    except ValueError:
-        return False
-    return True
-
-
-@contextlib.contextmanager
-def _cd(path: PathLike) -> Iterator[None]:
-    """Context manager helper to change the current working directory -- cd."""
-    old_cwd = os.getcwd()
-    os.chdir(os.fspath(path))
-    try:
-        yield
-    finally:
-        os.chdir(old_cwd)
-
-
-@contextlib.contextmanager
-def _add_ld_path(paths: Iterable[str]) -> Iterator[None]:
-    """Context manager helper to add a path to LD_LIBRARY_PATH."""
-    old_value = os.environ.get('LD_LIBRARY_PATH')
-    old_paths = old_value.split(os.pathsep) if old_value else []
-    os.environ['LD_LIBRARY_PATH'] = os.pathsep.join([*paths, *old_paths])
-    try:
-        yield
-    finally:
-        if old_value is not None:  # pragma: no cover
-            os.environ['LD_LIBRARY_PATH'] = old_value
-
-
-@contextlib.contextmanager
-def _edit_targz(path: PathLike, new_path: PathLike) -> Iterator[pathlib.Path]:
-    """Opens a .tar.gz file in the file system for edition.."""
-    with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
-        workdir = pathlib.Path(tmpdir)
-        with tarfile.open(path, 'r:gz') as tar:
-            tar.extractall(tmpdir)
-
-        yield workdir
-
-        # reproducibility
-        source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
-        mtime = int(source_date_epoch) if source_date_epoch else None
-
-        file = typing.cast(IO[bytes], gzip.GzipFile(
-            os.path.join(path, new_path),
-            mode='wb',
-            mtime=mtime,
-        ))
-        with contextlib.closing(file), tarfile.TarFile(
-            mode='w',
-            fileobj=file,
-            format=tarfile.PAX_FORMAT,  # changed in 3.8 to GNU
-        ) as tar:
-            for path in workdir.rglob('*'):
-                if path.is_file():
-                    tar.add(
-                        name=path,
-                        arcname=path.relative_to(workdir).as_posix(),
-                    )
-
-
-class _CLICounter:
-    def __init__(self, total: int) -> None:
-        self._total = total - 1
-        self._count = -1
-        self._current_line = ''
-
-    def update(self, description: str) -> None:
-        self._count += 1
-        new_line = f'[{self._count}/{self._total}] {description}'
-        if sys.stdout.isatty():
-            pad_size = abs(len(self._current_line) - len(new_line))
-            print(' ' + new_line + ' ' * pad_size, end='\r', flush=True)
-        else:
-            print(new_line)
-        self._current_line = new_line
-
-    def finish(self) -> None:
-        if sys.stdout.isatty():
-            print(f'\r{self._current_line}')
-
-
-@contextlib.contextmanager
-def _cli_counter(total: int) -> Iterator[_CLICounter]:
-    counter = _CLICounter(total)
-    yield counter
-    counter.finish()
-
-
 class MesonBuilderError(Exception):
     pass
-
-
-class _Tag(abc.ABC):
-    @abc.abstractmethod
-    def __init__(self, value: str) -> None: ...
-
-    @abc.abstractmethod
-    def __str__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def python(self) -> Optional[str]:
-        """Python tag."""
-
-    @property
-    @abc.abstractmethod
-    def abi(self) -> str:
-        """ABI tag."""
-
-
-class _StableABITag(_Tag):
-    _REGEX = re.compile(r'^abi(?P<abi_number>[0-9]+)$')
-
-    def __init__(self, value: str) -> None:
-        match = self._REGEX.match(value)
-        if not match:
-            raise ValueError(f'Invalid PEP 3149 stable ABI tag, expecting pattern `{self._REGEX.pattern}`')
-        self._abi_number = int(match.group('abi_number'))
-
-    @property
-    def abi_number(self) -> int:
-        return self._abi_number
-
-    def __str__(self) -> str:
-        return f'abi{self.abi_number}'
-
-    @property
-    def python(self) -> Literal[None]:
-        return None
-
-    @property
-    def abi(self) -> str:
-        return f'abi{self.abi_number}'
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, self.__class__) and other.abi_number == self.abi_number
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-
-class _LinuxInterpreterTag(_Tag):
-    def __init__(self, value: str) -> None:
-        parts = value.split('-')
-        if len(parts) < 2:
-            raise ValueError(
-                'Invalid PEP 3149 interpreter tag, expected at '
-                f'least 2 parts but got {len(parts)}'
-            )
-
-        self._implementation = parts[0]
-        self._interpreter_version = parts[1]
-        self._additional_information = parts[2:]
-
-        if self.implementation not in ('cpython', 'pypy', 'pypy3'):
-            raise NotImplementedError(
-                f'Unknown Python implementation: {self.implementation}. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
-                'and include information about the Python distribution you are using.'
-            )
-
-    @property
-    def implementation(self) -> str:
-        return self._implementation
-
-    @property
-    def interpreter_version(self) -> str:
-        return self._interpreter_version
-
-    @property
-    def additional_information(self) -> Sequence[str]:
-        return tuple(self._additional_information)
-
-    def __str__(self) -> str:
-        return '-'.join((
-            self.implementation,
-            self.interpreter_version,
-            *self.additional_information,
-        ))
-
-    @property
-    def python(self) -> str:
-        if self.implementation == 'cpython':
-            return f'cp{self.interpreter_version}'
-        elif self.implementation in ('pypy', 'pypy3'):
-            interpreter_version = f'{sys.version_info[0]}{sys.version_info[1]}'
-            return f'pp{interpreter_version}'
-        raise ValueError(f'Unknown implementation: {self.implementation}')
-
-    @property
-    def abi(self) -> str:
-        # XXX: This is a bit flimsy and needs custom logic to support each case,
-        #      but currently there's no better way to do it.
-        if self.implementation == 'cpython':
-            return f'cp{self.interpreter_version}'
-        elif self.implementation == 'pypy':
-            return f'pypy_{self.interpreter_version}'
-        elif self.implementation == 'pypy3':
-            return f'pypy3_{self.interpreter_version}'
-        raise ValueError(f'Unknown implementation: {self.implementation}')
-
-    def __eq__(self, other: Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and other.implementation == self.implementation
-            and other.interpreter_version == self.interpreter_version
-        )
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-
-class _WindowsInterpreterTag(_Tag):
-    def __init__(self, value: str) -> None:
-        # XXX: This is not actually standardized, so our implementation relies
-        #      on observing how the current software behaves!
-        self._parts = value.split('-')
-        if len(self.parts) != 2:
-            warnings.warn(
-                'Unexpected native module tag name, the ABI dectection might be broken. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
-                'and include information about the Python distribution you are using.'
-            )
-
-    @property
-    def parts(self) -> Sequence[str]:
-        return tuple(self._parts)
-
-    def __str__(self) -> str:
-        return '-'.join(self.parts)
-
-    @property
-    def python(self) -> str:
-        return self.abi
-
-    @property
-    def abi(self) -> str:
-        return self._parts[0]
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, self.__class__) and other.parts == self.parts
-
-    def __hash__(self) -> int:
-        return hash(str(self))
 
 
 class _WheelBuilder():
@@ -533,7 +273,7 @@ class _WheelBuilder():
             wheel_files = self._map_to_wheel(sources, copy_files)
 
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
-            with _cli_counter(
+            with mesonpy._util.cli_counter(
                 len(list(itertools.chain.from_iterable(wheel_files.values()))),
             ) as counter:
                 # install root scheme files
@@ -634,7 +374,7 @@ class Project():
         subprocess.check_call(list(args))
 
     def _meson(self, *args: str) -> None:
-        with _cd(self._build_dir):
+        with mesonpy._util.cd(self._build_dir):
             return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
@@ -795,18 +535,18 @@ class Project():
         # there are system dependencies (eg. replace it with a manylinux tag)
         return sysconfig.get_platform().replace('-', '_').replace('.', '_')
 
-    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[_Tag]:
+    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
         if not match:
             return None
         tag = match.group('tag')
 
         try:
-            return _StableABITag(tag)
+            return mesonpy._tags.StableABITag(tag)
         except ValueError:
-            return _LinuxInterpreterTag(tag)
+            return mesonpy._tags.WindowsInterpreterTag(tag)
 
-    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[_Tag]:
+    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
         # preventive and check its value to make sure it matches our expectations
         try:
@@ -830,11 +570,11 @@ class Project():
         tag = match.group('tag')
 
         try:
-            return _StableABITag(tag)
+            return mesonpy._tags.StableABITag(tag)
         except ValueError:
-            return _LinuxInterpreterTag(tag)
+            return mesonpy._tags.LinuxInterpreterTag(tag)
 
-    def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[_Tag]:
+    def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         if os.name == 'nt':
             return self._calculate_file_abi_tag_heuristic_windows(filename)
         # everything else *should* follow the POSIX way, at least to my knowledge
@@ -845,14 +585,14 @@ class Project():
             files = list(itertools.islice(files, max_count)) + [f'(... +{len(files)}))']
         return ''.join(f'{prefix}- {file}\n' for file in files)
 
-    def _files_by_tag(self) -> Mapping[_Tag, Collection[str]]:
-        files_by_tag: Dict[_Tag, List[str]] = collections.defaultdict(list)
+    def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
+        files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
         for file, details in self._install_plan.get('targets', {}).items():
             destination = pathlib.Path(details['destination'])
             # if in platlib, calculate the ABI tag
             if (
-                not is_relative_to(destination, '{py_platlib}')
-                and not is_relative_to(destination, '{moduledir_shared}')
+                not mesonpy._compat.is_relative_to(destination, '{py_platlib}')
+                and not mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
             ):
                 continue
             tag = self._calculate_file_abi_tag_heuristic(file)
@@ -860,7 +600,7 @@ class Project():
                 files_by_tag[tag] += file
         return files_by_tag
 
-    def _select_abi_tag(self) -> Optional[_Tag]:  # noqa: C901
+    def _select_abi_tag(self) -> Optional[mesonpy._tags.Tag]:  # noqa: C901
         """Given a list of ABI tags, selects the most specific one.
 
         Raises an error if there are incompatible tags.
@@ -873,16 +613,16 @@ class Project():
         for tag, files in tags.items():
             if __debug__:  # sanity check
                 if os.name == 'nt':
-                    assert not isinstance(tag, _LinuxInterpreterTag)
+                    assert not isinstance(tag, mesonpy._tags.LinuxInterpreterTag)
                 else:
-                    assert not isinstance(tag, _WindowsInterpreterTag)
+                    assert not isinstance(tag, mesonpy._tags.WindowsInterpreterTag)
             # no selected tag yet, let's assign this one
             if not selected_tag:
                 selected_tag = tag
             # interpreter tags
-            elif isinstance(tag, _LinuxInterpreterTag):
+            elif isinstance(tag, mesonpy._tags.LinuxInterpreterTag):
                 if tag != selected_tag:
-                    if isinstance(selected_tag, _LinuxInterpreterTag):
+                    if isinstance(selected_tag, mesonpy._tags.LinuxInterpreterTag):
                         raise ValueError(
                             'Found files with incompatible ABI tags:\n'
                             + self._file_list_repr(tags[selected_tag])
@@ -890,9 +630,9 @@ class Project():
                             + self._file_list_repr(files)
                         )
                     selected_tag = tag
-            elif isinstance(tag, _WindowsInterpreterTag):
+            elif isinstance(tag, mesonpy._tags.WindowsInterpreterTag):
                 if tag != selected_tag:
-                    if isinstance(selected_tag, _WindowsInterpreterTag):
+                    if isinstance(selected_tag, mesonpy._tags.WindowsInterpreterTag):
                         warnings.warn(
                             'Found files with different ABI tags but couldn\'t tell '
                             'if they are incompatible:\n'
@@ -903,8 +643,8 @@ class Project():
                         )
                     selected_tag = tag
             # stable ABI
-            elif isinstance(tag, _StableABITag):
-                if isinstance(selected_tag, _StableABITag) and tag != selected_tag:
+            elif isinstance(tag, mesonpy._tags.StableABITag):
+                if isinstance(selected_tag, mesonpy._tags.StableABITag) and tag != selected_tag:
                     raise ValueError(
                         'Found files with incompatible ABI tags:\n'
                         + self._file_list_repr(tags[selected_tag])
@@ -924,7 +664,7 @@ class Project():
         meson_dist = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')
 
-        with _edit_targz(meson_dist, sdist) as content:
+        with mesonpy._util.edit_targz(meson_dist, sdist) as content:
             # rename from meson name to sdist name if necessary
             if dist_name != meson_dist_name:
                 shutil.move(str(content / meson_dist_name), str(content / dist_name))
@@ -960,7 +700,7 @@ class Project():
 
         # use auditwheel to select the correct platform tag based on the external dependencies
         auditwheel_out = self._build_dir / 'auditwheel-output'
-        with _cd(self._build_dir), _add_ld_path(self._lib_paths):
+        with mesonpy._util.cd(self._build_dir), mesonpy._util.add_ld_path(self._lib_paths):
             self._proc('auditwheel', 'repair', '-w', os.fspath(auditwheel_out), os.fspath(wheel))
 
         # get built wheel

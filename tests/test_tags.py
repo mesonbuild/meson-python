@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-import mesonpy
+import mesonpy._tags
 
 
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
@@ -19,19 +19,19 @@ INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
     ]
 )
 def test_stable_abi_tag(value, number, abi, python):
-    tag = mesonpy._StableABITag(value)
+    tag = mesonpy._tags.StableABITag(value)
     assert str(tag) == value
     assert tag.abi_number == number
     assert tag.abi == abi
     assert tag.python == python
-    assert tag == mesonpy._StableABITag(value)
+    assert tag == mesonpy._tags.StableABITag(value)
 
 
 def test_stable_abi_tag_invalid():
     with pytest.raises(ValueError, match=re.escape(
         r'Invalid PEP 3149 stable ABI tag, expecting pattern `^abi(?P<abi_number>[0-9]+)$`'
     )):
-        mesonpy._StableABITag('invalid')
+        mesonpy._tags.StableABITag('invalid')
 
 
 @pytest.mark.parametrize(
@@ -47,14 +47,14 @@ def test_stable_abi_tag_invalid():
     ]
 )
 def test_linux_interpreter_tag(value, implementation, version, additional, abi, python):
-    tag = mesonpy._LinuxInterpreterTag(value)
+    tag = mesonpy._tags.LinuxInterpreterTag(value)
     assert str(tag) == value
     assert tag.implementation == implementation
     assert tag.interpreter_version == version
     assert tag.additional_information == additional
     assert tag.abi == abi
     assert tag.python == python
-    assert tag == mesonpy._LinuxInterpreterTag(value)
+    assert tag == mesonpy._tags.LinuxInterpreterTag(value)
 
 
 @pytest.mark.parametrize(
@@ -66,7 +66,7 @@ def test_linux_interpreter_tag(value, implementation, version, additional, abi, 
 )
 def test_linux_interpreter_tag_invalid(value, msg):
     with pytest.raises(ValueError, match=msg):
-        mesonpy._LinuxInterpreterTag(value)
+        mesonpy._tags.LinuxInterpreterTag(value)
 
 
 @pytest.mark.parametrize(
@@ -77,12 +77,12 @@ def test_linux_interpreter_tag_invalid(value, msg):
     ]
 )
 def test_windows_interpreter_tag(value, parts, abi, python):
-    tag = mesonpy._WindowsInterpreterTag(value)
+    tag = mesonpy._tags.WindowsInterpreterTag(value)
     assert str(tag) == value
     assert tag.parts == parts
     assert tag.abi == abi
     assert tag.python == python
-    assert tag == mesonpy._WindowsInterpreterTag(value)
+    assert tag == mesonpy._tags.WindowsInterpreterTag(value)
 
 
 @pytest.mark.parametrize('value', ['', 'unknown', 'too-much-information'])
@@ -92,4 +92,4 @@ def test_windows_interpreter_tag_warn(value):
         'Please report this to https://github.com/FFY00/mesonpy/issues '
         'and include information about the Python distribution you are using.'
     )):
-        mesonpy._WindowsInterpreterTag(value)
+        mesonpy._tags.WindowsInterpreterTag(value)
