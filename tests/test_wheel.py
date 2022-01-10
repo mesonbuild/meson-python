@@ -2,6 +2,7 @@
 
 import platform
 import re
+import subprocess
 import sys
 import sysconfig
 
@@ -50,6 +51,7 @@ def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
     for name, regex in zip(sorted(wheel_contents(artifact)), [
+        re.escape('.library.mesonpy.libs/libexample.so'),
         re.escape('library-1.0.0.data/scripts/example'),
         re.escape('library-1.0.0.dist-info/METADATA'),
         re.escape('library-1.0.0.dist-info/RECORD'),
@@ -96,3 +98,10 @@ def test_configure_data(wheel_configure_data):
 def test_interpreter_abi_tag(wheel_purelib_and_platlib):
     expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
     assert wheel_purelib_and_platlib.name == expected
+
+
+def test_local_lib(virtual_env, wheel_link_against_local_lib):
+    subprocess.check_call([virtual_env, '-m', 'pip', 'install', wheel_link_against_local_lib])
+    subprocess.check_output([
+        virtual_env, '-c', 'import example; print(example.example_sum(1, 2))'
+    ]).decode() == '3'

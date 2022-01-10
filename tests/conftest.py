@@ -6,6 +6,7 @@ import os.path
 import pathlib
 import shutil
 import tempfile
+import venv
 
 import git
 import pytest
@@ -52,6 +53,21 @@ def tmp_dir_session():
 
     try:
         yield pathlib.Path(path)
+    finally:
+        try:
+            shutil.rmtree(path)
+        except PermissionError:  # pragma: no cover
+            pass  # this sometimes fails on windows :/
+
+
+@pytest.fixture()
+def virtual_env():
+    path = pathlib.Path(tempfile.mkdtemp(prefix='mesonpy-test-venv-'))
+
+    venv.create(path, with_pip=True)
+    try:
+        # FIXME: windows
+        yield path / 'bin' / 'python'
     finally:
         try:
             shutil.rmtree(path)
