@@ -24,8 +24,8 @@ def test_get_requires_for_build_sdist(package, expected):
     [
         ('pure', set()),  # pure and no PEP 621
         ('full-metadata', {mesonpy._depstr.pep621}),  # pure and PEP 621
-        ('library', {mesonpy._depstr.auditwheel}),  # not pure and not PEP 621
-        ('library-pep621', {mesonpy._depstr.auditwheel, mesonpy._depstr.pep621}),  # not pure and PEP 621
+        ('library', {mesonpy._depstr.patchelf_wrapper}),  # not pure and not PEP 621
+        ('library-pep621', {mesonpy._depstr.patchelf_wrapper, mesonpy._depstr.pep621}),  # not pure and PEP 621
     ]
 )
 def test_get_requires_for_build_wheel(package, expected):

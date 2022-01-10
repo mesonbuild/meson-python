@@ -35,6 +35,7 @@ from typing import (
 import tomli
 
 import mesonpy._compat
+import mesonpy._elf
 import mesonpy._tags
 import mesonpy._util
 
@@ -43,16 +44,17 @@ from mesonpy._compat import Collection, Iterator, Mapping, Path
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import pep621 as _pep621  # noqa: F401
+    import wheel.wheelfile  # noqa: F401
 
 
 __version__ = '0.1.2'
 
 
 class _depstr:
-    auditwheel = 'auditwheel >= 5.0.0'
     ninja = 'ninja >= 1.10.0'
+    patchelf_wrapper = 'patchelf-wrapper'
     pep621 = 'pep621 >= 0.3.0'
-    wheel = 'wheel >= 0.36.0'
+    wheel = 'wheel >= 0.36.0'  # noqa: F811
 
 
 _COLORS = {
@@ -118,12 +120,14 @@ class _WheelBuilder():
         'platlib': ('{py_platlib}', '{moduledir_shared}'),
         'headers': ('{include}',),
         'data': ('{datadir}',),
+        # our custom location
+        'mesonpy-libs': ('{libdir}', '{libdir_shared}')
     }
-    # XXX: libdir - no match in wheel, we optionally bundle them via auditwheel
 
     """Helper class to build wheels from projects."""
     def __init__(self, project: Project) -> None:
         self._project = project
+        self._libs_build_dir = project._build_dir / 'mesonpy-wheel-libs'
 
     @property
     def basename(self) -> str:
@@ -150,7 +154,7 @@ class _WheelBuilder():
         return f'{self.basename}.data'
 
     @property
-    def wheel(self) -> bytes:
+    def wheel(self) -> bytes:  # noqa: F811
         '''dist-info WHEEL.'''
         return textwrap.dedent('''
             Wheel-Version: 1.0
@@ -253,6 +257,33 @@ class _WheelBuilder():
 
         return wheel_files
 
+    def _install_file(
+        self,
+        wheel_file: wheel.wheelfile.WheelFile,
+        counter: mesonpy._util.CLICounter,
+        origin: Path,
+        destination: pathlib.Path,
+    ) -> None:
+        location = os.fspath(destination).replace(os.path.sep, '/')
+        counter.update(location)
+
+        # fix file
+        if os.name == 'posix':
+            # add .mesonpy.libs to the RPATH of ELF files
+            if self._is_elf(os.fspath(origin)):
+                # copy ELF to our working directory to avoid Meson having to regenerate the file
+                new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._project._build_dir)
+                os.makedirs(new_origin.parent, exist_ok=True)
+                shutil.copy2(origin, new_origin)
+                origin = new_origin
+                # add our in-wheel libs folder to the RPATH
+                elf = mesonpy._elf.ELF(origin)
+                libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
+                if libdir_path not in elf.rpath:
+                    elf.rpath = [*elf.rpath, libdir_path]
+
+        wheel_file.write(origin, location)
+
     def build(
         self,
         sources: Dict[str, Dict[str, Any]],
@@ -264,13 +295,12 @@ class _WheelBuilder():
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
+        wheel_files = self._map_to_wheel(sources, copy_files)
 
         with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
             # add metadata
             whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
-
-            wheel_files = self._map_to_wheel(sources, copy_files)
 
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
@@ -279,18 +309,21 @@ class _WheelBuilder():
                 # install root scheme files
                 root_scheme = 'purelib' if self._project.is_pure else 'platlib'
                 for destination, origin in wheel_files[root_scheme]:
-                    location = os.fspath(destination).replace(os.path.sep, '/')
-                    counter.update(location)
-                    whl.write(origin, location)
+                    self._install_file(whl, counter, origin, destination)
+
+                # install bundled libraries
+                for destination, origin in wheel_files['mesonpy-libs']:
+                    assert os.name == 'posix', 'Bundling libraries in wheel is currently only supported in POSIX!'
+                    destination = pathlib.Path(f'.{self._project.name}.mesonpy.libs', destination)
+                    self._install_file(whl, counter, origin, destination)
+
                 # install the other schemes
                 for scheme in self._SCHEME_MAP:
-                    if root_scheme == scheme:
+                    if scheme in (root_scheme, 'mesonpy-libs'):
                         continue
                     for destination, origin in wheel_files[scheme]:
-                        wheel_path = pathlib.Path(f'{self.data_dir}/{scheme}') / destination
-                        location = os.fspath(wheel_path).replace(os.path.sep, '/')
-                        counter.update(location)
-                        whl.write(origin, location)
+                        destination = pathlib.Path(self.data_dir, scheme, destination)
+                        self._install_file(whl, counter, origin, destination)
 
         return wheel_file
 
@@ -531,8 +564,8 @@ class Project():
     def platform_tag(self) -> str:
         if self.is_pure:
             return 'any'
-        # Choose the sysconfig platform here and let auditwheel fix it later if
-        # there are system dependencies (eg. replace it with a manylinux tag)
+        # XXX: Choose the sysconfig platform here and let something like auditwheel
+        #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
         return sysconfig.get_platform().replace('-', '_').replace('.', '_')
 
     def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
@@ -679,39 +712,12 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: Path, skip_bundling: bool = True) -> pathlib.Path:
-        """Generates a wheel (binary distribution) in the specified directory.
-
-        Bundles the external binary dependencies by default, but can be skiped
-        via the ``skip_bundling`` parameter. This results in wheels that are
-        only garanteed to work on the current system as it may have external
-        dependencies.
-        This option is useful for users like Python distributions, which want
-        the artifacts to link the system libraries, unlike someone who is
-        distributing wheels on PyPI.
-        """
+    def wheel(self, directory: Path) -> pathlib.Path:  # noqa: F811
+        """Generates a wheel (binary distribution) in the specified directory."""
         wheel = _WheelBuilder(self).build(self._install_plan, self._copy_files, self._build_dir)
 
-        # return the wheel directly if pure or the user wants to skip the lib bundling step
-        if self.is_pure or skip_bundling:
-            final_wheel = pathlib.Path(directory, wheel.name)
-            shutil.move(os.fspath(wheel), final_wheel)
-            return final_wheel
-
-        # use auditwheel to select the correct platform tag based on the external dependencies
-        auditwheel_out = self._build_dir / 'auditwheel-output'
-        with mesonpy._util.cd(self._build_dir), mesonpy._util.add_ld_path(self._lib_paths):
-            self._proc('auditwheel', 'repair', '-w', os.fspath(auditwheel_out), os.fspath(wheel))
-
-        # get built wheel
-        out = list(auditwheel_out.glob('*.whl'))
-        assert len(out) == 1
-        repaired_wheel = out[0]
-
-        # move to the output directory
-        final_wheel = pathlib.Path(directory, repaired_wheel.name)
-        shutil.move(os.fspath(repaired_wheel), final_wheel)
-
+        final_wheel = pathlib.Path(directory, wheel.name)
+        shutil.move(os.fspath(wheel), final_wheel)
         return final_wheel
 
 
@@ -753,7 +759,7 @@ def get_requires_for_build_wheel(
     dependencies = [_depstr.wheel, _depstr.ninja]
     with _project(config_settings) as project:
         if not project.is_pure:
-            dependencies.append(_depstr.auditwheel)
+            dependencies.append(_depstr.patchelf_wrapper)
         if project.pep621:
             dependencies.append(_depstr.pep621)
     return dependencies
