@@ -117,7 +117,11 @@ class _WheelBuilder():
     _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
         'scripts': ('{bindir}',),
         'purelib': ('{py_purelib}',),
-        'platlib': ('{py_platlib}', '{moduledir_shared}'),
+        # {moduledir_shared} should be listed in platlib here too, but currently
+        # there is a Meson bug preventing us from using, so we will have to let
+        # that fallback on heuristics.
+        # see https://github.com/mesonbuild/meson/pull/9474
+        'platlib': ('{py_platlib}',),
         'headers': ('{include}',),
         'data': ('{datadir}',),
         # our custom location
@@ -208,11 +212,16 @@ class _WheelBuilder():
                     return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
+            # try to match the install path on the system to one of the known schemes
+            scheme_path = pathlib.Path(sys_paths[scheme])
+            destdir_scheme_path = self._project._install_dir / scheme_path.relative_to(scheme_path.root)
             try:
-                wheel_path = destination.relative_to(sys_paths[scheme])
+                wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
             except ValueError:
                 continue
-            if sys_paths['purelib'] == sys_paths['platlib']:
+            # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
+            # but we know that files that go there are supposed to go to platlib
+            if sys_paths['purelib'] == sys_paths['platlib'] and not origin.startswith('{moduledir_shared}'):
                 self._warn_unsure_platlib(origin, destination)
             return 'platlib', wheel_path
         return None
