@@ -268,7 +268,7 @@ class _WheelBuilder():
 
     def _install_file(
         self,
-        wheel_file: wheel.wheelfile.WheelFile,
+        wheel_file: wheel.wheelfile.WheelFile,  # type: ignore[name-defined]
         counter: mesonpy._util.CLICounter,
         origin: Path,
         destination: pathlib.Path,
