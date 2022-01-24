@@ -103,7 +103,8 @@ class LinuxInterpreterTag(Tag):
     @property
     def python(self) -> str:
         if self.implementation == 'cpython':
-            return f'cp{self.interpreter_version}'
+            # The Python tag for CPython does not seem to include the flags suffixes.
+            return f'cp{self.interpreter_version}'.rstrip('dmu')
         elif self.implementation in ('pypy', 'pypy3'):
             interpreter_version = f'{sys.version_info[0]}{sys.version_info[1]}'
             return f'pp{interpreter_version}'

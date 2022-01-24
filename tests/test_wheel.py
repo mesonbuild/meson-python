@@ -15,6 +15,7 @@ INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
 if platform.python_implementation() == 'CPython':
     INTERPRETER_TAG = f'cp{INTERPRETER_VERSION}'
+    PYTHON_TAG = INTERPRETER_TAG
     # Py_UNICODE_SIZE has been a runtime option since Python 3.3,
     # so the u suffix no longer exists
     if sysconfig.get_config_var('Py_DEBUG'):
@@ -24,8 +25,6 @@ if platform.python_implementation() == 'CPython':
         pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
         if pymalloc or pymalloc is None:  # none is the default value, which is enable
             INTERPRETER_TAG += 'm'
-
-    PYTHON_TAG = INTERPRETER_TAG
 elif platform.python_implementation() == 'PyPy':
     INTERPRETER_TAG = f'pypy3_{INTERPRETER_VERSION}'
     PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
