@@ -3,6 +3,14 @@ Changelog
 +++++++++
 
 
+0.2.0 (24-01-2022)
+==================
+
+- Select the correct ABI and Python tags
+- Force Meson to use the correct Python executable
+- Replace auditwheel with in-house vendoring mechanism
+
+
 0.1.2 (12-11-2021)
 ==================
 
