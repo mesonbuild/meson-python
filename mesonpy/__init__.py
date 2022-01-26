@@ -411,6 +411,13 @@ class Project():
         # configure the meson project; reconfigure if the user provided a build directory
         self._configure(reconfigure=bool(build_dir) and not native_file_mismatch)
 
+        # set version if dynamic (this fetches it from Meson)
+        if self._metadata and 'version' in self._metadata.dynamic:
+            self._metadata.version = self.version
+            # version is no longer dynamic
+            # XXX: Should this be automatically handled by pep621/pyproject-metadata?
+            self._metadata.dynamic.remove('version')
+
     def _proc(self, *args: str) -> None:
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
         subprocess.check_call(list(args))
