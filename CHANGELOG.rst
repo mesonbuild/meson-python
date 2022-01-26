@@ -3,6 +3,12 @@ Changelog
 +++++++++
 
 
+0.2.1 (26-02-2022)
+==================
+
+- Fix getting the project version dynamically from Meson
+
+
 0.2.0 (24-01-2022)
 ==================
 
