@@ -46,3 +46,13 @@ def test_pep621(sdist_full_metadata):
 
         An example package with all of the PEP 621 metadata!
     ''')
+
+
+def test_dynamic_version(sdist_dynamic_version):
+    sdist = tarfile.open(sdist_dynamic_version, 'r:gz')
+
+    assert sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read().decode().strip() == textwrap.dedent('''
+        Metadata-Version: 2.1
+        Name: dynamic-version
+        Version: 1.0.0
+    ''').strip()

@@ -1,0 +1,9 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['mesonpy']
+
+[project]
+name = 'dynamic-version'
+dynamic = [
+    'version',
+]
