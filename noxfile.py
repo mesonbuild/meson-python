@@ -6,8 +6,26 @@ import os.path
 import nox
 
 
-nox.options.sessions = ['mypy', 'test']
+nox.options.sessions = ['docs', 'mypy', 'test']
 nox.options.reuse_existing_virtualenvs = True
+
+
+@nox.session()
+def docs(session):
+    """
+    Build the docs. Pass "serve" to serve.
+    """
+
+    session.install('.[docs]')
+    session.chdir('docs')
+    session.run('sphinx-build', '-M', 'html', '.', '_build')
+
+    if session.posargs:
+        if 'serve' in session.posargs:
+            print('Launching docs at http://localhost:8000/ - use Ctrl-C to quit')
+            session.run('python', '-m', 'http.server', '8000', '-d', '_build/html')
+        else:
+            print('Unsupported argument to docs')
 
 
 @nox.session(python='3.7')
