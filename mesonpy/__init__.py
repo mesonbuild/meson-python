@@ -480,9 +480,9 @@ class Project():
     def _copy_files(self) -> Dict[str, str]:
         copy_files = {}
         for origin, destination in self._info('intro-installed').items():
-            destination_path = pathlib.Path(destination)
+            destination_path = pathlib.Path(destination).absolute()
             copy_files[origin] = os.fspath(
-                self._install_dir / destination_path.relative_to(destination_path.root)
+                self._install_dir / destination_path.relative_to(destination_path.anchor)
             )
         return copy_files
 
