@@ -32,9 +32,12 @@ elif platform.python_implementation() == 'PyPy':
 else:
     raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
 
+PLATFORM_TAG = sysconfig.get_platform().replace('-', '_').replace('.', '_')
 
 if platform.system() == 'Linux':
-    PLATFORM_TAG = f'linux_{platform.machine()}'
+    SHARED_LIB_EXT = 'so'
+elif platform.system() == 'Darwin':
+    SHARED_LIB_EXT = 'dylib'
 else:
     raise NotImplementedError(f'Unknown system: {platform.system()}')
 
@@ -51,12 +54,12 @@ def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
     for name, regex in zip(sorted(wheel_contents(artifact)), [
-        re.escape('.library.mesonpy.libs/libexample.so'),
+        re.escape(f'.library.mesonpy.libs/libexample.{SHARED_LIB_EXT}'),
         re.escape('library-1.0.0.data/scripts/example'),
         re.escape('library-1.0.0.dist-info/METADATA'),
         re.escape('library-1.0.0.dist-info/RECORD'),
         re.escape('library-1.0.0.dist-info/WHEEL'),
-        r'library\.libs/libexample.*\.so',
+        rf'library\.libs/libexample.*\.{SHARED_LIB_EXT}',
     ]):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
