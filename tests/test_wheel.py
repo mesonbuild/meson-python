@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 
+import os
 import platform
 import re
 import subprocess
@@ -38,6 +39,8 @@ if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
 elif platform.system() == 'Darwin':
     SHARED_LIB_EXT = 'dylib'
+elif platform.system() == 'Windows':
+    SHARED_LIB_EXT = 'dll'
 else:
     raise NotImplementedError(f'Unknown system: {platform.system()}')
 
@@ -50,6 +53,7 @@ def wheel_contents(artifact):
     }
 
 
+@pytest.mark.skipif(os.name != 'posix', reason='Needs library vendoring, only implemented in POSIX')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
@@ -67,13 +71,17 @@ def test_contents(package_library, wheel_library):
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
-    assert wheel_contents(artifact) == {
+    expecting = {
         f'plat{EXT_SUFFIX}',
         'purelib_and_platlib-1.0.0.data/purelib/pure.py',
         'purelib_and_platlib-1.0.0.dist-info/METADATA',
         'purelib_and_platlib-1.0.0.dist-info/RECORD',
         'purelib_and_platlib-1.0.0.dist-info/WHEEL',
     }
+    if platform.system() == 'Windows':
+        expecting.add('plat{}'.format(EXT_SUFFIX.replace('pyd', 'dll.a')))
+
+    assert wheel_contents(artifact) == expecting
 
 
 def test_pure(wheel_pure):

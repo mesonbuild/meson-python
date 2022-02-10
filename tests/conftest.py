@@ -44,7 +44,10 @@ def in_git_repo_context(path=os.path.curdir):
         handler.tag('-a', '-m', '', '1.0.0')
         yield
     finally:
-        shutil.rmtree(path / '.git')
+        try:
+            shutil.rmtree(path / '.git')
+        except PermissionError:
+            pass
 
 
 @pytest.fixture(scope='session')

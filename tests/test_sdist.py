@@ -9,6 +9,7 @@ def test_contents(sdist_library):
     assert set(sdist.getnames()) == {
         'library-1.0.0/example.c',
         'library-1.0.0/examplelib.c',
+        'library-1.0.0/examplelib.h',
         'library-1.0.0/meson.build',
         'library-1.0.0/pyproject.toml',
         'library-1.0.0/PKG-INFO',

@@ -3,6 +3,8 @@ project(
     version: '1.0.0',
 )
 
+install_headers('examplelib.h')
+
 example_lib = shared_library(
     'example', 'examplelib.c',
     install: true,
