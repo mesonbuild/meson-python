@@ -213,8 +213,8 @@ class _WheelBuilder():
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
             # try to match the install path on the system to one of the known schemes
-            scheme_path = pathlib.Path(sys_paths[scheme])
-            destdir_scheme_path = self._project._install_dir / scheme_path.relative_to(scheme_path.root)
+            scheme_path = pathlib.Path(sys_paths[scheme]).absolute()
+            destdir_scheme_path = self._project._install_dir / scheme_path.relative_to(scheme_path.anchor)
             try:
                 wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
             except ValueError:
