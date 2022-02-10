@@ -6,6 +6,7 @@ import subprocess
 import sys
 import sysconfig
 
+import pytest
 import wheel.wheelfile
 
 
@@ -99,6 +100,7 @@ def test_interpreter_abi_tag(wheel_purelib_and_platlib):
     assert wheel_purelib_and_platlib.name == expected
 
 
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(virtual_env, wheel_link_against_local_lib):
     subprocess.check_call([virtual_env, '-m', 'pip', 'install', wheel_link_against_local_lib])
     subprocess.check_output([
