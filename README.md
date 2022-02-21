@@ -15,11 +15,11 @@ See the [documentation](https://meson-python.readthedocs.io/en/stable/) for more
 - Pure Python modules :+1:
 - Native modules
   - Don't link against anything :+1:
-  - Link aginst external libraries :+1:
-  - Link aginst libraries from the Meson project :+1:
+  - Link against external libraries :+1:
+  - Link against libraries from the Meson project :+1:
   - Detect the ABI :+1:
 - Scripts (executables in Meson)
-  - Don't link aginst anything :+1:
+  - Don't link against anything :+1:
   - Link against external libraries :+1:
   - Link against libraries from the Meson project :hammer:
 
