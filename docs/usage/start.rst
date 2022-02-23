@@ -91,8 +91,12 @@ the ``version`` field and add it to ``project.dynamic``.
 Automatic metadata
 ------------------
 
-If no other metadata is specified, ``mesonpy`` will fetch the project name and
-version from Meson. In which case, you don't need to add anything else to your
-``pyproject.toml`` file.
+If ``project`` metadata table is specified, ``mesonpy`` will fetch the project
+name and version from Meson. In which case, you don't need to add anything else
+to your ``pyproject.toml`` file.
 
-This is not recommended. Please consider specifying the Python package metadata.
+
+.. admonition:: Warning
+   :class: warning
+
+   This is not recommended. Please consider specifying the Python package metadata.
