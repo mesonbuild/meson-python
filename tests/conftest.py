@@ -51,16 +51,11 @@ def in_git_repo_context(path=os.path.curdir):
 
 
 @pytest.fixture(scope='session')
-def tmp_dir_session():
-    path = tempfile.mkdtemp(prefix='mesonpy-test-')
-
-    try:
-        yield pathlib.Path(path)
-    finally:
-        try:
-            shutil.rmtree(path)
-        except PermissionError:  # pragma: no cover
-            pass  # this sometimes fails on windows :/
+def tmp_dir_session(tmpdir_factory):
+    return pathlib.Path(tempfile.mkdtemp(
+        prefix='mesonpy-test-',
+        dir=tmpdir_factory.mktemp('test'),
+    ))
 
 
 @pytest.fixture()
