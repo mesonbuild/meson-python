@@ -460,7 +460,7 @@ class Project():
         build_dir: Optional[Path] = None,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
-        with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
+        with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
             yield cls(source_dir, tmpdir, build_dir)
 
     @functools.lru_cache()
