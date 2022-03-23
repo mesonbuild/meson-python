@@ -25,6 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
+  'colorama; os_name == "nt"',
   'meson>=0.60.0',
   'ninja',
   'tomli>=1.0.0',
