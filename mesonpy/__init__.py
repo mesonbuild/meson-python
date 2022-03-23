@@ -122,7 +122,7 @@ class _WheelBuilder():
         # that fallback on heuristics.
         # see https://github.com/mesonbuild/meson/pull/9474
         'platlib': ('{py_platlib}',),
-        'headers': ('{include}',),
+        'headers': ('{includedir}',),
         'data': ('{datadir}',),
         # our custom location
         'mesonpy-libs': ('{libdir}', '{libdir_shared}')

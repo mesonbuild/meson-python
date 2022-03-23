@@ -59,6 +59,7 @@ def test_contents(package_library, wheel_library):
 
     for name, regex in zip(sorted(wheel_contents(artifact)), [
         re.escape(f'.library.mesonpy.libs/libexample.{SHARED_LIB_EXT}'),
+        re.escape('library-1.0.0.data/headers/examplelib.h'),
         re.escape('library-1.0.0.data/scripts/example'),
         re.escape('library-1.0.0.dist-info/METADATA'),
         re.escape('library-1.0.0.dist-info/RECORD'),
