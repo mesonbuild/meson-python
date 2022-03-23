@@ -17,6 +17,7 @@ import itertools
 import json
 import os
 import pathlib
+import platform
 import re
 import shutil
 import subprocess
@@ -277,7 +278,7 @@ class _WheelBuilder():
         counter.update(location)
 
         # fix file
-        if os.name == 'posix':
+        if platform.system() == 'Linux':
             # add .mesonpy.libs to the RPATH of ELF files
             if self._is_elf(os.fspath(origin)):
                 # copy ELF to our working directory to avoid Meson having to regenerate the file
@@ -322,7 +323,7 @@ class _WheelBuilder():
 
                 # install bundled libraries
                 for destination, origin in wheel_files['mesonpy-libs']:
-                    assert os.name == 'posix', 'Bundling libraries in wheel is currently only supported in POSIX!'
+                    assert platform.system() == 'Linux', 'Bundling libraries in wheel is currently only supported in POSIX!'
                     destination = pathlib.Path(f'.{self._project.name}.mesonpy.libs', destination)
                     self._install_file(whl, counter, origin, destination)
 
@@ -774,7 +775,7 @@ def get_requires_for_build_wheel(
 ) -> List[str]:
     dependencies = [_depstr.wheel, _depstr.ninja]
     with _project(config_settings) as project:
-        if not project.is_pure and os.name == 'posix':
+        if not project.is_pure and platform.system() == 'Linux':
             dependencies.append(_depstr.patchelf_wrapper)
         if project.pep621:
             dependencies.append(_depstr.pep621)
