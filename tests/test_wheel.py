@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: EUPL-1.2
 
-import os
 import platform
 import re
 import subprocess
@@ -53,7 +52,7 @@ def wheel_contents(artifact):
     }
 
 
-@pytest.mark.skipif(os.name != 'posix', reason='Needs library vendoring, only implemented in POSIX')
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 

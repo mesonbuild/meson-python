@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 
-import os
+import platform
 
 import pytest
 
@@ -9,7 +9,7 @@ import mesonpy
 from .conftest import cd_package
 
 
-if os.name == 'posix':
+if platform.system() == 'Linux':
     VENDORING_DEPS = {mesonpy._depstr.patchelf_wrapper}
 else:
     VENDORING_DEPS = set()
