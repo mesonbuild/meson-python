@@ -88,10 +88,7 @@ Not yet supported
 Platform
 ~~~~~~~~
 
-Currently, ``mesonpy`` is only tested on Linux, but it should work in most
-Unix-like operating systems.
-
-Windows and MacOS are not yet supported, but that is actively being worked on.
+Windows and MacOS are not yet fully supported, but that is actively being worked on.
 
 
 Executables that link against project libraries
