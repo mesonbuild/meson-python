@@ -68,6 +68,7 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
+@pytest.mark.xfail(reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
@@ -106,6 +107,7 @@ def test_configure_data(wheel_configure_data):
     }
 
 
+@pytest.mark.xfail(reason='Meson bug')
 def test_interpreter_abi_tag(wheel_purelib_and_platlib):
     expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
     assert wheel_purelib_and_platlib.name == expected
