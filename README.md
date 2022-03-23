@@ -26,7 +26,9 @@ See the [documentation](https://meson-python.readthedocs.io/en/stable/) for more
 #### Platform Support
 
 - Linux :+1:
-- Windows :soon:
-- MacOS :soon:
+- Windows :hammer:
+  - Does not support linking against libraries from the Meson project
+- MacOS :hammer:
+  - Does not support linking against libraries from the Meson project
 - Other UNIX-like :warning:
   - Most platforms should work, but currently that is not tested or guaranteed
