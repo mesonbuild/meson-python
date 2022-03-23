@@ -3,6 +3,15 @@ Changelog
 +++++++++
 
 
+0.3.0 (23-03-2022)
+==================
+
+- Initial cross-platform support
+  - Bundling libraries stioll is only supported on Linux
+- Add initial documentation
+- The build directory is now located in the project source
+
+
 0.2.1 (26-02-2022)
 ==================
 
