@@ -774,7 +774,7 @@ def get_requires_for_build_wheel(
 ) -> List[str]:
     dependencies = [_depstr.wheel, _depstr.ninja]
     with _project(config_settings) as project:
-        if not project.is_pure:
+        if not project.is_pure and os.name == 'posix':
             dependencies.append(_depstr.patchelf_wrapper)
         if project.pep621:
             dependencies.append(_depstr.pep621)
