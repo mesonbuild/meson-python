@@ -15,7 +15,7 @@ import mesonpy
 
 # -- Project information -----------------------------------------------------
 
-project = 'mesonpy'
+project = 'meson-python'
 copyright = '2021, Quansight Labs, Filipe Laíns'
 author = 'Filipe Laíns'
 
