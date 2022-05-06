@@ -1,8 +1,8 @@
 :hide-toc:
 
-***********************************
-mesonpy (meson-python) |PyPI badge|
-***********************************
+*************************
+meson-python |PyPI badge|
+*************************
 
 .. image:: https://results.pre-commit.ci/badge/github/FFY00/mesonpy/main.svg
    :target: https://results.pre-commit.ci/latest/github/FFY00/mesonpy/main
