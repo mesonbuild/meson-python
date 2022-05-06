@@ -2,6 +2,11 @@
 Changelog
 +++++++++
 
+0.4.0 (06-05-2022)
+==================
+
+- Set sane default arguments for release builds
+
 
 0.3.0 (23-03-2022)
 ==================
