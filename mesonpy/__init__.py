@@ -160,7 +160,7 @@ class _WheelBuilder():
 
     @property
     def wheel(self) -> bytes:  # noqa: F811
-        '''dist-info WHEEL.'''
+        '''Return WHEEL file for dist-info.'''
         return textwrap.dedent('''
             Wheel-Version: 1.0
             Generator: meson
@@ -173,6 +173,7 @@ class _WheelBuilder():
 
     @property
     def _debian_python(self) -> bool:
+        """Check if we are running on Debian-patched Python."""
         try:
             import distutils
             try:
@@ -197,6 +198,9 @@ class _WheelBuilder():
         )
 
     def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
+        """Extracts scheme and relative destination with heuristics based on the
+        origin file and the Meson destination path.
+        """
         warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
         sys_vars = sysconfig.get_config_vars()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
@@ -228,6 +232,10 @@ class _WheelBuilder():
         return None
 
     def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
+        """Extracts scheme and relative destination from Meson paths.
+
+        Eg. {bindir}/foo/bar -> (scripts, foo/bar)
+        """
         for scheme, placeholder in [
             (scheme, placeholder)
             for scheme, placeholders in self._SCHEME_MAP.items()
@@ -243,6 +251,7 @@ class _WheelBuilder():
         sources: Dict[str, Dict[str, Any]],
         copy_files: Dict[str, str],
     ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+        """Map files to the wheel, organized by scheme."""
         relative_destination: Optional[pathlib.Path]
         wheel_files = collections.defaultdict(list)
         for files in sources.values():  # entries in intro-install_plan.json
