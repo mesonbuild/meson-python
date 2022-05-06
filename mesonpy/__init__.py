@@ -449,6 +449,10 @@ class Project():
             self._meson(
                 'setup',
                 f'--native-file={os.fspath(self._meson_native_file)}',
+                # TODO: Allow configuring these arguments
+                '-Ddebug=false',
+                '-Dstrip=true',
+                '-Doptimization=2',
                 *setup_args,
             )
         except subprocess.CalledProcessError:
