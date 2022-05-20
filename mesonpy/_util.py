@@ -5,13 +5,11 @@
 import contextlib
 import gzip
 import os
-import pathlib
 import sys
 import tarfile
-import tempfile
 import typing
 
-from typing import IO
+from typing import IO, Optional, Tuple
 
 from mesonpy._compat import Iterable, Iterator, Path
 
@@ -41,35 +39,26 @@ def add_ld_path(paths: Iterable[str]) -> Iterator[None]:
 
 
 @contextlib.contextmanager
-def edit_targz(path: Path, new_path: Path) -> Iterator[pathlib.Path]:
+def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
     """Opens a .tar.gz file in the file system for edition.."""
-    with tempfile.TemporaryDirectory(prefix='mesonpy-') as tmpdir:
-        workdir = pathlib.Path(tmpdir)
-        with tarfile.open(path, 'r:gz') as tar:
-            tar.extractall(tmpdir)
 
-        yield workdir
+    # reproducibility
+    source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
+    mtime = int(source_date_epoch) if source_date_epoch else None
 
-        # reproducibility
-        source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
-        mtime = int(source_date_epoch) if source_date_epoch else None
+    file = typing.cast(IO[bytes], gzip.GzipFile(
+        os.path.join(path, path),
+        mode='wb',
+        mtime=mtime,
+    ))
+    tar = tarfile.TarFile(
+        mode='w',
+        fileobj=file,
+        format=tarfile.PAX_FORMAT,  # changed in 3.8 to GNU
+    )
 
-        file = typing.cast(IO[bytes], gzip.GzipFile(
-            os.path.join(path, new_path),
-            mode='wb',
-            mtime=mtime,
-        ))
-        with contextlib.closing(file), tarfile.TarFile(
-            mode='w',
-            fileobj=file,
-            format=tarfile.PAX_FORMAT,  # changed in 3.8 to GNU
-        ) as tar:
-            for path in workdir.rglob('*'):
-                if path.is_file():
-                    tar.add(
-                        name=path,
-                        arcname=path.relative_to(workdir).as_posix(),
-                    )
+    with contextlib.closing(file), tar:
+        yield tar, mtime
 
 
 class CLICounter:

@@ -13,6 +13,7 @@ from __future__ import annotations
 import collections
 import contextlib
 import functools
+import io
 import itertools
 import json
 import os
@@ -23,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+import tarfile
 import tempfile
 import textwrap
 import typing
@@ -538,7 +540,8 @@ class Project():
         assert isinstance(version, str)
         return version
 
-    @property
+    @property  # type: ignore[misc]
+    @functools.lru_cache(maxsize=1)
     def metadata(self) -> bytes:  # noqa: C901
         """Project metadata."""
         # the rest of the keys are only available when using PEP 621 metadata
@@ -718,26 +721,46 @@ class Project():
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
-        self._meson('dist', '--no-tests', '--formats', 'gztar')
+        self._meson('dist', '--allow-dirty', '--no-tests', '--formats', 'gztar')
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
         meson_dist_name = f'{self._meson_name}-{self._meson_version}'
-        meson_dist = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
+        meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')
 
-        with mesonpy._util.edit_targz(meson_dist, sdist) as content:
-            # rename from meson name to sdist name if necessary
-            if dist_name != meson_dist_name:
-                shutil.move(str(content / meson_dist_name), str(content / dist_name))
+        with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as (tar, mtime):
+            for member in meson_dist.getmembers():
+                # skip the generated meson native file
+                if member.name == f'{meson_dist_name}/.mesonpy-native-file.ini':
+                    continue
 
-            # remove .mesonpy-native-file.ini if it exists
-            native_file = content / meson_dist_name / '.mesonpy-native-file.ini'
-            if native_file.exists():
-                native_file.unlink()
+                # calculate the file path in the source directory
+                assert member.name, member.name
+                member_parts = member.name.split('/')
+                if len(member_parts) <= 1:
+                    continue
+                path = self._source_dir.joinpath(*member_parts[1:])
+
+                if not path.is_file():
+                    continue
+
+                # rewrite the path if necessary, to match the sdist distribution name
+                if dist_name != meson_dist_name:
+                    member.name = path.relative_to(self._source_dir).as_posix()
+
+                # rewrite the size
+                member.size = os.path.getsize(path)
+
+                with path.open('rb') as f:
+                    tar.addfile(member, fileobj=f)
 
             # add PKG-INFO to dist file to make it a sdist
-            content.joinpath(dist_name, 'PKG-INFO').write_bytes(self.metadata)
+            pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
+            if mtime:
+                pkginfo_info.mtime = mtime
+            pkginfo_info.size = len(self.metadata)  # type: ignore[arg-type]
+            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))  # type: ignore[arg-type]
 
         return sdist
 
