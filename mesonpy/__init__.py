@@ -51,13 +51,6 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 __version__ = '0.4.0'
 
 
-class _depstr:
-    ninja = 'ninja >= 1.10.0'
-    patchelf_wrapper = 'patchelf-wrapper'
-    pep621 = 'pep621 >= 0.3.0'
-    wheel = 'wheel >= 0.36.0'  # noqa: F811
-
-
 _COLORS = {
     'cyan': '\33[36m',
     'yellow': '\33[93m',
@@ -762,16 +755,6 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
         yield project
 
 
-def get_requires_for_build_sdist(
-    config_settings: Optional[Dict[Any, Any]] = None,
-) -> List[str]:
-    dependencies = []
-    with _project(config_settings) as project:
-        if project.pep621:
-            dependencies.append(_depstr.pep621)
-    return dependencies
-
-
 def build_sdist(
     sdist_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -781,18 +764,6 @@ def build_sdist(
     out = pathlib.Path(sdist_directory)
     with _project(config_settings) as project:
         return project.sdist(out).name
-
-
-def get_requires_for_build_wheel(
-    config_settings: Optional[Dict[str, str]] = None,
-) -> List[str]:
-    dependencies = [_depstr.wheel, _depstr.ninja]
-    with _project(config_settings) as project:
-        if not project.is_pure and platform.system() == 'Linux':
-            dependencies.append(_depstr.patchelf_wrapper)
-        if project.pep621:
-            dependencies.append(_depstr.pep621)
-    return dependencies
 
 
 def build_wheel(
