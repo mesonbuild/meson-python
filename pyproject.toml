@@ -4,6 +4,8 @@ backend-path = ['.']
 requires = [
   'meson>=0.60.0',
   'ninja',
+  'wheel',
+  'pep621 >= 0.4.0',
   'tomli>=1.0.0',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
@@ -29,7 +31,7 @@ dependencies = [
   'meson>=0.60.0',
   'ninja >= 1.10.0',
   'pep621 >= 0.4.0',
-  'patchelf-wrapper, sys_platform == "linux"',  # FIXME: broken package, see gh-52
+  'patchelf-wrapper; sys_platform == "linux"',  # FIXME: broken package, see gh-52
   'wheel >= 0.36.0',
   'tomli>=1.0.0',
   'typing-extensions>=3.7.4; python_version<"3.8"',
