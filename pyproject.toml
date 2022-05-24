@@ -4,6 +4,7 @@ backend-path = ['.']
 requires = [
   'meson>=0.60.0',
   'ninja',
+  'pep621>=0.3.0',
   'tomli>=1.0.0',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
@@ -28,6 +29,7 @@ dependencies = [
   'colorama; os_name == "nt"',
   'meson>=0.60.0',
   'ninja',
+  'pep621>=0.3.0', # not a hard dependency, only needed for projects that use PEP 621 metadata
   'tomli>=1.0.0',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
