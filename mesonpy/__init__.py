@@ -53,7 +53,7 @@ __version__ = '0.4.0'
 
 class _depstr:
     ninja = 'ninja >= 1.10.0'
-    patchelf_wrapper = 'patchelf-wrapper'
+    patchelf = 'patchelf >= 0.11.0'
     wheel = 'wheel >= 0.36.0'  # noqa: F811
 
 
@@ -778,7 +778,10 @@ def get_requires_for_build_wheel(
     dependencies = [_depstr.wheel, _depstr.ninja]
     with _project(config_settings) as project:
         if not project.is_pure and platform.system() == 'Linux':
-            dependencies.append(_depstr.patchelf_wrapper)
+            # we may need patchelf
+            if not shutil.which('patchelf'):  # XXX: This is slightly dangerous.
+                # patchelf not already acessible on the system
+                dependencies.append(_depstr.patchelf)
     return dependencies
 
 
