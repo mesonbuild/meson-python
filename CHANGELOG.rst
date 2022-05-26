@@ -2,6 +2,14 @@
 Changelog
 +++++++++
 
+
+0.5.0 (26-05-2022)
+==================
+
+- Improvements in dependency detections
+- Include uncommited changes in sdists
+
+
 0.4.0 (06-05-2022)
 ==================
 
