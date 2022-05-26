@@ -745,15 +745,18 @@ class Project():
                 if not path.is_file():
                     continue
 
+                info = tarfile.TarInfo(member.name)
+                info.size = os.path.getsize(path)
+
                 # rewrite the path if necessary, to match the sdist distribution name
                 if dist_name != meson_dist_name:
-                    member.name = path.relative_to(self._source_dir).as_posix()
-
-                # rewrite the size
-                member.size = os.path.getsize(path)
+                    info.name = pathlib.Path(
+                        dist_name,
+                        path.relative_to(self._source_dir)
+                    ).as_posix()
 
                 with path.open('rb') as f:
-                    tar.addfile(member, fileobj=f)
+                    tar.addfile(info, fileobj=f)
 
             # add PKG-INFO to dist file to make it a sdist
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
