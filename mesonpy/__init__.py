@@ -54,7 +54,6 @@ __version__ = '0.5.0'
 
 
 class _depstr:
-    ninja = 'ninja >= 1.10.0'
     patchelf = 'patchelf >= 0.11.0'
     wheel = 'wheel >= 0.36.0'  # noqa: F811
 
@@ -801,7 +800,7 @@ def build_sdist(
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    dependencies = [_depstr.wheel, _depstr.ninja]
+    dependencies = [_depstr.wheel]
     with _project(config_settings) as project:
         if not project.is_pure and platform.system() == 'Linux':
             # we may need patchelf

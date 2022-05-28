@@ -33,5 +33,4 @@ def test_get_requires_for_build_wheel(mocker, package, expected, system_patchelf
     with cd_package(package):
         assert set(mesonpy.get_requires_for_build_wheel()) == expected | {
             mesonpy._depstr.wheel,
-            mesonpy._depstr.ninja,
         }
