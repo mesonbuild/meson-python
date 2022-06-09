@@ -7,7 +7,7 @@ name = 'full-metadata'
 version = '1.2.3'
 description = 'Some package with all of the PEP 621 metadata'
 readme = 'README.md'
-requires-python = '>=3.10'
+requires-python = '>=3.7'
 license = {file = 'LICENSE'}
 keywords = ['full', 'metadata']
 authors = [

@@ -1,0 +1,8 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'unsupported-python-version'
+version = '1.2.3'
+requires-python = '==1.0.0'
