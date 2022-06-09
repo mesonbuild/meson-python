@@ -33,7 +33,7 @@ def test_pep621(sdist_full_metadata):
         Project-URL: Documentation, https://readthedocs.org
         Project-URL: Repository, https://github.com/FFY00/mesonpy
         Project-URL: Changelog, https://github.com/FFY00/mesonpy/blob/master/CHANGELOG.md
-        Requires-Python: >=3.10
+        Requires-Python: >=3.7
         Requires-Dist: a
         Requires-Dist: b>1
         Requires-Dist: c>2; os_name != "nt"

@@ -384,16 +384,8 @@ class Project():
             )
             self._metadata = None
 
-        # check for unsupported dynamic fields
         if self._metadata:
-            unsupported_dynamic = {
-                key for key in self._metadata.dynamic
-                if key not in self._ALLOWED_DYNAMIC_FIELDS
-            }
-            if unsupported_dynamic:
-                raise MesonBuilderError('Unsupported dynamic fields: {}'.format(
-                    ', '.join(unsupported_dynamic)),
-                )
+            self._validate_metadata()
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
@@ -457,6 +449,29 @@ class Project():
                 self._configure()
             else:
                 raise
+
+    def _validate_metadata(self) -> None:
+        assert self._metadata
+
+        # check for unsupported dynamic fields
+        unsupported_dynamic = {
+            key for key in self._metadata.dynamic
+            if key not in self._ALLOWED_DYNAMIC_FIELDS
+        }
+        if unsupported_dynamic:
+            raise MesonBuilderError('Unsupported dynamic fields: {}'.format(
+                ', '.join(unsupported_dynamic)),
+            )
+
+        # check if we are running on an unsupported interpreter
+        if (
+            self._metadata.requires_python
+            and platform.python_version() not in self._metadata.requires_python
+        ):
+            raise MesonBuilderError(
+                f'Unsupported Python version `{platform.python_version()}`, '
+                f'expected `{self._metadata.requires_python}`'
+            )
 
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
