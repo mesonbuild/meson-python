@@ -46,7 +46,7 @@ from mesonpy._compat import Collection, Iterator, Mapping, Path
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    import pep621 as _pep621  # noqa: F401
+    import pyproject_metadata  # noqa: F401
     import wheel.wheelfile  # noqa: F401
 
 
@@ -353,7 +353,7 @@ class Project():
     _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
         'version',
     ]
-    _metadata: Optional[_pep621.StandardMetadata]
+    _metadata: Optional[pyproject_metadata.StandardMetadata]
 
     def __init__(
         self,
@@ -372,11 +372,11 @@ class Project():
         self._pep621 = 'project' in self._config
         if self.pep621:
             try:
-                import pep621  # noqa: F811
+                import pyproject_metadata  # noqa: F811
             except ModuleNotFoundError:  # pragma: no cover
                 self._metadata = None
             else:
-                self._metadata = pep621.StandardMetadata.from_pyproject(self._config, self._source_dir)
+                self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(self._config, self._source_dir)
         else:
             print(
                 '{yellow}{bold}! Using Meson to generate the project metadata '
@@ -550,8 +550,8 @@ class Project():
                 Name: {self.name}
                 Version: {self.version}
             ''').strip().encode()
-        # re-import pep621 to raise ModuleNotFoundError if it is really missing
-        import pep621  # noqa: F401, F811
+        # re-import pyproject_metadata to raise ModuleNotFoundError if it is really missing
+        import pyproject_metadata  # noqa: F401, F811
         assert self._metadata
         # use self.version as the version may be dynamic -- fetched from Meson
         core_metadata = self._metadata.as_rfc822()
