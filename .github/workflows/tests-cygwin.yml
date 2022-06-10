@@ -33,6 +33,7 @@ jobs:
           packages: >-
             python3${{ matrix.python-minor }}
             python3${{ matrix.python-minor }}-pip
+            cmake make ninja
 
       - name: Install nox
         shell: bash.exe -eo pipefail -o igncr "{0}"
