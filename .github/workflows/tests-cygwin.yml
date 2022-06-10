@@ -24,6 +24,9 @@ jobs:
           - '9'
 
     steps:
+      - name: Tell git to use proper newlines
+        run: git config --global core.autocrlf input
+
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -39,6 +42,8 @@ jobs:
         shell: bash.exe -eo pipefail -o igncr "{0}"
         env:
           PATH: "/bin:/usr/bin:/usr/local/bin:/usr/lib/lapack"
+          TMP: "/tmp"
+          TEMP: "/tmp"
         run: |
             /usr/bin/python -m pip install nox
             nox --version
@@ -47,7 +52,12 @@ jobs:
         shell: bash.exe -eo pipefail -o igncr "{0}"
         env:
           PATH: "/bin:/usr/bin:/usr/local/bin:/usr/lib/lapack"
-        run: nox -s test-3.${{ matrix.python-minor }}
+          CHERE_INVOKING: 1
+          TMP: "/tmp"
+          TEMP: "/tmp"
+        run: |
+          cd "${GITHUB_WORKSPACE}"
+          nox -s test-3.${{ matrix.python-minor }}
 
       - name: Send coverage report
         uses: codecov/codecov-action@v1
