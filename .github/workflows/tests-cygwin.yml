@@ -36,12 +36,16 @@ jobs:
 
       - name: Install nox
         shell: bash.exe -eo pipefail -o igncr "{0}"
+        env:
+          PATH: "/bin:/usr/bin:/usr/local/bin:/usr/lib/lapack"
         run: |
             /usr/bin/python -m pip install nox
             nox --version
 
       - name: Run tests
         shell: bash.exe -eo pipefail -o igncr "{0}"
+        env:
+          PATH: "/bin:/usr/bin:/usr/local/bin:/usr/lib/lapack"
         run: nox -s test-3.${{ matrix.python-minor }}
 
       - name: Send coverage report
