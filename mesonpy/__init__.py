@@ -464,14 +464,13 @@ class Project():
             )
 
         # check if we are running on an unsupported interpreter
-        if (
-            self._metadata.requires_python
-            and platform.python_version() not in self._metadata.requires_python
-        ):
-            raise MesonBuilderError(
-                f'Unsupported Python version `{platform.python_version()}`, '
-                f'expected `{self._metadata.requires_python}`'
-            )
+        if self._metadata.requires_python:
+            self._metadata.requires_python.prereleases = True
+            if platform.python_version() not in self._metadata.requires_python:
+                raise MesonBuilderError(
+                    f'Unsupported Python version `{platform.python_version()}`, '
+                    f'expected `{self._metadata.requires_python}`'
+                )
 
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
