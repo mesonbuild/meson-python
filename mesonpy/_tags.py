@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: EUPL-1.2
+# SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
