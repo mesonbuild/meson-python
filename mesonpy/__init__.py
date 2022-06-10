@@ -229,7 +229,7 @@ class _WheelBuilder():
             if sys_paths['purelib'] == sys_paths['platlib'] and not origin.startswith('{moduledir_shared}'):
                 self._warn_unsure_platlib(origin, destination)
             return 'platlib', wheel_path
-        return None
+        return None  # no match was found
 
     def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
         """Extracts scheme and relative destination from Meson paths.
@@ -244,7 +244,7 @@ class _WheelBuilder():
             if destination.startswith(placeholder):
                 relative_destination = pathlib.Path(destination).relative_to(placeholder)
                 return scheme, relative_destination
-        return None
+        return None  # no match was found
 
     def _map_to_wheel(
         self,
