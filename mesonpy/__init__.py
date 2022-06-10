@@ -184,11 +184,11 @@ class _WheelBuilder():
         except ModuleNotFoundError:
             return False
 
-    def _is_elf(self, file: str) -> bool:
+    def _is_elf(self, file: Union[str, pathlib.Path]) -> bool:
         with open(file, 'rb') as f:
             return f.read(4) == b'\x7fELF'
 
-    def _warn_unsure_platlib(self, origin: str, destination: pathlib.Path) -> None:
+    def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
         if self._is_elf(origin):
             return
         warnings.warn(
@@ -197,7 +197,7 @@ class _WheelBuilder():
             stacklevel=2,
         )
 
-    def _map_from_heuristics(self, origin: str, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
+    def _map_from_heuristics(self, origin: pathlib.Path, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
         """Extracts scheme and relative destination with heuristics based on the
         origin file and the Meson destination path.
         """
@@ -207,13 +207,13 @@ class _WheelBuilder():
         sys_paths = sysconfig.get_paths(vars=sys_vars)
         # Debian dist-packages
         if self._debian_python:
-            search_path = destination
+            search_path = origin
             while search_path != search_path.parent:
                 search_path = search_path.parent
                 if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
-                    calculated_path = destination.relative_to(search_path)
+                    calculated_path = origin.relative_to(search_path)
                     warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
-                    if not origin.startswith('{moduledir_shared}'):
+                    if not destination.root == '{moduledir_shared}':
                         self._warn_unsure_platlib(origin, destination)
                     return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
@@ -227,7 +227,7 @@ class _WheelBuilder():
                 continue
             # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
             # but we know that files that go there are supposed to go to platlib
-            if sys_paths['purelib'] == sys_paths['platlib'] and not origin.startswith('{moduledir_shared}'):
+            if sys_paths['purelib'] == sys_paths['platlib'] and not destination.root == '{moduledir_shared}':
                 self._warn_unsure_platlib(origin, destination)
             return 'platlib', wheel_path
         return None  # no match was found
@@ -263,7 +263,10 @@ class _WheelBuilder():
                     # using scheme map
                     self._map_from_scheme_map(meson_destination)
                     # using heuristics
-                    or self._map_from_heuristics(copy_files[file], pathlib.Path(meson_destination))
+                    or self._map_from_heuristics(
+                        pathlib.Path(copy_files[file]),
+                        pathlib.Path(meson_destination),
+                    )
                 )
                 if install_details:
                     scheme, destination = install_details
