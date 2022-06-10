@@ -213,7 +213,8 @@ class _WheelBuilder():
                 if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
                     calculated_path = destination.relative_to(search_path)
                     warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
-                    self._warn_unsure_platlib(origin, destination)
+                    if not origin.startswith('{moduledir_shared}'):
+                        self._warn_unsure_platlib(origin, destination)
                     return 'platlib', calculated_path
         # purelib or platlib -- go to wheel root
         for scheme in ('purelib', 'platlib'):
