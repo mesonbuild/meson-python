@@ -1,2 +1,3 @@
 .mesonpy-native-file.ini
 docs/_build
+*.pyc
