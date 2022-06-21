@@ -54,6 +54,9 @@ __version__ = '0.6.0'
 
 
 class _depstr:
+    """Namespace that holds the requirement strings for dependencies we *might*
+    need at runtime. Having them in one place makes it easier to update.
+    """
     patchelf = 'patchelf >= 0.11.0'
     wheel = 'wheel >= 0.36.0'  # noqa: F811
 
@@ -71,6 +74,12 @@ _NO_COLORS = {color: '' for color in _COLORS}
 
 
 def _init_colors() -> Dict[str, str]:
+    """Detect if we should be using colors in the output. We will enable colors
+    if running in a TTY, and no environment variable overrides it. Setting the
+    NO_COLOR (https://no-color.org/) environment variable force-disables colors,
+    and FORCE_COLOR forces color to be used, which is useful for thing like
+    Github actions.
+    """
     if 'NO_COLOR' in os.environ:
         if 'FORCE_COLOR' in os.environ:
             warnings.warn('Both NO_COLOR and FORCE_COLOR environment variables are set, disabling color')
@@ -80,7 +89,7 @@ def _init_colors() -> Dict[str, str]:
     return _NO_COLORS
 
 
-_STYLES = _init_colors()
+_STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
 
 
 _LINUX_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.so$')
@@ -96,10 +105,14 @@ def _showwarning(
     file: Optional[TextIO] = None,
     line: Optional[str] = None,
 ) -> None:  # pragma: no cover
+    """Callable to override the default warning handler, to have colored output."""
     print('{yellow}WARNING{reset} {}'.format(message, **_STYLES))
 
 
 def _setup_cli() -> None:
+    """Setup CLI stuff (eg. handlers, hooks, etc.). Should only be called when
+    actually we are in control of the CLI, not on a normal import.
+    """
     warnings.showwarning = _showwarning
 
     try:  # pragma: no cover
@@ -111,10 +124,13 @@ def _setup_cli() -> None:
 
 
 class MesonBuilderError(Exception):
-    pass
+    """Error when building the Meson package."""
 
 
 class _WheelBuilder():
+    """Helper class to build wheels from projects."""
+
+    # Maps wheel scheme names to Meson placeholder directories
     _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
         'scripts': ('{bindir}',),
         'purelib': ('{py_purelib}',),
@@ -129,13 +145,13 @@ class _WheelBuilder():
         'mesonpy-libs': ('{libdir}', '{libdir_shared}')
     }
 
-    """Helper class to build wheels from projects."""
     def __init__(self, project: Project) -> None:
         self._project = project
         self._libs_build_dir = project._build_dir / 'mesonpy-wheel-libs'
 
     @property
     def basename(self) -> str:
+        """Normalized wheel name and version (eg. meson_python-1.0.0)."""
         return '{distribution}-{version}'.format(
             distribution=self._project.name.replace('-', '_'),
             version=self._project.version,
@@ -143,6 +159,7 @@ class _WheelBuilder():
 
     @property
     def name(self) -> str:
+        """Wheel name, this includes the basename and tags."""
         return '{basename}-{python_tag}-{abi_tag}-{platform_tag}'.format(
             basename=self.basename,
             python_tag=self._project.python_tag,
@@ -160,7 +177,7 @@ class _WheelBuilder():
 
     @property
     def wheel(self) -> bytes:  # noqa: F811
-        '''Return WHEEL file for dist-info.'''
+        """Return WHEEL file for dist-info."""
         return textwrap.dedent('''
             Wheel-Version: 1.0
             Generator: meson
@@ -185,11 +202,25 @@ class _WheelBuilder():
             return False
 
     def _is_elf(self, file: Union[str, pathlib.Path]) -> bool:
+        """Check if file is an ELF file."""
         with open(file, 'rb') as f:
             return f.read(4) == b'\x7fELF'
 
     def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
-        if self._is_elf(origin):
+        """Warn if we are unsure if the file should be mapped to purelib or platlib.
+
+        This happens when we use heuristics to try to map a file purelib or
+        platlib but can't differentiate between the two. In which case, we place
+        the file in platlib to be safe and warn the user.
+
+        If we can detect the file is architecture dependent and indeed does not
+        belong in purelib, we will skip the warning.
+        """
+        # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
+        # but we know that files that go there are supposed to go to platlib.
+        if self._is_elf(origin) or destination.root == '{moduledir_shared}':
+            # The file is architecture dependent and does not belong in puredir,
+            # so the warning is skipped.
             return
         warnings.warn(
             'Could not tell if file was meant for purelib or platlib, '
@@ -205,7 +236,7 @@ class _WheelBuilder():
         sys_vars = sysconfig.get_config_vars()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
         sys_paths = sysconfig.get_paths(vars=sys_vars)
-        # Debian dist-packages
+        # Try to map to Debian dist-packages
         if self._debian_python:
             search_path = origin
             while search_path != search_path.parent:
@@ -216,7 +247,7 @@ class _WheelBuilder():
                     if not destination.root == '{moduledir_shared}':
                         self._warn_unsure_platlib(origin, destination)
                     return 'platlib', calculated_path
-        # purelib or platlib -- go to wheel root
+        # Try to map to the interpreter purelib or platlib
         for scheme in ('purelib', 'platlib'):
             # try to match the install path on the system to one of the known schemes
             scheme_path = pathlib.Path(sys_paths[scheme]).absolute()
@@ -225,9 +256,7 @@ class _WheelBuilder():
                 wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
             except ValueError:
                 continue
-            # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
-            # but we know that files that go there are supposed to go to platlib
-            if sys_paths['purelib'] == sys_paths['platlib'] and not destination.root == '{moduledir_shared}':
+            if sys_paths['purelib'] == sys_paths['platlib']:
                 self._warn_unsure_platlib(origin, destination)
             return 'platlib', wheel_path
         return None  # no match was found
@@ -235,7 +264,8 @@ class _WheelBuilder():
     def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
         """Extracts scheme and relative destination from Meson paths.
 
-        Eg. {bindir}/foo/bar -> (scripts, foo/bar)
+            Meson destination path -> (wheel scheme, subpath inside the scheme)
+        Eg. {bindir}/foo/bar       -> (scripts, foo/bar)
         """
         for scheme, placeholder in [
             (scheme, placeholder)
@@ -287,6 +317,12 @@ class _WheelBuilder():
         origin: Path,
         destination: pathlib.Path,
     ) -> None:
+        """"Install" file into the wheel and do the necessary processing before
+        doing so.
+
+        Some files might need to be fixed up to set the RPATH to the internal
+        library directory on Linux wheels for eg.
+        """
         location = os.fspath(destination).replace(os.path.sep, '/')
         counter.update(location)
 
@@ -422,14 +458,21 @@ class Project():
             self._metadata.version = self.version
 
     def _proc(self, *args: str) -> None:
+        """Invoke a subprocess."""
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
         subprocess.check_call(list(args))
 
     def _meson(self, *args: str) -> None:
+        """Invoke Meson."""
         with mesonpy._util.cd(self._build_dir):
             return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
+        """Configure Meson project.
+
+        We will try to reconfigure the build directory if possible to avoid
+        expensive rebuilds.
+        """
         setup_args = [
             f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
@@ -455,6 +498,8 @@ class Project():
                 raise
 
     def _validate_metadata(self) -> None:
+        """Check the pyproject.toml metadata and see if there are any issues."""
+
         assert self._metadata
 
         # check for unsupported dynamic fields
@@ -478,6 +523,7 @@ class Project():
 
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
+        """Trigger the Meson build."""
         self._meson('compile')
         self._meson('install', '--destdir', os.fspath(self._install_dir))
 
@@ -503,10 +549,12 @@ class Project():
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+        """Meson install_plan metadata."""
         return self._info('intro-install_plan').copy()
 
     @property
     def _copy_files(self) -> Dict[str, str]:
+        """Files that Meson will copy on install and the target location."""
         copy_files = {}
         for origin, destination in self._info('intro-installed').items():
             destination_path = pathlib.Path(destination).absolute()
@@ -527,26 +575,28 @@ class Project():
 
     @property
     def _meson_name(self) -> str:
+        """Name in meson.build."""
         name = self._info('intro-projectinfo')['descriptive_name']
         assert isinstance(name, str)
         return name
 
     @property
     def _meson_version(self) -> str:
+        """Version in meson.build."""
         name = self._info('intro-projectinfo')['version']
         assert isinstance(name, str)
         return name
 
     @property
     def name(self) -> str:
-        """Project name."""
+        """Project name. Specified in pyproject.toml."""
         name = self._metadata.name if self._metadata else self._meson_name
         assert isinstance(name, str)
         return name.replace('-', '_')
 
     @property
     def version(self) -> str:
-        """Project version."""
+        """Project version. Either specified in pyproject.toml or meson.build."""
         if self._metadata and 'version' not in self._metadata.dynamic:
             version = str(self._metadata.version)
         else:
@@ -575,6 +625,7 @@ class Project():
 
     @property
     def is_pure(self) -> bool:
+        """Is the wheel "pure" (architecture independent)?"""
         # XXX: I imagine some users might want to force the package to be
         # non-pure, but I think it's better that we evaluate use-cases as they
         # arise and make sure allowing the user to override this is indeed the
@@ -590,6 +641,7 @@ class Project():
 
     @property
     def pep621(self) -> bool:
+        """Does the project use PEP 621 metadata?"""
         return self._pep621
 
     @property
@@ -615,6 +667,7 @@ class Project():
         return sysconfig.get_platform().replace('-', '_').replace('.', '_')
 
     def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the Windows tag from the Python extension file name."""
         match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
         if not match:
             return None
@@ -626,6 +679,7 @@ class Project():
             return mesonpy._tags.WindowsInterpreterTag(tag)
 
     def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the Posix tag from the Python extension file name."""
         # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
         # preventive and check its value to make sure it matches our expectations
         try:
@@ -654,6 +708,7 @@ class Project():
             return mesonpy._tags.LinuxInterpreterTag(tag)
 
     def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the ABI tag from the Python extension file name."""
         if os.name == 'nt':
             return self._calculate_file_abi_tag_heuristic_windows(filename)
         # everything else *should* follow the POSIX way, at least to my knowledge
@@ -665,6 +720,7 @@ class Project():
         return ''.join(f'{prefix}- {file}\n' for file in files)
 
     def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
+        """Map files into ABI tags."""
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
         for file, details in self._install_plan.get('targets', {}).items():
             destination = pathlib.Path(details['destination'])
@@ -792,6 +848,7 @@ class Project():
 
 @contextlib.contextmanager
 def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
+    """Create the project given the given config settings."""
     if config_settings is None:
         config_settings = {}
 
