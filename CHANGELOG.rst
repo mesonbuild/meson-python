@@ -3,6 +3,15 @@ Changelog
 +++++++++
 
 
+0.6.0 (21-06-2022)
+==================
+
+- Project relicensed to MIT
+- Error out when running in an unsupported interpreter
+- Fix slightly broken Debian heuristics
+- Update ``pep621`` dependency to ``pyproject-metadata``
+
+
 0.5.0 (26-05-2022)
 ==================
 
