@@ -58,9 +58,24 @@ Python tool (pip_, `pypa/build`_, etc.) to build and install the project.
 ``mesonpy`` will build a Python sdist (source distribution) or wheel (binary
 distribution) from Meson_ project.
 
+Source distribution (sdist)
+---------------------------
+
 The source distribution is based on ``meson dist``, so make sure all your files
-are inluded there. In git projects, Meson_ will not include files that are not
-checked into git, keep that in mind when developing.
+are included there. In git projects, Meson_ will not include files that are not
+checked into git, keep that in mind when developing. By default, all files
+under version control will be included in the sdist. In order to exclude files,
+use ``export-ignore`` or ``export-subst`` attributes in ``.gitattributes`` (see
+the ``git-archive`` documentation for details; ``meson dist`` uses
+``git-archive`` under the hood).
+
+Local (uncommitted) changes to files that are under version control will be
+included. This is often needed when applying patches, e.g. for build issues
+found during packaging, to work around test failures, to amend the license for
+vendored components in wheels, etc.
+
+Binary distribution (wheels)
+----------------------------
 
 The binary distribution is built by running Meson_ and introspecting the build
 and trying to map the files to their correct location. Due to some limitations
@@ -71,10 +86,16 @@ similarly, the user will be warned. These warnings are not necessarily a reason
 for concern, they are there to help identifying issues. In these cases, we
 recommend that you check if the files in question were indeed mapped to the
 expected place, and open a bug report if they weren't.
-If the project includes shared libraries that are needed by other files, those
-libraries will be included in the wheel, and native files will have their
+
+If the project itself includes shared libraries that are needed by other files,
+those libraries will be included in the wheel, and native files will have their
 library search path extended to include the directory where the libraries are
 placed.
+
+If the project depends on external shared libraries, those libraries will not
+be included in the wheel. Vendoring those libraries or finding a suitable runtime
+dependency that provides those libraries is the responsibility of the user
+of ``meson-python``.
 
 
 What are the limitations?
