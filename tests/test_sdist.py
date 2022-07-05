@@ -4,6 +4,10 @@ import os
 import tarfile
 import textwrap
 
+from pathlib import Path
+
+import pytest
+
 import mesonpy
 
 from .conftest import in_git_repo_context
@@ -36,6 +40,12 @@ def test_contents_subdirs(sdist_subdirs):
     }
 
 
+in_git_repo = (Path(__file__).resolve().parent / '.git').exists()
+
+
+@pytest.mark.skipif(
+    not in_git_repo, reason='Must be in git repo, cannot create sdist from sdist'
+)
 def test_contents_unstaged(package_pure, tmpdir):
     new_data = textwrap.dedent('''
     def bar():
