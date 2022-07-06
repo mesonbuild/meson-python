@@ -27,6 +27,7 @@ def test_pep621(sdist_full_metadata):
         Author: Jane Doe
         Author-Email: Unknown <jhon.doe@example.com>
         Maintainer-Email: Jane Doe <jane.doe@example.com>
+        License: some license
         Classifier: Development Status :: 4 - Beta
         Classifier: Programming Language :: Python
         Project-URL: Homepage, https://example.com
