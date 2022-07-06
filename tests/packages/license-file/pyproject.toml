@@ -1,0 +1,8 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'license-file'
+version = '1.0.0'
+license = { file = 'something/LICENSE.custom' }

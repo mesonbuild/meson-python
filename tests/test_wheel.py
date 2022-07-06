@@ -119,3 +119,8 @@ def test_local_lib(virtual_env, wheel_link_against_local_lib):
     subprocess.check_output([
         virtual_env, '-c', 'import example; print(example.example_sum(1, 2))'
     ]).decode() == '3'
+
+
+def test_contents_license_file(wheel_license_file):
+    artifact = wheel.wheelfile.WheelFile(wheel_license_file)
+    assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom') == b'Hello!\n'

@@ -361,6 +361,15 @@ class _WheelBuilder():
             whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
 
+            # add license (see https://github.com/FFY00/meson-python/issues/88)
+            if self._project._metadata:
+                license_ = self._project._metadata.license
+                if license_ and license_.file:
+                    whl.write(
+                        self._project._source_dir / license_.file,
+                        f'{self.distinfo_dir}/{os.path.basename(license_.file)}',
+                    )
+
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
                 len(list(itertools.chain.from_iterable(wheel_files.values()))),
