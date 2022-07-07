@@ -46,10 +46,11 @@ def test_contents_unstaged(package_pure, tmpdir):
         old_data = f.read()
 
     try:
-        with in_git_repo_context(), open('pure.py', 'w') as f, open('crap', 'x'):
-            f.write(new_data)
+        with in_git_repo_context():
+            with open('pure.py', 'w') as f, open('crap', 'x'):
+                f.write(new_data)
 
-        sdist_path = mesonpy.build_sdist(os.fspath(tmpdir))
+            sdist_path = mesonpy.build_sdist(os.fspath(tmpdir))
     finally:
         with open('pure.py', 'w') as f:
             f.write(old_data)
