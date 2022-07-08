@@ -93,9 +93,19 @@ library search path extended to include the directory where the libraries are
 placed.
 
 If the project depends on external shared libraries, those libraries will not
-be included in the wheel. Vendoring those libraries or finding a suitable runtime
-dependency that provides those libraries is the responsibility of the user
-of ``meson-python``.
+be included in the wheel. This can be handled in several ways by the package
+developer using ``meson-python``:
+
+1. Finding or creating a suitable Python package that provides those shared
+   libraries and can be added to ``dependencies`` in ``pyproject.toml``.
+2. Vendoring those libraries into the wheel. Currently ``meson-python`` does
+   not provide an OS-agnostic way of doing that; on Linux ``auditwheel`` can be
+   used, and on macOS ``delocate``. Or, the package developer can copy the
+   shared libraries into the source tree and patch ``meson.build`` files to
+   include them.
+3. Documenting that the dependency is assumed to already be installed on the
+   end user's system, and letting the end user install it themselves (e.g.,
+   through their Linux distro package manager).
 
 
 What are the limitations?
