@@ -4,6 +4,8 @@ import os
 import tarfile
 import textwrap
 
+import pytest
+
 import mesonpy
 
 from .conftest import in_git_repo_context
@@ -66,3 +68,17 @@ def test_contents_unstaged(package_pure, tmpdir):
     }
     read_data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
     assert read_data == new_data.encode()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Executable bit does not exist on Windows')
+def test_executable_bit(sdist_executable_bit):
+    sdist = tarfile.open(sdist_executable_bit, 'r:gz')
+
+    assert set((tar.name, tar.mode) for tar in sdist.getmembers()) == {
+        ('executable_bit-1.0.0/PKG-INFO', 420),
+        ('executable_bit-1.0.0/example-script.py', 755),
+        ('executable_bit-1.0.0/example.c', 644),
+        ('executable_bit-1.0.0/executable_module.py', 755),
+        ('executable_bit-1.0.0/meson.build', 644),
+        ('executable_bit-1.0.0/pyproject.toml', 644),
+    }

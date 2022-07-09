@@ -863,7 +863,9 @@ class Project():
                     continue
 
                 info = tarfile.TarInfo(member.name)
-                info.size = os.path.getsize(path)
+                file_stat = os.stat(path)
+                info.size = file_stat.st_size
+                info.mode = int(oct(file_stat.st_mode)[-3:])
 
                 # rewrite the path if necessary, to match the sdist distribution name
                 if dist_name != meson_dist_name:

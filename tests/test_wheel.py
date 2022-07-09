@@ -130,3 +130,23 @@ def test_local_lib(virtual_env, wheel_link_against_local_lib):
 def test_contents_license_file(wheel_license_file):
     artifact = wheel.wheelfile.WheelFile(wheel_license_file)
     assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Executable bit does not exist on Windows')
+def test_executable_bit(wheel_executable_bit):
+    artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
+
+    executable_files = {
+        'executable_bit-1.0.0.data/purelib/executable_module.py',
+        'executable_bit-1.0.0.data/scripts/example',
+        # 'executable_bit-1.0.0.data/scripts/example-script'
+        'executable_bit-1.0.0.data/data/bin/example-script',
+    }
+
+    for info in artifact.infolist():
+        mode = (info.external_attr >> 16) & 0o777
+        executable_bit = bool(mode & 0b001_000_000)  # owner execute
+        if info.filename in executable_files:
+            assert executable_bit, f'{info.filename} should have the executable bit set!'
+        else:
+            assert not executable_bit, f'{info.filename} should not have the executable bit set!'
