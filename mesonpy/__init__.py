@@ -732,15 +732,40 @@ class Project():
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
         for file, details in self._install_plan.get('targets', {}).items():
             destination = pathlib.Path(details['destination'])
+
             # if in platlib, calculate the ABI tag
-            if (
-                not mesonpy._compat.is_relative_to(destination, '{py_platlib}')
-                and not mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
+            if not (
+                mesonpy._compat.is_relative_to(destination, '{py_platlib}')
+                or mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
             ):
-                continue
+                # XXX: Ideally we would just check the anchor placeholder in the
+                #      path (eg. check if it is {py_platlib}) but Meson seems to
+                #      have a bug where it sometimes returns a full path without
+                #      placeholder, so we will check if the file path is
+                #      relative to platlib.
+                #      This can be problematic because the platlib path might be
+                #      same one used for other schemes. In these situations we
+                #      will be picking up files are not supposed to be in
+                #      platlib, and that could just be supporting files.
+                #      See https://github.com/FFY00/meson-python/issues/95
+                #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
+                from_heuristic = False
+                platlib = sysconfig.get_path('platlib')
+                if platlib and mesonpy._compat.is_relative_to(destination, platlib):
+                    from_heuristic = True
+                else:
+                    continue
+
             tag = self._calculate_file_abi_tag_heuristic(file)
             if tag:
+                if from_heuristic:
+                    warnings.warn(
+                        'Could not tell with certainty if this file was meant '
+                        'to be mapped to platlib, but it was used to calculate '
+                        f'the ABI tag: {destination}'
+                    )
                 files_by_tag[tag] += file
+
         return files_by_tag
 
     def _select_abi_tag(self) -> Optional[mesonpy._tags.Tag]:  # noqa: C901
