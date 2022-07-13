@@ -134,11 +134,7 @@ class _WheelBuilder():
     _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
         'scripts': ('{bindir}',),
         'purelib': ('{py_purelib}',),
-        # {moduledir_shared} should be listed in platlib here too, but currently
-        # there is a Meson bug preventing us from using, so we will have to let
-        # that fallback on heuristics.
-        # see https://github.com/mesonbuild/meson/pull/9474
-        'platlib': ('{py_platlib}',),
+        'platlib': ('{py_platlib}', '{moduledir_shared}'),
         'headers': ('{includedir}',),
         'data': ('{datadir}',),
         # our custom location
@@ -218,7 +214,7 @@ class _WheelBuilder():
         """
         # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
         # but we know that files that go there are supposed to go to platlib.
-        if self._is_elf(origin) or destination.root == '{moduledir_shared}':
+        if self._is_elf(origin):
             # The file is architecture dependent and does not belong in puredir,
             # so the warning is skipped.
             return
@@ -244,8 +240,7 @@ class _WheelBuilder():
                 if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
                     calculated_path = origin.relative_to(search_path)
                     warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
-                    if not destination.root == '{moduledir_shared}':
-                        self._warn_unsure_platlib(origin, destination)
+                    self._warn_unsure_platlib(origin, destination)
                     return 'platlib', calculated_path
         # Try to map to the interpreter purelib or platlib
         for scheme in ('purelib', 'platlib'):
