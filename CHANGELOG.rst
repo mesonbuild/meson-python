@@ -3,6 +3,13 @@ Changelog
 +++++++++
 
 
+0.7.0 (22-07-2022)
+==================
+
+- Fix the wrong Python and ABI tags being generated in Meson 0.63.0
+- Fix project license not being included in the project metadata
+
+
 0.6.0 (21-06-2022)
 ==================
 
