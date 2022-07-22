@@ -11,7 +11,6 @@ requires = [
 
 [project]
 name = 'meson-python'
-version = '0.7.0'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.md'
 requires-python = '>=3.7'
@@ -32,6 +31,10 @@ dependencies = [
   'pyproject-metadata>=0.5.0', # not a hard dependency, only needed for projects that use PEP 621 metadata
   'tomli>=1.0.0',
   'typing-extensions>=3.7.4; python_version<"3.8"',
+]
+
+dynamic = [
+  'version',
 ]
 
 [project.optional-dependencies]
