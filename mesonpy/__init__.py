@@ -233,7 +233,7 @@ class _WheelBuilder():
         origin file and the Meson destination path.
         """
         warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
-        sys_vars = sysconfig.get_config_vars()
+        sys_vars = sysconfig.get_config_vars().copy()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
         sys_paths = sysconfig.get_paths(vars=sys_vars)
         # Try to map to Debian dist-packages
@@ -750,7 +750,9 @@ class Project():
                 #      See https://github.com/FFY00/meson-python/issues/95
                 #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
                 from_heuristic = False
-                platlib = sysconfig.get_path('platlib')
+                sys_vars = sysconfig.get_config_vars().copy()
+                sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
+                platlib = sysconfig.get_path('platlib', vars=sys_vars)
                 if platlib and mesonpy._compat.is_relative_to(destination, platlib):
                     from_heuristic = True
                 else:
@@ -764,7 +766,7 @@ class Project():
                         'to be mapped to platlib, but it was used to calculate '
                         f'the ABI tag: {destination}'
                     )
-                files_by_tag[tag] += file
+                files_by_tag[tag].append(file)
 
         return files_by_tag
 
