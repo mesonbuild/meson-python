@@ -672,7 +672,19 @@ class Project():
             return 'any'
         # XXX: Choose the sysconfig platform here and let something like auditwheel
         #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
-        return sysconfig.get_platform().replace('-', '_').replace('.', '_')
+        platform_ = sysconfig.get_platform()
+        parts = platform_.split('-')
+        if parts[0] == 'macosx' and parts[1] in ('11', '12'):
+            # Workaround for bug where pypa/packaging does not consider macOS
+            # tags without minor versions valid. Some Python flavors (Homebrew
+            # for example) on macOS started to do this in version 11, and
+            # pypa/packaging should handle things correctly from version 13 and
+            # forward, so we will add a 0 minor version to MacOS 11 and 12.
+            # https://github.com/FFY00/meson-python/issues/91
+            # https://github.com/pypa/packaging/issues/578
+            parts[1] += '.0'
+            platform_ = '-'.join(parts)
+        return platform_.replace('-', '_').replace('.', '_')
 
     def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the Windows tag from the Python extension file name."""
