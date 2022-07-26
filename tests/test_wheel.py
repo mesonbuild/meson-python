@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 
+import os
 import platform
 import re
 import subprocess
@@ -114,6 +115,11 @@ def test_interpreter_abi_tag(wheel_purelib_and_platlib):
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+@pytest.mark.xfail(
+    sys.version_info >= (3, 9) and os.environ.get('GITHUB_ACTIONS') == 'true',
+    reason='github actions',
+    strict=True,
+)
 def test_local_lib(virtual_env, wheel_link_against_local_lib):
     subprocess.check_call([virtual_env, '-m', 'pip', 'install', wheel_link_against_local_lib])
     subprocess.check_output([
