@@ -3,6 +3,13 @@ Changelog
 +++++++++
 
 
+0.8.0 (26-07-2022)
+==================
+
+- Fix sometimes the incorrect ABI tags being generated
+- Add workaround for macOS 11 and 12 installations that are missing a minor version in the platform string
+
+
 0.7.0 (22-07-2022)
 ==================
 
