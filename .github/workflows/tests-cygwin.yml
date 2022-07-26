@@ -11,6 +11,8 @@ on:
 jobs:
   pytest:
     runs-on: windows-latest
+    env:
+      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:

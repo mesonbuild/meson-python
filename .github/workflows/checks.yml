@@ -10,6 +10,8 @@ on:
 jobs:
   mypy:
     runs-on: ubuntu-latest
+    env:
+      FORCE_COLOR: true
     steps:
       - uses: actions/checkout@v2
 
