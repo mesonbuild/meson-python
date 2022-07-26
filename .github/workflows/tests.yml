@@ -11,6 +11,8 @@ on:
 jobs:
   pytest:
     runs-on: ${{ matrix.os }}-latest
+    env:
+      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:
