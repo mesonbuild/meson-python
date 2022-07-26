@@ -28,6 +28,8 @@ def reload_module():
 )
 def test_colors(mocker, monkeypatch, reload_module, tty, env, colors):
     mocker.patch('sys.stdout.isatty', return_value=tty)
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    monkeypatch.delenv('FORCE_COLOR', raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
 
