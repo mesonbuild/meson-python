@@ -50,7 +50,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     import wheel.wheelfile  # noqa: F401
 
 
-__version__ = '0.8.0'
+__version__ = '0.9.0.dev0'
 
 
 class _depstr:
