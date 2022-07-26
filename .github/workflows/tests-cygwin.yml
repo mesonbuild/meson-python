@@ -39,6 +39,7 @@ jobs:
 
       - name: Send coverage report
         uses: codecov/codecov-action@v1
+        if: ${{ always() }}
         env:
           PYTHON: cygwin-${{ matrix.python }}
         with:
