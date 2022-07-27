@@ -744,6 +744,7 @@ class Project():
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
         for file, details in self._install_plan.get('targets', {}).items():
             destination = pathlib.Path(details['destination'])
+            from_heuristic = False
 
             # if in platlib, calculate the ABI tag
             if not (
@@ -761,7 +762,6 @@ class Project():
                 #      platlib, and that could just be supporting files.
                 #      See https://github.com/FFY00/meson-python/issues/95
                 #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
-                from_heuristic = False
                 sys_vars = sysconfig.get_config_vars().copy()
                 sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
                 platlib = sysconfig.get_path('platlib', vars=sys_vars)
