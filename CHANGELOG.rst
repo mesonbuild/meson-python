@@ -3,6 +3,12 @@ Changelog
 +++++++++
 
 
+0.8.1 (28-07-2022)
+==================
+
+- Fix ``UnboundLocalError`` in tag detection code
+
+
 0.8.0 (26-07-2022)
 ==================
 
