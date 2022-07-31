@@ -406,6 +406,7 @@ class Project():
 
     def __init__(
         self,
+        config_settings: Dict[Any, Any],
         source_dir: Path,
         working_dir: Path,
         build_dir: Optional[Path] = None,
@@ -460,7 +461,7 @@ class Project():
                 self._meson_native_file.write_text(native_file_data)
 
         # configure the meson project; reconfigure if the user provided a build directory
-        self._configure(reconfigure=bool(build_dir) and not native_file_mismatch)
+        self._configure(config_settings, reconfigure=bool(build_dir) and not native_file_mismatch)
 
         # set version if dynamic (this fetches it from Meson)
         if self._metadata and 'version' in self._metadata.dynamic:
@@ -476,17 +477,22 @@ class Project():
         with mesonpy._util.cd(self._build_dir):
             return self._proc('meson', *args)
 
-    def _configure(self, reconfigure: bool = False) -> None:
+    def _configure(self, config_settings: Dict[Any, Any], reconfigure: bool = False) -> None:
         """Configure Meson project.
 
         We will try to reconfigure the build directory if possible to avoid
         expensive rebuilds.
         """
-        setup_args = [
+        setup_args = []
+        for key, value in config_settings.items():
+            setup_args.append(f'{key}={value}')
+
+        setup_args += [
             f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
             os.fspath(self._build_dir),
         ]
+
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
 
@@ -494,14 +500,13 @@ class Project():
             self._meson(
                 'setup',
                 f'--native-file={os.fspath(self._meson_native_file)}',
-                # TODO: Allow configuring these arguments
                 '-Ddebug=false',
                 '-Doptimization=2',
                 *setup_args,
             )
         except subprocess.CalledProcessError:
             if reconfigure:  # if failed reconfiguring, try a normal configure
-                self._configure()
+                self._configure(config_settings)
             else:
                 raise
 
@@ -539,12 +544,16 @@ class Project():
     @contextlib.contextmanager
     def with_temp_working_dir(
         cls,
+        config_settings: Optional[Dict[Any, Any]] = None,
         source_dir: Path = os.path.curdir,
         build_dir: Optional[Path] = None,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
+        if config_settings is None:
+            config_settings = {}
+
         with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir)
+            yield cls(config_settings, source_dir, tmpdir, build_dir)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -901,8 +910,11 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     if config_settings is None:
         config_settings = {}
 
+    build_dir = config_settings.pop('builddir', None)
+
     with Project.with_temp_working_dir(
-        build_dir=config_settings.get('builddir'),
+        config_settings=config_settings,
+        build_dir=build_dir,
     ) as project:
         yield project
 
