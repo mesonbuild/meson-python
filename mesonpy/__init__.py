@@ -684,6 +684,11 @@ class Project():
             # https://github.com/pypa/packaging/issues/578
             parts[1] += '.0'
             platform_ = '-'.join(parts)
+        elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
+            # 32-bit Python running on an x86_64 host
+            # https://github.com/FFY00/meson-python/issues/123
+            parts[1] = 'i686'
+            platform_ = '-'.join(parts)
         return platform_.replace('-', '_').replace('.', '_')
 
     def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
