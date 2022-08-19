@@ -50,6 +50,12 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     import wheel.wheelfile  # noqa: F401
 
 
+if sys.version_info >= (3, 8):
+    from functools import cached_property
+else:
+    cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
+
+
 __version__ = '0.9.0.dev0'
 
 
@@ -158,6 +164,10 @@ class _WheelBuilder():
         self._copy_files = copy_files
 
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
+
+    @cached_property
+    def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+        return self._map_to_wheel(self._sources, self._copy_files)
 
     @property
     def basename(self) -> str:
@@ -306,43 +316,15 @@ class _WheelBuilder():
     def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
         """Map files into ABI tags."""
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
+        platlib_files = {destination for destination, _ in self._wheel_files['platlib']}
+
         for file, details in self._sources.get('targets', {}).items():
             destination = pathlib.Path(details['destination'])
-            from_heuristic = False
-
             # if in platlib, calculate the ABI tag
-            if not (
-                mesonpy._compat.is_relative_to(destination, '{py_platlib}')
-                or mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
-            ):
-                # XXX: Ideally we would just check the anchor placeholder in the
-                #      path (eg. check if it is {py_platlib}) but Meson seems to
-                #      have a bug where it sometimes returns a full path without
-                #      placeholder, so we will check if the file path is
-                #      relative to platlib.
-                #      This can be problematic because the platlib path might be
-                #      same one used for other schemes. In these situations we
-                #      will be picking up files are not supposed to be in
-                #      platlib, and that could just be supporting files.
-                #      See https://github.com/FFY00/meson-python/issues/95
-                #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
-                sys_vars = sysconfig.get_config_vars().copy()
-                sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
-                platlib = sysconfig.get_path('platlib', vars=sys_vars)
-                if platlib and mesonpy._compat.is_relative_to(destination, platlib):
-                    from_heuristic = True
-                else:
-                    continue
-
-            tag = self._calculate_file_abi_tag_heuristic(file)
-            if tag:
-                if from_heuristic:
-                    warnings.warn(
-                        'Could not tell with certainty if this file was meant '
-                        'to be mapped to platlib, but it was used to calculate '
-                        f'the ABI tag: {destination}'
-                    )
-                files_by_tag[tag].append(file)
+            if destination in platlib_files:
+                tag = self._calculate_file_abi_tag_heuristic(file)
+                if tag:
+                    files_by_tag[tag].append(file)
 
         return files_by_tag
 
@@ -546,7 +528,6 @@ class _WheelBuilder():
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
-        wheel_files = self._map_to_wheel(self._sources, self._copy_files)
 
         with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
             # add metadata
@@ -562,15 +543,15 @@ class _WheelBuilder():
 
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
-                len(list(itertools.chain.from_iterable(wheel_files.values()))),
+                len(list(itertools.chain.from_iterable(self._wheel_files.values()))),
             ) as counter:
                 # install root scheme files
                 root_scheme = 'purelib' if self._project.is_pure else 'platlib'
-                for destination, origin in wheel_files[root_scheme]:
+                for destination, origin in self._wheel_files[root_scheme]:
                     self._install_file(whl, counter, origin, destination)
 
                 # install bundled libraries
-                for destination, origin in wheel_files['mesonpy-libs']:
+                for destination, origin in self._wheel_files['mesonpy-libs']:
                     assert platform.system() == 'Linux', 'Bundling libraries in wheel is currently only supported in POSIX!'
                     destination = pathlib.Path(f'.{self._project.name}.mesonpy.libs', destination)
                     self._install_file(whl, counter, origin, destination)
@@ -579,7 +560,7 @@ class _WheelBuilder():
                 for scheme in self._SCHEME_MAP:
                     if scheme in (root_scheme, 'mesonpy-libs'):
                         continue
-                    for destination, origin in wheel_files[scheme]:
+                    for destination, origin in self._wheel_files[scheme]:
                         destination = pathlib.Path(self.data_dir, scheme, destination)
                         self._install_file(whl, counter, origin, destination)
 
