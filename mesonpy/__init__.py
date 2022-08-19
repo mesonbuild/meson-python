@@ -141,9 +141,23 @@ class _WheelBuilder():
         'mesonpy-libs': ('{libdir}', '{libdir_shared}')
     }
 
-    def __init__(self, project: Project) -> None:
+    def __init__(
+        self,
+        project: Project,
+        source_dir: pathlib.Path,
+        install_dir: pathlib.Path,
+        build_dir: pathlib.Path,
+        sources: Dict[str, Dict[str, Any]],
+        copy_files: Dict[str, str],
+    ) -> None:
         self._project = project
-        self._libs_build_dir = project._build_dir / 'mesonpy-wheel-libs'
+        self._source_dir = source_dir
+        self._install_dir = install_dir
+        self._build_dir = build_dir
+        self._sources = sources
+        self._copy_files = copy_files
+
+        self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
     @property
     def basename(self) -> str:
@@ -158,9 +172,9 @@ class _WheelBuilder():
         """Wheel name, this includes the basename and tags."""
         return '{basename}-{python_tag}-{abi_tag}-{platform_tag}'.format(
             basename=self.basename,
-            python_tag=self._project.python_tag,
-            abi_tag=self._project.abi_tag,
-            platform_tag=self._project.platform_tag,
+            python_tag=self.python_tag,
+            abi_tag=self.abi_tag,
+            platform_tag=self.platform_tag,
         )
 
     @property
@@ -181,7 +195,7 @@ class _WheelBuilder():
             Tag: {tags}
         ''').strip().format(
             is_purelib='true' if self._project.is_pure else 'false',
-            tags=f'{self._project.python_tag}-{self._project.abi_tag}-{self._project.platform_tag}',
+            tags=f'{self.python_tag}-{self.abi_tag}-{self.platform_tag}',
         ).encode()
 
     @property
@@ -196,6 +210,194 @@ class _WheelBuilder():
             return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
         except ModuleNotFoundError:
             return False
+
+    @property
+    def python_tag(self) -> str:
+        selected_tag = self._select_abi_tag()
+        if selected_tag and selected_tag.python:
+            return selected_tag.python
+        return 'py3'
+
+    @property
+    def abi_tag(self) -> str:
+        selected_tag = self._select_abi_tag()
+        if selected_tag:
+            return selected_tag.abi
+        return 'none'
+
+    @property
+    def platform_tag(self) -> str:
+        if self._project.is_pure:
+            return 'any'
+        # XXX: Choose the sysconfig platform here and let something like auditwheel
+        #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
+        platform_ = sysconfig.get_platform()
+        parts = platform_.split('-')
+        if parts[0] == 'macosx' and parts[1] in ('11', '12'):
+            # Workaround for bug where pypa/packaging does not consider macOS
+            # tags without minor versions valid. Some Python flavors (Homebrew
+            # for example) on macOS started to do this in version 11, and
+            # pypa/packaging should handle things correctly from version 13 and
+            # forward, so we will add a 0 minor version to MacOS 11 and 12.
+            # https://github.com/FFY00/meson-python/issues/91
+            # https://github.com/pypa/packaging/issues/578
+            parts[1] += '.0'
+            platform_ = '-'.join(parts)
+        elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
+            # 32-bit Python running on an x86_64 host
+            # https://github.com/FFY00/meson-python/issues/123
+            parts[1] = 'i686'
+            platform_ = '-'.join(parts)
+        return platform_.replace('-', '_').replace('.', '_')
+
+    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the Windows tag from the Python extension file name."""
+        match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
+        if not match:
+            return None
+        tag = match.group('tag')
+
+        try:
+            return mesonpy._tags.StableABITag(tag)
+        except ValueError:
+            return mesonpy._tags.WindowsInterpreterTag(tag)
+
+    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the Posix tag from the Python extension file name."""
+        # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
+        # preventive and check its value to make sure it matches our expectations
+        try:
+            extension = sysconfig.get_config_vars().get('SHLIB_SUFFIX', '.so')
+            if extension != '.so':
+                raise NotImplementedError(
+                    f"We don't currently support the {extension} extension. "
+                    'Please report this to https://github.com/FFY00/mesonpy/issues '
+                    'and include information about your operating system.'
+                )
+        except KeyError:
+            warnings.warn(
+                'sysconfig does not export SHLIB_SUFFIX, so we are unable to '
+                'perform the sanity check regarding the extension suffix. '
+                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'and include the output of `python -m sysconfig`.'
+            )
+        match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
+        if not match:  # this file does not appear to be a native module
+            return None
+        tag = match.group('tag')
+
+        try:
+            return mesonpy._tags.StableABITag(tag)
+        except ValueError:
+            return mesonpy._tags.LinuxInterpreterTag(tag)
+
+    def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+        """Try to calculate the ABI tag from the Python extension file name."""
+        if os.name == 'nt':
+            return self._calculate_file_abi_tag_heuristic_windows(filename)
+        # everything else *should* follow the POSIX way, at least to my knowledge
+        return self._calculate_file_abi_tag_heuristic_posix(filename)
+
+    def _file_list_repr(self, files: Collection[str], prefix: str = '\t\t', max_count: int = 3) -> str:
+        if len(files) > max_count:
+            files = list(itertools.islice(files, max_count)) + [f'(... +{len(files)}))']
+        return ''.join(f'{prefix}- {file}\n' for file in files)
+
+    def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
+        """Map files into ABI tags."""
+        files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
+        for file, details in self._sources.get('targets', {}).items():
+            destination = pathlib.Path(details['destination'])
+            from_heuristic = False
+
+            # if in platlib, calculate the ABI tag
+            if not (
+                mesonpy._compat.is_relative_to(destination, '{py_platlib}')
+                or mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
+            ):
+                # XXX: Ideally we would just check the anchor placeholder in the
+                #      path (eg. check if it is {py_platlib}) but Meson seems to
+                #      have a bug where it sometimes returns a full path without
+                #      placeholder, so we will check if the file path is
+                #      relative to platlib.
+                #      This can be problematic because the platlib path might be
+                #      same one used for other schemes. In these situations we
+                #      will be picking up files are not supposed to be in
+                #      platlib, and that could just be supporting files.
+                #      See https://github.com/FFY00/meson-python/issues/95
+                #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
+                sys_vars = sysconfig.get_config_vars().copy()
+                sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
+                platlib = sysconfig.get_path('platlib', vars=sys_vars)
+                if platlib and mesonpy._compat.is_relative_to(destination, platlib):
+                    from_heuristic = True
+                else:
+                    continue
+
+            tag = self._calculate_file_abi_tag_heuristic(file)
+            if tag:
+                if from_heuristic:
+                    warnings.warn(
+                        'Could not tell with certainty if this file was meant '
+                        'to be mapped to platlib, but it was used to calculate '
+                        f'the ABI tag: {destination}'
+                    )
+                files_by_tag[tag].append(file)
+
+        return files_by_tag
+
+    def _select_abi_tag(self) -> Optional[mesonpy._tags.Tag]:  # noqa: C901
+        """Given a list of ABI tags, selects the most specific one.
+
+        Raises an error if there are incompatible tags.
+        """
+        # Possibilities:
+        #   - interpreter specific (cpython/pypy/etc, version)
+        #   - stable abi (abiX)
+        tags = self._files_by_tag()
+        selected_tag = None
+        for tag, files in tags.items():
+            if __debug__:  # sanity check
+                if os.name == 'nt':
+                    assert not isinstance(tag, mesonpy._tags.LinuxInterpreterTag)
+                else:
+                    assert not isinstance(tag, mesonpy._tags.WindowsInterpreterTag)
+            # no selected tag yet, let's assign this one
+            if not selected_tag:
+                selected_tag = tag
+            # interpreter tags
+            elif isinstance(tag, mesonpy._tags.LinuxInterpreterTag):
+                if tag != selected_tag:
+                    if isinstance(selected_tag, mesonpy._tags.LinuxInterpreterTag):
+                        raise ValueError(
+                            'Found files with incompatible ABI tags:\n'
+                            + self._file_list_repr(tags[selected_tag])
+                            + '\tand\n'
+                            + self._file_list_repr(files)
+                        )
+                    selected_tag = tag
+            elif isinstance(tag, mesonpy._tags.WindowsInterpreterTag):
+                if tag != selected_tag:
+                    if isinstance(selected_tag, mesonpy._tags.WindowsInterpreterTag):
+                        warnings.warn(
+                            'Found files with different ABI tags but couldn\'t tell '
+                            'if they are incompatible:\n'
+                            + self._file_list_repr(tags[selected_tag])
+                            + '\tand\n'
+                            + self._file_list_repr(files)
+                            + 'Please report this to https://github.com/FFY00/mesonpy/issues.'
+                        )
+                    selected_tag = tag
+            # stable ABI
+            elif isinstance(tag, mesonpy._tags.StableABITag):
+                if isinstance(selected_tag, mesonpy._tags.StableABITag) and tag != selected_tag:
+                    raise ValueError(
+                        'Found files with incompatible ABI tags:\n'
+                        + self._file_list_repr(tags[selected_tag])
+                        + '\tand\n'
+                        + self._file_list_repr(files)
+                    )
+        return selected_tag
 
     def _is_elf(self, file: Union[str, pathlib.Path]) -> bool:
         """Check if file is an ELF file."""
@@ -246,7 +448,7 @@ class _WheelBuilder():
         for scheme in ('purelib', 'platlib'):
             # try to match the install path on the system to one of the known schemes
             scheme_path = pathlib.Path(sys_paths[scheme]).absolute()
-            destdir_scheme_path = self._project._install_dir / scheme_path.relative_to(scheme_path.anchor)
+            destdir_scheme_path = self._install_dir / scheme_path.relative_to(scheme_path.anchor)
             try:
                 wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
             except ValueError:
@@ -326,7 +528,7 @@ class _WheelBuilder():
             # add .mesonpy.libs to the RPATH of ELF files
             if self._is_elf(os.fspath(origin)):
                 # copy ELF to our working directory to avoid Meson having to regenerate the file
-                new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._project._build_dir)
+                new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
                 os.makedirs(new_origin.parent, exist_ok=True)
                 shutil.copy2(origin, new_origin)
                 origin = new_origin
@@ -338,18 +540,13 @@ class _WheelBuilder():
 
         wheel_file.write(origin, location)
 
-    def build(
-        self,
-        sources: Dict[str, Dict[str, Any]],
-        copy_files: Dict[str, str],
-        directory: Path,
-    ) -> pathlib.Path:
+    def build(self, directory: Path) -> pathlib.Path:
         import wheel.wheelfile
 
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
-        wheel_files = self._map_to_wheel(sources, copy_files)
+        wheel_files = self._map_to_wheel(self._sources, self._copy_files)
 
         with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
             # add metadata
@@ -357,13 +554,11 @@ class _WheelBuilder():
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
 
             # add license (see https://github.com/FFY00/meson-python/issues/88)
-            if self._project._metadata:
-                license_ = self._project._metadata.license
-                if license_ and license_.file:
-                    whl.write(
-                        self._project._source_dir / license_.file,
-                        f'{self.distinfo_dir}/{os.path.basename(license_.file)}',
-                    )
+            if self._project.license_file:
+                whl.write(
+                    self._source_dir / self._project.license_file,
+                    f'{self.distinfo_dir}/{os.path.basename(self._project.license_file)}',
+                )
 
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
@@ -627,6 +822,14 @@ class Project():
         return bytes(core_metadata)
 
     @property
+    def license_file(self) -> Optional[pathlib.Path]:
+        if self._metadata:
+            license_ = self._metadata.license
+            if license_ and license_.file:
+                return pathlib.Path(license_.file)
+        return None
+
+    @property
     def is_pure(self) -> bool:
         """Is the wheel "pure" (architecture independent)?"""
         # XXX: I imagine some users might want to force the package to be
@@ -646,194 +849,6 @@ class Project():
     def pep621(self) -> bool:
         """Does the project use PEP 621 metadata?"""
         return self._pep621
-
-    @property
-    def python_tag(self) -> str:
-        selected_tag = self._select_abi_tag()
-        if selected_tag and selected_tag.python:
-            return selected_tag.python
-        return 'py3'
-
-    @property
-    def abi_tag(self) -> str:
-        selected_tag = self._select_abi_tag()
-        if selected_tag:
-            return selected_tag.abi
-        return 'none'
-
-    @property
-    def platform_tag(self) -> str:
-        if self.is_pure:
-            return 'any'
-        # XXX: Choose the sysconfig platform here and let something like auditwheel
-        #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
-        platform_ = sysconfig.get_platform()
-        parts = platform_.split('-')
-        if parts[0] == 'macosx' and parts[1] in ('11', '12'):
-            # Workaround for bug where pypa/packaging does not consider macOS
-            # tags without minor versions valid. Some Python flavors (Homebrew
-            # for example) on macOS started to do this in version 11, and
-            # pypa/packaging should handle things correctly from version 13 and
-            # forward, so we will add a 0 minor version to MacOS 11 and 12.
-            # https://github.com/FFY00/meson-python/issues/91
-            # https://github.com/pypa/packaging/issues/578
-            parts[1] += '.0'
-            platform_ = '-'.join(parts)
-        elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
-            # 32-bit Python running on an x86_64 host
-            # https://github.com/FFY00/meson-python/issues/123
-            parts[1] = 'i686'
-            platform_ = '-'.join(parts)
-        return platform_.replace('-', '_').replace('.', '_')
-
-    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
-        """Try to calculate the Windows tag from the Python extension file name."""
-        match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
-        if not match:
-            return None
-        tag = match.group('tag')
-
-        try:
-            return mesonpy._tags.StableABITag(tag)
-        except ValueError:
-            return mesonpy._tags.WindowsInterpreterTag(tag)
-
-    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
-        """Try to calculate the Posix tag from the Python extension file name."""
-        # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
-        # preventive and check its value to make sure it matches our expectations
-        try:
-            extension = sysconfig.get_config_vars().get('SHLIB_SUFFIX', '.so')
-            if extension != '.so':
-                raise NotImplementedError(
-                    f"We don't currently support the {extension} extension. "
-                    'Please report this to https://github.com/FFY00/mesonpy/issues '
-                    'and include information about your operating system.'
-                )
-        except KeyError:
-            warnings.warn(
-                'sysconfig does not export SHLIB_SUFFIX, so we are unable to '
-                'perform the sanity check regarding the extension suffix. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
-                'and include the output of `python -m sysconfig`.'
-            )
-        match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
-        if not match:  # this file does not appear to be a native module
-            return None
-        tag = match.group('tag')
-
-        try:
-            return mesonpy._tags.StableABITag(tag)
-        except ValueError:
-            return mesonpy._tags.LinuxInterpreterTag(tag)
-
-    def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
-        """Try to calculate the ABI tag from the Python extension file name."""
-        if os.name == 'nt':
-            return self._calculate_file_abi_tag_heuristic_windows(filename)
-        # everything else *should* follow the POSIX way, at least to my knowledge
-        return self._calculate_file_abi_tag_heuristic_posix(filename)
-
-    def _file_list_repr(self, files: Collection[str], prefix: str = '\t\t', max_count: int = 3) -> str:
-        if len(files) > max_count:
-            files = list(itertools.islice(files, max_count)) + [f'(... +{len(files)}))']
-        return ''.join(f'{prefix}- {file}\n' for file in files)
-
-    def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
-        """Map files into ABI tags."""
-        files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
-        for file, details in self._install_plan.get('targets', {}).items():
-            destination = pathlib.Path(details['destination'])
-            from_heuristic = False
-
-            # if in platlib, calculate the ABI tag
-            if not (
-                mesonpy._compat.is_relative_to(destination, '{py_platlib}')
-                or mesonpy._compat.is_relative_to(destination, '{moduledir_shared}')
-            ):
-                # XXX: Ideally we would just check the anchor placeholder in the
-                #      path (eg. check if it is {py_platlib}) but Meson seems to
-                #      have a bug where it sometimes returns a full path without
-                #      placeholder, so we will check if the file path is
-                #      relative to platlib.
-                #      This can be problematic because the platlib path might be
-                #      same one used for other schemes. In these situations we
-                #      will be picking up files are not supposed to be in
-                #      platlib, and that could just be supporting files.
-                #      See https://github.com/FFY00/meson-python/issues/95
-                #      Meson bug: https://github.com/mesonbuild/meson/issues/10601
-                sys_vars = sysconfig.get_config_vars().copy()
-                sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
-                platlib = sysconfig.get_path('platlib', vars=sys_vars)
-                if platlib and mesonpy._compat.is_relative_to(destination, platlib):
-                    from_heuristic = True
-                else:
-                    continue
-
-            tag = self._calculate_file_abi_tag_heuristic(file)
-            if tag:
-                if from_heuristic:
-                    warnings.warn(
-                        'Could not tell with certainty if this file was meant '
-                        'to be mapped to platlib, but it was used to calculate '
-                        f'the ABI tag: {destination}'
-                    )
-                files_by_tag[tag].append(file)
-
-        return files_by_tag
-
-    def _select_abi_tag(self) -> Optional[mesonpy._tags.Tag]:  # noqa: C901
-        """Given a list of ABI tags, selects the most specific one.
-
-        Raises an error if there are incompatible tags.
-        """
-        # Possibilities:
-        #   - interpreter specific (cpython/pypy/etc, version)
-        #   - stable abi (abiX)
-        tags = self._files_by_tag()
-        selected_tag = None
-        for tag, files in tags.items():
-            if __debug__:  # sanity check
-                if os.name == 'nt':
-                    assert not isinstance(tag, mesonpy._tags.LinuxInterpreterTag)
-                else:
-                    assert not isinstance(tag, mesonpy._tags.WindowsInterpreterTag)
-            # no selected tag yet, let's assign this one
-            if not selected_tag:
-                selected_tag = tag
-            # interpreter tags
-            elif isinstance(tag, mesonpy._tags.LinuxInterpreterTag):
-                if tag != selected_tag:
-                    if isinstance(selected_tag, mesonpy._tags.LinuxInterpreterTag):
-                        raise ValueError(
-                            'Found files with incompatible ABI tags:\n'
-                            + self._file_list_repr(tags[selected_tag])
-                            + '\tand\n'
-                            + self._file_list_repr(files)
-                        )
-                    selected_tag = tag
-            elif isinstance(tag, mesonpy._tags.WindowsInterpreterTag):
-                if tag != selected_tag:
-                    if isinstance(selected_tag, mesonpy._tags.WindowsInterpreterTag):
-                        warnings.warn(
-                            'Found files with different ABI tags but couldn\'t tell '
-                            'if they are incompatible:\n'
-                            + self._file_list_repr(tags[selected_tag])
-                            + '\tand\n'
-                            + self._file_list_repr(files)
-                            + 'Please report this to https://github.com/FFY00/mesonpy/issues.'
-                        )
-                    selected_tag = tag
-            # stable ABI
-            elif isinstance(tag, mesonpy._tags.StableABITag):
-                if isinstance(selected_tag, mesonpy._tags.StableABITag) and tag != selected_tag:
-                    raise ValueError(
-                        'Found files with incompatible ABI tags:\n'
-                        + self._file_list_repr(tags[selected_tag])
-                        + '\tand\n'
-                        + self._file_list_repr(files)
-                    )
-        return selected_tag
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
@@ -888,7 +903,14 @@ class Project():
 
     def wheel(self, directory: Path) -> pathlib.Path:  # noqa: F811
         """Generates a wheel (binary distribution) in the specified directory."""
-        wheel = _WheelBuilder(self).build(self._install_plan, self._copy_files, self._build_dir)
+        wheel = _WheelBuilder(
+            self,
+            self._source_dir,
+            self._install_dir,
+            self._build_dir,
+            self._install_plan,
+            self._copy_files,
+        ).build(self._build_dir)
 
         final_wheel = pathlib.Path(directory, wheel.name)
         shutil.move(os.fspath(wheel), final_wheel)
