@@ -54,5 +54,5 @@ docs = [
 [project.urls]
 homepage = 'https://github.com/FFY00/mesonpy'
 repository = 'https://github.com/FFY00/mesonpy'
-documentation = 'https://mesonpy.readthedocs.io'
-changelog = 'https://mesonpy.readthedocs.io/en/latest/changelog.html'
+documentation = 'https://meson-python.readthedocs.io/'
+changelog = 'https://meson-python.readthedocs.io/en/latest/changelog.html'
