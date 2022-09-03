@@ -1,0 +1,153 @@
+name: Run Sage CI for Linux/Cygwin
+
+## This GitHub Actions workflow provides:
+##
+##  - portability testing, by building and testing this project on many platforms
+##    (Linux variants and Cygwin)
+##
+##  - continuous integration, by building and testing other software
+##    that depends on this project.
+##
+## It runs on every push to the GitHub repository.
+##
+## The testing can be monitored in the "Actions" tab of the GitHub repository.
+##
+## After all jobs have finished (or are canceled) and a short delay,
+## tar files of all logs are made available as "build artifacts".
+##
+## This GitHub Actions workflow uses the portability testing framework
+## of SageMath (https://www.sagemath.org/).  For more information, see
+## https://doc.sagemath.org/html/en/developer/portability_testing.html
+
+## The workflow consists of two jobs:
+##
+##  - First, it builds a source distribution of the project
+##    and generates a script "update-pkgs.sh".  It uploads them
+##    as a build artifact named upstream.
+##
+##  - Second, it checks out a copy of the SageMath source tree.
+##    It downloads the upstream artifact and replaces the project's
+##    package in the SageMath distribution by the newly packaged one
+##    from the upstream artifact, by running the script "update-pkgs.sh".
+##    Then it builds a small portion of the Sage distribution.
+##
+## Many copies of the second step are run in parallel for each of the tested
+## systems/configurations.
+
+on: [push, pull_request, workflow_dispatch]
+
+## Uncomment this (and comment the above) to run only on pushes to a tag,
+## not on all pushes to a branch.
+##
+## on:
+##   pull_request:
+##     types: [opened, synchronize]
+##   push:
+##     tags:
+##       - '*'
+##   workflow_dispatch:
+##     # Allow to run manually
+
+env:
+  # Ubuntu packages to install so that the project's "setup.py sdist" can succeed
+  DIST_PREREQ:      python3-pip
+  # Name of this project in the Sage distribution
+  SPKG:             meson_python
+  # Sage distribution packages to build
+  TARGETS_PRE:      build/make/Makefile
+  TARGETS:          SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+  TARGETS_OPTIONAL: build/make/Makefile
+  # Standard setting: Test the current beta release of Sage:
+  SAGE_REPO:        sagemath/sage
+  SAGE_REF:         develop
+  # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
+  # (this is a no-op after that ticket is merged)
+  SAGE_TRAC_GIT:    https://github.com/sagemath/sagetrac-mirror.git
+  SAGE_TICKET:      34081
+  ## REMOVE_PATCHES:   "*"
+
+jobs:
+
+  dist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out ${{ env.SPKG }}
+        uses: actions/checkout@v2
+        with:
+          path: build/pkgs/${{ env.SPKG }}/src
+      - name: Install prerequisites
+        run: |
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install $DIST_PREREQ
+          python3 -m pip install --user build
+      - name: Run make dist, prepare upstream artifact
+        run: |
+          (cd build/pkgs/${{ env.SPKG }}/src && python3 -m build --sdist .) \
+          && mkdir -p upstream && cp build/pkgs/${{ env.SPKG }}/src/dist/*.tar.gz upstream/${{ env.SPKG }}-git.tar.gz \
+          && echo "sage-package create ${{ env.SPKG }} --version git --tarball ${{ env.SPKG }}-git.tar.gz --type=standard" > upstream/update-pkgs.sh \
+          && if [ -n "${{ env.REMOVE_PATCHES }}" ]; then echo "(cd ../build/pkgs/${{ env.SPKG }}/patches && rm -f ${{ env.REMOVE_PATCHES }}; :)" >> upstream/update-pkgs.sh; fi \
+          && ls -l upstream/
+      - uses: actions/upload-artifact@v2
+        with:
+          path: upstream
+          name: upstream
+
+  cygwin:
+    # https://github.com/sagemath/sage/blob/develop/.github/workflows/cygwin.yml
+    uses: sagemath/sage/.github/workflows/cygwin.yml@develop
+    with:
+      # FIXME: duplicated from env.TARGETS
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+      prefix: /opt/sage-meson-python
+      sage_repo: sagemath/sage
+      sage_ref: develop
+      sage_trac_git: https://github.com/sagemath/sagetrac-mirror.git
+      sage_trac_ticket: 34081
+      upstream_artifact: upstream
+    needs: [dist]
+
+  linux:
+    # https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
+    uses: sagemath/sage/.github/workflows/docker.yml@develop
+    with:
+      # Reduced list of systems to test: Only those that bring python >= 3.8
+      # Full list at https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
+      # See also https://github.com/sagemath/sage/blob/develop/tox.ini
+      tox_system_factors: >-
+          ["ubuntu-focal",
+           "ubuntu-jammy",
+           "ubuntu-kinetic",
+           "debian-bullseye",
+           "debian-bookworm",
+           "debian-sid",
+           "fedora-31",
+           "fedora-32",
+           "fedora-33",
+           "fedora-34",
+           "fedora-35",
+           "fedora-36",
+           "fedora-37",
+           "centos-stream-8",
+           "centos-stream-9",
+           "gentoo-python3.9",
+           "gentoo-python3.10",
+           "archlinux-latest",
+           "opensuse-15.3",
+           "opensuse-15.4",
+           "opensuse-tumbleweed",
+           "conda-forge",
+           ]
+      tox_packages_factors: >-
+          ["standard",
+           ]
+      # FIXME: duplicated from env.TARGETS
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+      sage_repo: sagemath/sage
+      sage_ref: develop
+      upstream_artifact: upstream
+      sage_trac_git: https://github.com/sagemath/sagetrac-mirror.git
+      sage_trac_ticket: 34081
+      # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
+      # 'Package "sage-docker-..." is already associated with another repository.'
+      docker_push_repository: ghcr.io/${{ github.repository }}/meson-python-
+    needs: [dist]
