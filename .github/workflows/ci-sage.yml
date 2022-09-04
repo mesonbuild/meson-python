@@ -83,7 +83,8 @@ jobs:
 
   linux:
     # https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
-    uses: sagemath/sage/.github/workflows/docker.yml@develop
+    # Use branch u/mkoeppe/numpy_1_23_x__scipy_1_9_x for a fix for uppercase github repo names (FFY00)
+    uses: sagemath/sagetrac-mirror/.github/workflows/docker.yml@u/mkoeppe/numpy_1_23_x__scipy_1_9_x
     with:
       # Reduced list of systems to test: Only those that bring python >= 3.8
       # Full list at https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
