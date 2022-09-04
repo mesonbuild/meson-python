@@ -1,9 +1,9 @@
-name: Run Sage CI for Linux/Cygwin
+name: Run Sage CI for Linux
 
 ## This GitHub Actions workflow provides:
 ##
 ##  - portability testing, by building and testing this project on many platforms
-##    (Linux variants and Cygwin)
+##    (Linux variants)
 ##
 ##  - continuous integration, by building and testing other software
 ##    that depends on this project.
@@ -49,21 +49,10 @@ on: [push, pull_request, workflow_dispatch]
 ##     # Allow to run manually
 
 env:
-  # Ubuntu packages to install so that the project's "setup.py sdist" can succeed
+  # Ubuntu packages to install so that the project's can build an sdist
   DIST_PREREQ:      python3-pip
   # Name of this project in the Sage distribution
   SPKG:             meson_python
-  # Sage distribution packages to build
-  TARGETS_PRE:      build/make/Makefile
-  TARGETS:          SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
-  TARGETS_OPTIONAL: build/make/Makefile
-  # Standard setting: Test the current beta release of Sage:
-  SAGE_REPO:        sagemath/sage
-  SAGE_REF:         develop
-  # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
-  # (this is a no-op after that ticket is merged)
-  SAGE_TRAC_GIT:    https://github.com/sagemath/sagetrac-mirror.git
-  SAGE_TICKET:      34081
   ## REMOVE_PATCHES:   "*"
 
 jobs:
@@ -111,12 +100,15 @@ jobs:
       tox_packages_factors: >-
           ["standard",
            ]
-      # FIXME: duplicated from env.TARGETS
+      # Sage distribution packages to build
       targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+      # Standard setting: Test the current beta release of Sage:
       sage_repo: sagemath/sage
       sage_ref: develop
       upstream_artifact: upstream
       sage_trac_git: https://github.com/sagemath/sagetrac-mirror.git
+      # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
+      # (this is a no-op after that ticket is merged)
       sage_trac_ticket: 34081
       # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
       # 'Package "sage-docker-..." is already associated with another repository.'
