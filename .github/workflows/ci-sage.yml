@@ -92,20 +92,6 @@ jobs:
           path: upstream
           name: upstream
 
-  cygwin:
-    # https://github.com/sagemath/sage/blob/develop/.github/workflows/cygwin.yml
-    uses: sagemath/sage/.github/workflows/cygwin.yml@develop
-    with:
-      # FIXME: duplicated from env.TARGETS
-      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
-      prefix: /opt/sage-meson-python
-      sage_repo: sagemath/sage
-      sage_ref: develop
-      sage_trac_git: https://github.com/sagemath/sagetrac-mirror.git
-      sage_trac_ticket: 34081
-      upstream_artifact: upstream
-    needs: [dist]
-
   linux:
     # https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
     uses: sagemath/sage/.github/workflows/docker.yml@develop
@@ -114,27 +100,12 @@ jobs:
       # Full list at https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
       # See also https://github.com/sagemath/sage/blob/develop/tox.ini
       tox_system_factors: >-
-          ["ubuntu-focal",
-           "ubuntu-jammy",
-           "ubuntu-kinetic",
-           "debian-bullseye",
-           "debian-bookworm",
-           "debian-sid",
-           "fedora-31",
-           "fedora-32",
-           "fedora-33",
-           "fedora-34",
-           "fedora-35",
+          ["debian-bullseye",
            "fedora-36",
-           "fedora-37",
            "centos-stream-8",
-           "centos-stream-9",
            "gentoo-python3.9",
-           "gentoo-python3.10",
            "archlinux-latest",
-           "opensuse-15.3",
            "opensuse-15.4",
-           "opensuse-tumbleweed",
            "conda-forge",
            ]
       tox_packages_factors: >-
