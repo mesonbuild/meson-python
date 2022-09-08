@@ -2,7 +2,7 @@
 build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
-  'meson>=0.62.0',
+  'meson',
   'ninja',
   'pyproject-metadata>=0.5.0',
   'tomli>=1.0.0',

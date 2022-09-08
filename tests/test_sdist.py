@@ -76,9 +76,12 @@ def test_executable_bit(sdist_executable_bit):
 
     assert set((tar.name, tar.mode) for tar in sdist.getmembers()) == {
         ('executable_bit-1.0.0/PKG-INFO', 420),
-        ('executable_bit-1.0.0/example-script.py', 755),
-        ('executable_bit-1.0.0/example.c', 644),
-        ('executable_bit-1.0.0/executable_module.py', 755),
-        ('executable_bit-1.0.0/meson.build', 644),
-        ('executable_bit-1.0.0/pyproject.toml', 644),
+        # We match the executable bit on everything
+        # but PKG-INFO(we create this ourselves)
+        # Note: File perms are in octal, but Python returns it in int
+        ('executable_bit-1.0.0/example-script.py', int('755', 8)),
+        ('executable_bit-1.0.0/example.c', int('644', 8)),
+        ('executable_bit-1.0.0/executable_module.py', int('755', 8)),
+        ('executable_bit-1.0.0/meson.build', int('644', 8)),
+        ('executable_bit-1.0.0/pyproject.toml', int('644', 8)),
     }
