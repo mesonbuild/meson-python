@@ -270,7 +270,7 @@ class _WheelBuilder():
         try:
             return mesonpy._tags.StableABITag(tag)
         except ValueError:
-            return mesonpy._tags.WindowsInterpreterTag(tag)
+            return mesonpy._tags.InterpreterTag(tag)
 
     def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the Posix tag from the Python extension file name."""
@@ -299,7 +299,7 @@ class _WheelBuilder():
         try:
             return mesonpy._tags.StableABITag(tag)
         except ValueError:
-            return mesonpy._tags.LinuxInterpreterTag(tag)
+            return mesonpy._tags.InterpreterTag(tag)
 
     def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the ABI tag from the Python extension file name."""
@@ -339,35 +339,18 @@ class _WheelBuilder():
         tags = self._files_by_tag()
         selected_tag = None
         for tag, files in tags.items():
-            if __debug__:  # sanity check
-                if os.name == 'nt':
-                    assert not isinstance(tag, mesonpy._tags.LinuxInterpreterTag)
-                else:
-                    assert not isinstance(tag, mesonpy._tags.WindowsInterpreterTag)
             # no selected tag yet, let's assign this one
             if not selected_tag:
                 selected_tag = tag
-            # interpreter tags
-            elif isinstance(tag, mesonpy._tags.LinuxInterpreterTag):
+            # interpreter tag
+            elif isinstance(tag, mesonpy._tags.InterpreterTag):
                 if tag != selected_tag:
-                    if isinstance(selected_tag, mesonpy._tags.LinuxInterpreterTag):
+                    if isinstance(selected_tag, mesonpy._tags.InterpreterTag):
                         raise ValueError(
                             'Found files with incompatible ABI tags:\n'
                             + self._file_list_repr(tags[selected_tag])
                             + '\tand\n'
                             + self._file_list_repr(files)
-                        )
-                    selected_tag = tag
-            elif isinstance(tag, mesonpy._tags.WindowsInterpreterTag):
-                if tag != selected_tag:
-                    if isinstance(selected_tag, mesonpy._tags.WindowsInterpreterTag):
-                        warnings.warn(
-                            'Found files with different ABI tags but couldn\'t tell '
-                            'if they are incompatible:\n'
-                            + self._file_list_repr(tags[selected_tag])
-                            + '\tand\n'
-                            + self._file_list_repr(files)
-                            + 'Please report this to https://github.com/FFY00/mesonpy/issues.'
                         )
                     selected_tag = tag
             # stable ABI

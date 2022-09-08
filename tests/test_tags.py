@@ -41,20 +41,21 @@ def test_stable_abi_tag_invalid():
         ('cpython-310-x86_64-linux-gnu', 'cpython', '310', ('x86_64', 'linux', 'gnu'), 'cp310', 'cp310'),
         ('cpython-310', 'cpython', '310', (), 'cp310', 'cp310'),
         ('cpython-310-special', 'cpython', '310', ('special',), 'cp310', 'cp310'),
-        ('pypy-41', 'pypy', '41', (), 'pypy_41', f'pp{INTERPRETER_VERSION}'),
-        ('pypy3-72-x86_64-linux-gnu', 'pypy3', '72', ('x86_64', 'linux', 'gnu'), 'pypy3_72', f'pp{INTERPRETER_VERSION}'),
         ('cpython-310-x86_64-linux-gnu', 'cpython', '310', ('x86_64', 'linux', 'gnu'), 'cp310', 'cp310'),
+        ('pypy39-pp73-x86_64-linux-gnu', 'pypy39', 'pp73', ('x86_64', 'linux', 'gnu'), 'pypy39_pp73', 'pp39'),
+        ('pypy39-pp73-win_amd64', 'pypy39', 'pp73', ('win_amd64', ), 'pypy39_pp73', 'pp39'),
+        ('pypy38-pp73-darwin', 'pypy38', 'pp73', ('darwin', ), 'pypy38_pp73', 'pp38'),
     ]
 )
-def test_linux_interpreter_tag(value, implementation, version, additional, abi, python):
-    tag = mesonpy._tags.LinuxInterpreterTag(value)
+def test_interpreter_tag(value, implementation, version, additional, abi, python):
+    tag = mesonpy._tags.InterpreterTag(value)
     assert str(tag) == value
     assert tag.implementation == implementation
     assert tag.interpreter_version == version
     assert tag.additional_information == additional
     assert tag.abi == abi
     assert tag.python == python
-    assert tag == mesonpy._tags.LinuxInterpreterTag(value)
+    assert tag == mesonpy._tags.InterpreterTag(value)
 
 
 @pytest.mark.parametrize(
@@ -64,32 +65,6 @@ def test_linux_interpreter_tag(value, implementation, version, additional, abi, 
         ('invalid', 'Invalid PEP 3149 interpreter tag, expected at least 2 parts but got 1'),
     ]
 )
-def test_linux_interpreter_tag_invalid(value, msg):
+def test_interpreter_tag_invalid(value, msg):
     with pytest.raises(ValueError, match=msg):
-        mesonpy._tags.LinuxInterpreterTag(value)
-
-
-@pytest.mark.parametrize(
-    ('value', 'parts', 'abi', 'python'),
-    [
-        ('cp310-win_amd64', ('cp310', 'win_amd64'), 'cp310', 'cp310'),
-        ('cp38-win32', ('cp38', 'win32'), 'cp38', 'cp38')
-    ]
-)
-def test_windows_interpreter_tag(value, parts, abi, python):
-    tag = mesonpy._tags.WindowsInterpreterTag(value)
-    assert str(tag) == value
-    assert tag.parts == parts
-    assert tag.abi == abi
-    assert tag.python == python
-    assert tag == mesonpy._tags.WindowsInterpreterTag(value)
-
-
-@pytest.mark.parametrize('value', ['', 'unknown', 'too-much-information'])
-def test_windows_interpreter_tag_warn(value):
-    with pytest.warns(Warning, match=(
-        'Unexpected native module tag name, the ABI dectection might be broken. '
-        'Please report this to https://github.com/FFY00/mesonpy/issues '
-        'and include information about the Python distribution you are using.'
-    )):
-        mesonpy._tags.WindowsInterpreterTag(value)
+        mesonpy._tags.InterpreterTag(value)
