@@ -196,9 +196,9 @@ def test_interpreter_abi_tag(wheel_purelib_and_platlib):
 )
 def test_local_lib(virtual_env, wheel_link_against_local_lib):
     subprocess.check_call([virtual_env, '-m', 'pip', 'install', wheel_link_against_local_lib])
-    subprocess.check_output([
+    assert subprocess.check_output([
         virtual_env, '-c', 'import example; print(example.example_sum(1, 2))'
-    ]).decode() == '3'
+    ]).decode().strip() == '3'
 
 
 def test_contents_license_file(wheel_license_file):
