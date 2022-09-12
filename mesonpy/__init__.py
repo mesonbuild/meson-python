@@ -614,7 +614,7 @@ class Project():
         # write the native file
         native_file_data = textwrap.dedent(f'''
             [binaries]
-            python3 = '{sys.executable}'
+            python = '{sys.executable}'
         ''')
         native_file_mismatch = (
             not self._meson_native_file.exists()
