@@ -247,7 +247,16 @@ def test_detect_wheel_tag_script(wheel_executable):
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-def test_unneeded_rpath(wheel_purelib_and_platlib, tmpdir):
+def test_rpath(wheel_link_against_local_lib, tmpdir):
+    artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
+    artifact.extractall(tmpdir)
+
+    elf = mesonpy._elf.ELF(tmpdir / f'example{EXT_SUFFIX}')
+    assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+
+
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+def test_uneeded_rpath(wheel_purelib_and_platlib, tmpdir):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmpdir)
 
