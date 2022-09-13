@@ -170,6 +170,10 @@ class _WheelBuilder():
         return self._map_to_wheel(self._sources, self._copy_files)
 
     @property
+    def _has_internal_libs(self) -> bool:
+        return bool(self._wheel_files['mesonpy-libs'])
+
+    @property
     def basename(self) -> str:
         """Normalized wheel name and version (eg. meson_python-1.0.0)."""
         return '{distribution}-{version}'.format(
@@ -518,19 +522,6 @@ class _WheelBuilder():
         counter.update(location)
 
         # fix file
-        if platform.system() == 'Linux' and not os.path.isdir(origin):
-            # add .mesonpy.libs to the RPATH of ELF files
-            if self._is_native(os.fspath(origin)):
-                # copy ELF to our working directory to avoid Meson having to regenerate the file
-                new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
-                os.makedirs(new_origin.parent, exist_ok=True)
-                shutil.copy2(origin, new_origin)
-                origin = new_origin
-                # add our in-wheel libs folder to the RPATH
-                elf = mesonpy._elf.ELF(origin)
-                libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
-                if libdir_path not in elf.rpath:
-                    elf.rpath = [*elf.rpath, libdir_path]
         if os.path.isdir(origin):
             for root, dirnames, filenames in os.walk(str(origin)):
                 # Sort the directory names so that `os.walk` will walk them in a
@@ -542,6 +533,20 @@ class _WheelBuilder():
                         arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, '/'))
                         wheel_file.write(path, arcname)
         else:
+            if self._has_internal_libs and platform.system() == 'Linux':
+                # add .mesonpy.libs to the RPATH of ELF files
+                if self._is_native(os.fspath(origin)):
+                    # copy ELF to our working directory to avoid Meson having to regenerate the file
+                    new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
+                    os.makedirs(new_origin.parent, exist_ok=True)
+                    shutil.copy2(origin, new_origin)
+                    origin = new_origin
+                    # add our in-wheel libs folder to the RPATH
+                    elf = mesonpy._elf.ELF(origin)
+                    libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
+                    if libdir_path not in elf.rpath:
+                        elf.rpath = [*elf.rpath, libdir_path]
+
             wheel_file.write(origin, location)
 
     def build(self, directory: Path) -> pathlib.Path:
