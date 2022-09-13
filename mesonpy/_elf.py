@@ -23,7 +23,7 @@ class ELF:
     def rpath(self) -> Collection[str]:
         if self._rpath is None:
             rpath = self._patchelf('--print-rpath').strip()
-            self._rpath = rpath.split(';') if rpath else []
+            self._rpath = rpath.split(':') if rpath else []
         return frozenset(self._rpath)
 
     @rpath.setter
