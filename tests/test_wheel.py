@@ -10,6 +10,8 @@ import sysconfig
 import pytest
 import wheel.wheelfile
 
+import mesonpy._elf
+
 
 try:
     import importlib.metadata  # not available in Python 3.7
@@ -242,3 +244,16 @@ def test_detect_wheel_tag_script(wheel_executable):
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
     assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+
+
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+def test_unneeded_rpath(wheel_purelib_and_platlib, tmpdir):
+    artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
+    artifact.extractall(tmpdir)
+
+    elf = mesonpy._elf.ELF(tmpdir / f'plat{EXT_SUFFIX}')
+    if elf.rpath:
+        # elf.rpath is a frozenset, so iterate over it. An rpath may be
+        # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
+        for rpath in elf.rpath:
+            assert 'mesonpy.libs' not in rpath
