@@ -330,15 +330,12 @@ class _WheelBuilder():
     def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
         """Map files into ABI tags."""
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
-        platlib_files = {destination for destination, _ in self._wheel_files['platlib']}
 
-        for file, details in self._sources.get('targets', {}).items():
-            destination = pathlib.Path(details['destination'])
+        for _, file in self._wheel_files['platlib']:
             # if in platlib, calculate the ABI tag
-            if destination in platlib_files:
-                tag = self._calculate_file_abi_tag_heuristic(file)
-                if tag:
-                    files_by_tag[tag].append(file)
+            tag = self._calculate_file_abi_tag_heuristic(file)
+            if tag:
+                files_by_tag[tag].append(file)
 
         return files_by_tag
 
