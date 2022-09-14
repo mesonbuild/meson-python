@@ -34,19 +34,17 @@ name: Run Sage CI for Linux
 ## Many copies of the second step are run in parallel for each of the tested
 ## systems/configurations.
 
-on: [push, pull_request, workflow_dispatch]
-
-## Uncomment this (and comment the above) to run only on pushes to a tag,
-## not on all pushes to a branch.
-##
-## on:
-##   pull_request:
-##     types: [opened, synchronize]
-##   push:
-##     tags:
-##       - '*'
-##   workflow_dispatch:
-##     # Allow to run manually
+on:
+  pull_request:
+    branches:
+      - main
+      - release-*
+  push:
+    branches:
+      - main
+      - release-*
+  workflow_dispatch:
+    # Allow to run manually
 
 env:
   # Ubuntu packages to install so that the project's can build an sdist
