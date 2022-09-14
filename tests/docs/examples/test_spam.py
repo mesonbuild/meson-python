@@ -1,8 +1,12 @@
 import subprocess
+import sys
+
+import pytest
 
 from .conftest import build_project_wheel, examples_dir
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason='Example only supports >=3.8')
 def test_build_and_import(virtual_env, tmp_dir_session):
     """Test that the wheel for the spam example builds, installs, and imports."""
     wheel = build_project_wheel(
