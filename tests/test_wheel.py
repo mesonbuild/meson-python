@@ -153,3 +153,10 @@ def test_executable_bit(wheel_executable_bit):
             assert executable_bit, f'{info.filename} should have the executable bit set!'
         else:
             assert not executable_bit, f'{info.filename} should not have the executable bit set!'
+
+
+def test_detect_wheel_tag(wheel_purelib_and_platlib):
+    name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
+    assert name.group('pyver') == PYTHON_TAG
+    assert name.group('abi') == INTERPRETER_TAG
+    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
