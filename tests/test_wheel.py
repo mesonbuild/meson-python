@@ -6,10 +6,20 @@ import re
 import subprocess
 import sys
 import sysconfig
+import importlib.metadata
 
 import pytest
 import wheel.wheelfile
 
+try:
+    # Note, this may be None due to an importlib bug, handled in `finally`
+    meson_version = importlib.metadata.version('meson')
+except PackageNotFoundError:
+    # Meson does not have to be installed in the same Python environment
+    meson_version = None
+finally:
+    if meson_version is None:
+        meson_version = '99999'
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
@@ -69,7 +79,7 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
-@pytest.mark.xfail(reason='Meson bug')
+@pytest.mark.xfail(meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
