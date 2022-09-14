@@ -1,0 +1,7 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = "mypkg"
+description = "A typical Python package layout"
