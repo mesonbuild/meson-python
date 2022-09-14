@@ -101,7 +101,7 @@ def test_configure_data(wheel_configure_data):
     artifact = wheel.wheelfile.WheelFile(wheel_configure_data)
 
     assert wheel_contents(artifact) == {
-        'configure_data-1.0.0.data/platlib/configure_data.py',
+        'configure_data.py',
         'configure_data-1.0.0.dist-info/METADATA',
         'configure_data-1.0.0.dist-info/RECORD',
         'configure_data-1.0.0.dist-info/WHEEL',
