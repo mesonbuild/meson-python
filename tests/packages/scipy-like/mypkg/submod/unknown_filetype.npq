@@ -1,0 +1,2 @@
+# Unknown file types (e.g. `.npy` or `.npz` data files) can be present in
+# a Python package.

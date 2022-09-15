@@ -19,3 +19,9 @@ py.install_sources(
   pure: false,
   subdir: 'mypkg'
 )
+
+# Still broken, see gh-105 and https://github.com/mesonbuild/meson/issues/10639
+#install_subdir(
+#  'submod',
+#  install_dir: py.get_install_dir(pure: false) / 'mypkg/submod'
+#)
