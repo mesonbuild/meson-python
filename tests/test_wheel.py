@@ -28,7 +28,7 @@ if platform.python_implementation() == 'CPython':
         if pymalloc or pymalloc is None:  # none is the default value, which is enable
             INTERPRETER_TAG += 'm'
 elif platform.python_implementation() == 'PyPy':
-    INTERPRETER_TAG = f'pypy3_{INTERPRETER_VERSION}'
+    INTERPRETER_TAG = sysconfig.get_config_var('SOABI').replace('-', '_')
     PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
 else:
     raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
