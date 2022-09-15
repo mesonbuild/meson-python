@@ -62,6 +62,11 @@ def wheel_contents(artifact):
         if not entry.endswith('/')
     }
 
+
+def wheel_filename(artifact):
+    return artifact.filename.split(os.sep)[-1]
+
+
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
@@ -83,6 +88,8 @@ def test_scipy_like(wheel_scipy_like):
         #'mypkg/submod/unknown_filetype.npq',
     }
     assert wheel_contents(artifact) == expecting
+    assert 'none' not in wheel_filename(artifact)
+    assert 'any' not in wheel_filename(artifact)
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
