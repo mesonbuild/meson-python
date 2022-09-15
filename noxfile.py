@@ -35,7 +35,7 @@ def mypy(session):
     session.run('mypy', '-p', 'mesonpy')
 
 
-@nox.session(python=['3.7', '3.8', '3.9', '3.10', '3.11'])
+@nox.session(python=['3.7', '3.8', '3.9', '3.10', '3.11', 'pypy3.8', 'pypy3.9'])
 def test(session):
     htmlcov_output = os.path.join(session.virtualenv.location, 'htmlcov')
     xmlcov_output = os.path.join(session.virtualenv.location, f'coverage-{session.python}.xml')
