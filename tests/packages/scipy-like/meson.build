@@ -1,6 +1,6 @@
-project(
-    'scipy-like', 'c',
-    version: '2.3.4',
+project('scipy-like',
+  'c', 'cython',
+  version: '2.3.4',
 )
 
 py_mod = import('python')

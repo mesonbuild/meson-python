@@ -14,6 +14,12 @@ py.extension_module('extmod',
   subdir: 'mypkg'
 )
 
+py.extension_module('cy_extmod',
+  'cy_extmod.pyx',
+  install: true,
+  subdir: 'mypkg'
+)
+
 py.install_sources(
   '__init__.py',
   pure: false,

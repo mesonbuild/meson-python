@@ -62,6 +62,28 @@ def wheel_contents(artifact):
         if not entry.endswith('/')
     }
 
+def test_scipy_like(wheel_scipy_like):
+    # This test is meant to exercise features commonly needed by a regular
+    # Python package for scientific computing or data science:
+    #   - C and Cython extensions,
+    #   - including generated code,
+    #   - using `install_subdir`,
+    #   - packaging data files with extensions not known to Meson
+    artifact = wheel.wheelfile.WheelFile(wheel_scipy_like)
+
+    expecting = {
+        'mypkg-2.3.4.dist-info/METADATA',
+        'mypkg-2.3.4.dist-info/RECORD',
+        'mypkg-2.3.4.dist-info/WHEEL',
+        'mypkg/__init__.py',
+        'mypkg/__config__.py',
+        f'mypkg/extmod{EXT_SUFFIX}',
+        f'mypkg/cy_extmod{EXT_SUFFIX}',
+        #'mypkg/submod/__init__.py',
+        #'mypkg/submod/unknown_filetype.npq',
+    }
+    assert wheel_contents(artifact) == expecting
+
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
 def test_contents(package_library, wheel_library):
