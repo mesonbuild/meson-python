@@ -46,6 +46,10 @@ on:
   workflow_dispatch:
     # Allow to run manually
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   # Ubuntu packages to install so that the project's can build an sdist
   DIST_PREREQ:      python3-pip
