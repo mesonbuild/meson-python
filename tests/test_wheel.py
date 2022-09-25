@@ -84,8 +84,8 @@ def test_scipy_like(wheel_scipy_like):
         'mypkg/__config__.py',
         f'mypkg/extmod{EXT_SUFFIX}',
         f'mypkg/cy_extmod{EXT_SUFFIX}',
-        #'mypkg/submod/__init__.py',
-        #'mypkg/submod/unknown_filetype.npq',
+        'mypkg/submod/__init__.py',
+        'mypkg/submod/unknown_filetype.npq',
     }
     assert wheel_contents(artifact) == expecting
     assert 'none' not in wheel_filename(artifact)
