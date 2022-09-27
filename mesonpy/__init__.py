@@ -766,7 +766,7 @@ class Project():
         assert isinstance(version, str)
         return version
 
-    @property  # type: ignore[misc]
+    @property
     @functools.lru_cache(maxsize=1)
     def metadata(self) -> bytes:  # noqa: C901
         """Project metadata."""
