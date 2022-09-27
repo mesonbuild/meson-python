@@ -386,12 +386,17 @@ class _WheelBuilder():
                 return f.read(4) in (
                     b'\xfe\xed\xfa\xce',  # 32-bit
                     b'\xfe\xed\xfa\xcf',  # 64-bit
+                    b'\xcf\xfa\xed\xfe',  # arm64
                     b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
                 )
             elif platform.system() == 'Windows':
                 return f.read(2) == b'MZ'
 
-        raise NotImplementedError(f'Unknown system: {platform.system()}')
+        # For unknown platforms, check for file extensions.
+        _, ext = os.path.splitext(file)
+        if ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd'):
+            return True
+        return False
 
     def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
         """Warn if we are unsure if the file should be mapped to purelib or platlib.
