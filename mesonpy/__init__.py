@@ -195,6 +195,20 @@ class _WheelBuilder():
     def data_dir(self) -> str:
         return f'{self.basename}.data'
 
+    @cached_property
+    def is_pure(self) -> bool:
+        """Is the wheel "pure" (architecture independent)?"""
+        # XXX: I imagine some users might want to force the package to be
+        # non-pure, but I think it's better that we evaluate use-cases as they
+        # arise and make sure allowing the user to override this is indeed the
+        # best option for the use-case.
+        if self._wheel_files['platlib']:
+            return False
+        for _, file in self._wheel_files['scripts']:
+            if self._is_native(file):
+                return False
+        return True
+
     @property
     def wheel(self) -> bytes:  # noqa: F811
         """Return WHEEL file for dist-info."""
@@ -204,7 +218,7 @@ class _WheelBuilder():
             Root-Is-Purelib: {is_purelib}
             Tag: {tags}
         ''').strip().format(
-            is_purelib='true' if self._project.is_pure else 'false',
+            is_purelib='true' if self.is_pure else 'false',
             tags=f'{self.python_tag}-{self.abi_tag}-{self.platform_tag}',
         ).encode()
 
@@ -237,7 +251,7 @@ class _WheelBuilder():
 
     @property
     def platform_tag(self) -> str:
-        if self._project.is_pure:
+        if self.is_pure:
             return 'any'
         # XXX: Choose the sysconfig platform here and let something like auditwheel
         #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
@@ -316,15 +330,12 @@ class _WheelBuilder():
     def _files_by_tag(self) -> Mapping[mesonpy._tags.Tag, Collection[str]]:
         """Map files into ABI tags."""
         files_by_tag: Dict[mesonpy._tags.Tag, List[str]] = collections.defaultdict(list)
-        platlib_files = {destination for destination, _ in self._wheel_files['platlib']}
 
-        for file, details in self._sources.get('targets', {}).items():
-            destination = pathlib.Path(details['destination'])
+        for _, file in self._wheel_files['platlib']:
             # if in platlib, calculate the ABI tag
-            if destination in platlib_files:
-                tag = self._calculate_file_abi_tag_heuristic(file)
-                if tag:
-                    files_by_tag[tag].append(file)
+            tag = self._calculate_file_abi_tag_heuristic(file)
+            if tag:
+                files_by_tag[tag].append(file)
 
         return files_by_tag
 
@@ -364,10 +375,28 @@ class _WheelBuilder():
                     )
         return selected_tag
 
-    def _is_elf(self, file: Union[str, pathlib.Path]) -> bool:
-        """Check if file is an ELF file."""
+    def _is_native(self, file: Union[str, pathlib.Path]) -> bool:
+        """Check if file is a native file."""
+        self._project.build()  # the project needs to be built for this :/
+
         with open(file, 'rb') as f:
-            return f.read(4) == b'\x7fELF'
+            if platform.system() == 'Linux':
+                return f.read(4) == b'\x7fELF'  # ELF
+            elif platform.system() == 'Darwin':
+                return f.read(4) in (
+                    b'\xfe\xed\xfa\xce',  # 32-bit
+                    b'\xfe\xed\xfa\xcf',  # 64-bit
+                    b'\xcf\xfa\xed\xfe',  # arm64
+                    b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
+                )
+            elif platform.system() == 'Windows':
+                return f.read(2) == b'MZ'
+
+        # For unknown platforms, check for file extensions.
+        _, ext = os.path.splitext(file)
+        if ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd'):
+            return True
+        return False
 
     def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
         """Warn if we are unsure if the file should be mapped to purelib or platlib.
@@ -381,7 +410,7 @@ class _WheelBuilder():
         """
         # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
         # but we know that files that go there are supposed to go to platlib.
-        if self._is_elf(origin):
+        if self._is_native(origin):
             # The file is architecture dependent and does not belong in puredir,
             # so the warning is skipped.
             return
@@ -491,7 +520,7 @@ class _WheelBuilder():
         # fix file
         if platform.system() == 'Linux':
             # add .mesonpy.libs to the RPATH of ELF files
-            if self._is_elf(os.fspath(origin)):
+            if self._is_native(os.fspath(origin)):
                 # copy ELF to our working directory to avoid Meson having to regenerate the file
                 new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
                 os.makedirs(new_origin.parent, exist_ok=True)
@@ -529,7 +558,7 @@ class _WheelBuilder():
                 len(list(itertools.chain.from_iterable(self._wheel_files.values()))),
             ) as counter:
                 # install root scheme files
-                root_scheme = 'purelib' if self._project.is_pure else 'platlib'
+                root_scheme = 'purelib' if self.is_pure else 'platlib'
                 for destination, origin in self._wheel_files[root_scheme]:
                     self._install_file(whl, counter, origin, destination)
 
@@ -683,6 +712,17 @@ class Project():
                     f'expected `{self._metadata.requires_python}`'
                 )
 
+    @cached_property
+    def _wheel_builder(self) -> _WheelBuilder:
+        return _WheelBuilder(
+            self,
+            self._source_dir,
+            self._install_dir,
+            self._build_dir,
+            self._install_plan,
+            self._copy_files,
+        )
+
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
         """Trigger the Meson build."""
@@ -796,18 +836,7 @@ class Project():
     @property
     def is_pure(self) -> bool:
         """Is the wheel "pure" (architecture independent)?"""
-        # XXX: I imagine some users might want to force the package to be
-        # non-pure, but I think it's better that we evaluate use-cases as they
-        # arise and make sure allowing the user to override this is indeed the
-        # best option for the use-case.
-        not_pure = ('{bindir}', '{libdir_shared}', '{libdir_static}', '{py_platlib}', '{moduledir_shared}')
-        for data_type, files in self._install_plan.items():
-            for entry in files.values():
-                if entry['destination'] is None:  # pragma: no cover
-                    continue
-                if any(key in entry['destination'] for key in not_pure):
-                    return False
-        return True
+        return bool(self._wheel_builder.is_pure)
 
     @property
     def pep621(self) -> bool:
@@ -867,14 +896,7 @@ class Project():
 
     def wheel(self, directory: Path) -> pathlib.Path:  # noqa: F811
         """Generates a wheel (binary distribution) in the specified directory."""
-        wheel = _WheelBuilder(
-            self,
-            self._source_dir,
-            self._install_dir,
-            self._build_dir,
-            self._install_plan,
-            self._copy_files,
-        ).build(self._build_dir)
+        wheel = self._wheel_builder.build(self._build_dir)
 
         final_wheel = pathlib.Path(directory, wheel.name)
         shutil.move(os.fspath(wheel), final_wheel)

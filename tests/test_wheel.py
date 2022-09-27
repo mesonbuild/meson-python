@@ -28,7 +28,7 @@ if platform.python_implementation() == 'CPython':
         if pymalloc or pymalloc is None:  # none is the default value, which is enable
             INTERPRETER_TAG += 'm'
 elif platform.python_implementation() == 'PyPy':
-    INTERPRETER_TAG = f'pypy3_{INTERPRETER_VERSION}'
+    INTERPRETER_TAG = sysconfig.get_config_var('SOABI').replace('-', '_')
     PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
 else:
     raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
@@ -101,7 +101,7 @@ def test_configure_data(wheel_configure_data):
     artifact = wheel.wheelfile.WheelFile(wheel_configure_data)
 
     assert wheel_contents(artifact) == {
-        'configure_data-1.0.0.data/platlib/configure_data.py',
+        'configure_data.py',
         'configure_data-1.0.0.dist-info/METADATA',
         'configure_data-1.0.0.dist-info/RECORD',
         'configure_data-1.0.0.dist-info/WHEEL',
@@ -153,3 +153,19 @@ def test_executable_bit(wheel_executable_bit):
             assert executable_bit, f'{info.filename} should have the executable bit set!'
         else:
             assert not executable_bit, f'{info.filename} should not have the executable bit set!'
+
+
+@pytest.mark.skipif(os.name == 'nt',
+                    reason='Wheel build fixture in conftest.py broken on Windows')
+def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
+    name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
+    assert name.group('pyver') == PYTHON_TAG
+    assert name.group('abi') == INTERPRETER_TAG
+    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+
+
+def test_detect_wheel_tag_script(wheel_executable):
+    name = wheel.wheelfile.WheelFile(wheel_executable).parsed_filename
+    assert name.group('pyver') == 'py3'
+    assert name.group('abi') == 'none'
+    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
