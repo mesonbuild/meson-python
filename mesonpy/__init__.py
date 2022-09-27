@@ -836,7 +836,7 @@ class Project():
     @property
     def is_pure(self) -> bool:
         """Is the wheel "pure" (architecture independent)?"""
-        return self._wheel_builder.is_pure
+        return bool(self._wheel_builder.is_pure)
 
     @property
     def pep621(self) -> bool:
