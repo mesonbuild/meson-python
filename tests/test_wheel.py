@@ -155,6 +155,8 @@ def test_executable_bit(wheel_executable_bit):
             assert not executable_bit, f'{info.filename} should not have the executable bit set!'
 
 
+@pytest.mark.skipif(os.name == 'nt',
+                    reason='Wheel build fixture in conftest.py broken on Windows')
 def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
     assert name.group('pyver') == PYTHON_TAG
