@@ -532,14 +532,14 @@ class _WheelBuilder():
                 if libdir_path not in elf.rpath:
                     elf.rpath = [*elf.rpath, libdir_path]
         if os.path.isdir(origin):
-            for root, dirnames, filenames in os.walk(origin):
+            for root, dirnames, filenames in os.walk(str(origin)):
                 # Sort the directory names so that `os.walk` will walk them in a
                 # defined order on the next iteration.
                 dirnames.sort()
                 for name in sorted(filenames):
                     path = os.path.normpath(os.path.join(root, name))
                     if os.path.isfile(path):
-                        arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, "/"))
+                        arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, '/'))
                         wheel_file.write(path, arcname)
         else:
             wheel_file.write(origin, location)
