@@ -104,7 +104,7 @@ jobs:
           ["standard",
            ]
       # Sage distribution packages to build
-      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python" meson_python
       # Standard setting: Test the current beta release of Sage:
       sage_repo: sagemath/sage
       sage_ref: develop
