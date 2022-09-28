@@ -17,7 +17,7 @@ class ELF:
         self._needed: Optional[Collection[str]] = None
 
     def _patchelf(self, *args: str) -> str:
-        return subprocess.check_output(['patchelf', *args, self._path]).decode()
+        return subprocess.check_output(['patchelf', *args, self._path], stderr=subprocess.STDOUT).decode()
 
     @property
     def rpath(self) -> Collection[str]:
