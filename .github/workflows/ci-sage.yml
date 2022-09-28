@@ -101,7 +101,7 @@ jobs:
            "conda-forge",
            ]
       tox_packages_factors: >-
-          ["standard",
+          ["standard-develop",
            ]
       # Sage distribution packages to build
       targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python" meson_python
