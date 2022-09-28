@@ -18,9 +18,9 @@ else:
 
 
 if sys.version_info >= (3, 8):
-    from typing import Literal
+    from typing import Literal, TypedDict
 else:
-    from typing_extensions import Literal
+    from typing_extensions import Literal, TypedDict
 
 
 Path = Union[str, os.PathLike]
@@ -44,4 +44,5 @@ __all__ = [
     'Mapping',
     'Path',
     'Sequence',
+    'TypedDict',
 ]

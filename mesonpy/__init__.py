@@ -42,7 +42,7 @@ import mesonpy._elf
 import mesonpy._tags
 import mesonpy._util
 
-from mesonpy._compat import Collection, Iterator, Mapping, Path
+from mesonpy._compat import Collection, Iterator, Mapping, Path, TypedDict
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -129,6 +129,15 @@ def _setup_cli() -> None:
         colorama.init()  # fix colors on windows
 
 
+class _MesonBuildOption(TypedDict):
+    name: str
+    value: Union[str, List[str]]
+    section: str
+    machine: str
+    type: str
+    description: str
+
+
 class MesonBuilderError(Exception):
     """Error when building the Meson package."""
 
@@ -155,6 +164,7 @@ class _WheelBuilder():
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
         copy_files: Dict[str, str],
+        build_options: Dict[str, _MesonBuildOption],
     ) -> None:
         self._project = project
         self._source_dir = source_dir
@@ -162,6 +172,7 @@ class _WheelBuilder():
         self._build_dir = build_dir
         self._sources = sources
         self._copy_files = copy_files
+        self._build_options = build_options
 
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
@@ -431,6 +442,7 @@ class _WheelBuilder():
         warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
         sys_vars = sysconfig.get_config_vars().copy()
         sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
+        sys_vars['prefix'] = self._build_options['prefix']['value']
         sys_paths = sysconfig.get_paths(vars=sys_vars)
         # Try to map to Debian dist-packages
         if self._debian_python:
@@ -736,6 +748,7 @@ class Project():
             self._build_dir,
             self._install_plan,
             self._copy_files,
+            self._build_options,
         )
 
     @functools.lru_cache(maxsize=None)
@@ -756,18 +769,18 @@ class Project():
             yield cls(source_dir, tmpdir, build_dir)
 
     @functools.lru_cache()
-    def _info(self, name: str) -> Dict[str, Any]:
+    def _info(self, name: str) -> Any:
         """Read info from meson-info directory."""
         file = self._build_dir.joinpath('meson-info', f'{name}.json')
-        return typing.cast(
-            Dict[str, str],
-            json.loads(file.read_text())
-        )
+        return json.loads(file.read_text())
 
     @property
-    def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+    def _install_plan(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
         """Meson install_plan metadata."""
-        return self._info('intro-install_plan').copy()
+        return typing.cast(
+            Dict[str, Dict[str, Dict[str, Any]]],
+            self._info('intro-install_plan').copy()
+        )
 
     @property
     def _copy_files(self) -> Dict[str, str]:
@@ -779,6 +792,16 @@ class Project():
                 self._install_dir / destination_path.relative_to(destination_path.anchor)
             )
         return copy_files
+
+    @property
+    def _build_options(self) -> Dict[str, _MesonBuildOption]:
+        """Meson buildoptions metadata."""
+        data = self._info('intro-buildoptions').copy()
+        typing.cast(List[_MesonBuildOption], data)
+        return {
+            item['name']: item
+            for item in data
+        }
 
     @property
     def _lib_paths(self) -> Set[str]:
