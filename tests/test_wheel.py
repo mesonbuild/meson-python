@@ -11,6 +11,19 @@ import pytest
 import wheel.wheelfile
 
 
+try:
+    import importlib.metadata  # not available in Python 3.7
+
+    # Note, this may be None due to an importlib bug, handled in `finally`
+    try:
+        meson_version = importlib.metadata.version('meson')
+    except importlib.metadata.PackageNotFoundError:
+        meson_version = None
+except ModuleNotFoundError:
+    # Meson does not have to be installed in the same Python environment
+    meson_version = None
+
+
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
@@ -40,7 +53,7 @@ if platform.system() == 'Linux':
 elif platform.system() == 'Darwin':
     SHARED_LIB_EXT = 'dylib'
 elif platform.system() == 'Windows':
-    SHARED_LIB_EXT = 'dll.a'
+    SHARED_LIB_EXT = 'pyd'
 else:
     raise NotImplementedError(f'Unknown system: {platform.system()}')
 
@@ -51,6 +64,62 @@ def wheel_contents(artifact):
         entry for entry in artifact.namelist()
         if not entry.endswith('/')
     }
+
+
+def wheel_filename(artifact):
+    return artifact.filename.split(os.sep)[-1]
+
+
+win_py37 = os.name == 'nt' and sys.version_info < (3, 8)
+
+
+@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
+def test_scipy_like(wheel_scipy_like):
+    # This test is meant to exercise features commonly needed by a regular
+    # Python package for scientific computing or data science:
+    #   - C and Cython extensions,
+    #   - including generated code,
+    #   - using `install_subdir`,
+    #   - packaging data files with extensions not known to Meson
+    artifact = wheel.wheelfile.WheelFile(wheel_scipy_like)
+
+    expecting = {
+        'mypkg-2.3.4.dist-info/METADATA',
+        'mypkg-2.3.4.dist-info/RECORD',
+        'mypkg-2.3.4.dist-info/WHEEL',
+        'mypkg/__init__.py',
+        'mypkg/__config__.py',
+        f'mypkg/extmod{EXT_SUFFIX}',
+        f'mypkg/cy_extmod{EXT_SUFFIX}',
+    }
+    # Meson master has a fix for `install_subdir` that is not present in
+    # 0.63.2: https://github.com/mesonbuild/meson/pull/10765
+    # A backport of the fix may land in 0.63.3, if so then remove the version
+    # check here and add the two expected files unconditionally.
+    if meson_version and meson_version >= '0.63.99':
+        expecting |= {
+            'mypkg/submod/__init__.py',
+            'mypkg/submod/unknown_filetype.npq',
+        }
+    if os.name == 'nt':
+        # Currently Meson is installing `.dll.a` (import libraries) next to
+        # `.pyd` extension modules. Those are very small, so it's not a major
+        # issue - just sloppy. For now, ensure we don't fail on those
+        actual_files = wheel_contents(artifact)
+        for item in expecting:
+            assert item in actual_files
+    else:
+        assert wheel_contents(artifact) == expecting
+
+    name = artifact.parsed_filename
+    assert name.group('pyver') == PYTHON_TAG
+    assert name.group('abi') == INTERPRETER_TAG
+    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+
+    # Extra checks to doubly-ensure that there are no issues with erroneously
+    # considering a package with an extension module as pure
+    assert 'none' not in wheel_filename(artifact)
+    assert 'any' not in wheel_filename(artifact)
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
@@ -69,7 +138,9 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
-@pytest.mark.xfail(reason='Meson bug')
+@pytest.mark.skipif(win_py37,
+                    reason='Somehow pkg-config went missing within Nox env, see gh-145')
+@pytest.mark.xfail(meson_version and meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 

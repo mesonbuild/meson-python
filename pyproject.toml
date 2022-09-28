@@ -44,6 +44,7 @@ test = [
   'pytest-mock',
   'GitPython',
   'auditwheel',
+  'Cython',
 ]
 docs = [
   'furo>=2021.08.31',
