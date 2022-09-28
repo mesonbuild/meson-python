@@ -68,7 +68,7 @@ jobs:
             nox --version
 
       - name: Run tests
-        run: nox -s test-${{ env.BASE }}
+        run: nox -v -s test-${{ env.BASE }}
 
       - name: Send coverage report
         uses: codecov/codecov-action@v1
