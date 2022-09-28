@@ -28,7 +28,8 @@ EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
 
-if platform.python_implementation() == 'CPython':
+python_implementation = platform.python_implementation()
+if python_implementation == 'CPython' or python_implementation.startswith('CYGWIN'):
     INTERPRETER_TAG = f'cp{INTERPRETER_VERSION}'
     PYTHON_TAG = INTERPRETER_TAG
     # Py_UNICODE_SIZE has been a runtime option since Python 3.3,
@@ -40,11 +41,11 @@ if platform.python_implementation() == 'CPython':
         pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
         if pymalloc or pymalloc is None:  # none is the default value, which is enable
             INTERPRETER_TAG += 'm'
-elif platform.python_implementation() == 'PyPy':
+elif python_implementation == 'PyPy':
     INTERPRETER_TAG = sysconfig.get_config_var('SOABI').replace('-', '_')
     PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
 else:
-    raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
+    raise NotImplementedError(f'Unknown implementation: {python_implementation}')
 
 PLATFORM_TAG = sysconfig.get_platform().replace('-', '_').replace('.', '_')
 
@@ -52,7 +53,7 @@ if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
 elif platform.system() == 'Darwin':
     SHARED_LIB_EXT = 'dylib'
-elif platform.system() == 'Windows':
+elif platform.system() == 'Windows' or platform.system().startswith('CYGWIN'):
     SHARED_LIB_EXT = 'pyd'
 else:
     raise NotImplementedError(f'Unknown system: {platform.system()}')
