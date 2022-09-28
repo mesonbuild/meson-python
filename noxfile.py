@@ -2,6 +2,7 @@
 
 import os
 import os.path
+import platform
 
 import nox
 
@@ -45,6 +46,10 @@ def test(session):
     # optional github actions integration
     if os.environ.get('GITHUB_ACTIONS') == 'true':
         session.install('pytest-github-actions-annotate-failures')
+
+    # https://github.com/gitpython-developers/GitPython/pull/1455
+    if platform.system().startswith('CYGWIN'):
+        session.install('git+https://github.com/gitpython-developers/GitPython.git')
 
     session.run(
         'pytest',
