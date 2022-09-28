@@ -501,15 +501,15 @@ class _WheelBuilder():
 
         return wheel_files
 
-    def _install_file(
+    def _install_path(
         self,
         wheel_file: wheel.wheelfile.WheelFile,  # type: ignore[name-defined]
         counter: mesonpy._util.CLICounter,
         origin: Path,
         destination: pathlib.Path,
     ) -> None:
-        """"Install" file into the wheel and do the necessary processing before
-        doing so.
+        """"Install" file or directory into the wheel
+        and do the necessary processing before doing so.
 
         Some files might need to be fixed up to set the RPATH to the internal
         library directory on Linux wheels for eg.
@@ -518,7 +518,7 @@ class _WheelBuilder():
         counter.update(location)
 
         # fix file
-        if platform.system() == 'Linux':
+        if platform.system() == 'Linux' and not os.path.isdir(origin):
             # add .mesonpy.libs to the RPATH of ELF files
             if self._is_native(os.fspath(origin)):
                 # copy ELF to our working directory to avoid Meson having to regenerate the file
@@ -531,8 +531,18 @@ class _WheelBuilder():
                 libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
                 if libdir_path not in elf.rpath:
                     elf.rpath = [*elf.rpath, libdir_path]
-
-        wheel_file.write(origin, location)
+        if os.path.isdir(origin):
+            for root, dirnames, filenames in os.walk(str(origin)):
+                # Sort the directory names so that `os.walk` will walk them in a
+                # defined order on the next iteration.
+                dirnames.sort()
+                for name in sorted(filenames):
+                    path = os.path.normpath(os.path.join(root, name))
+                    if os.path.isfile(path):
+                        arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, '/'))
+                        wheel_file.write(path, arcname)
+        else:
+            wheel_file.write(origin, location)
 
     def build(self, directory: Path) -> pathlib.Path:
         import wheel.wheelfile
@@ -560,13 +570,13 @@ class _WheelBuilder():
                 # install root scheme files
                 root_scheme = 'purelib' if self.is_pure else 'platlib'
                 for destination, origin in self._wheel_files[root_scheme]:
-                    self._install_file(whl, counter, origin, destination)
+                    self._install_path(whl, counter, origin, destination)
 
                 # install bundled libraries
                 for destination, origin in self._wheel_files['mesonpy-libs']:
                     assert platform.system() == 'Linux', 'Bundling libraries in wheel is currently only supported in POSIX!'
                     destination = pathlib.Path(f'.{self._project.name}.mesonpy.libs', destination)
-                    self._install_file(whl, counter, origin, destination)
+                    self._install_path(whl, counter, origin, destination)
 
                 # install the other schemes
                 for scheme in self._SCHEME_MAP:
@@ -574,7 +584,7 @@ class _WheelBuilder():
                         continue
                     for destination, origin in self._wheel_files[scheme]:
                         destination = pathlib.Path(self.data_dir, scheme, destination)
-                        self._install_file(whl, counter, origin, destination)
+                        self._install_path(whl, counter, origin, destination)
 
         return wheel_file
 
