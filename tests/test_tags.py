@@ -40,6 +40,8 @@ def test_stable_abi_tag_invalid():
         ('cpython-37-x86_64-linux-gnu', 'cpython', '37', ('x86_64', 'linux', 'gnu'), 'cp37', 'cp37'),
         ('cpython-310-x86_64-linux-gnu', 'cpython', '310', ('x86_64', 'linux', 'gnu'), 'cp310', 'cp310'),
         ('cpython-310', 'cpython', '310', (), 'cp310', 'cp310'),
+        ('cp311-win_amd64', 'cpython', '311', ('win_amd64', ), 'cp311', 'cp311'),
+        ('cpython-311-win_amd64', 'cpython', '311', ('win_amd64', ), 'cp311', 'cp311'),
         ('cpython-310-special', 'cpython', '310', ('special',), 'cp310', 'cp310'),
         ('cpython-310-x86_64-linux-gnu', 'cpython', '310', ('x86_64', 'linux', 'gnu'), 'cp310', 'cp310'),
         ('pypy39-pp73-x86_64-linux-gnu', 'pypy39', 'pp73', ('x86_64', 'linux', 'gnu'), 'pypy39_pp73', 'pp39'),
@@ -49,7 +51,10 @@ def test_stable_abi_tag_invalid():
 )
 def test_interpreter_tag(value, implementation, version, additional, abi, python):
     tag = mesonpy._tags.InterpreterTag(value)
-    assert str(tag) == value
+    if not value.startswith('cp311'):
+        # Avoid testing the workaround for the invalid Windows tag
+        assert str(tag) == value
+
     assert tag.implementation == implementation
     assert tag.interpreter_version == version
     assert tag.additional_information == additional
