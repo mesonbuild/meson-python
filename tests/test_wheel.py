@@ -96,9 +96,9 @@ def test_scipy_like(wheel_scipy_like):
     # check here and add the two expected files unconditionally.
     if meson_version >= '0.63.99':
         expecting |= {
-        'mypkg/submod/__init__.py',
-        'mypkg/submod/unknown_filetype.npq',
-    }
+            'mypkg/submod/__init__.py',
+            'mypkg/submod/unknown_filetype.npq',
+        }
     assert wheel_contents(artifact) == expecting
 
     name = artifact.parsed_filename
