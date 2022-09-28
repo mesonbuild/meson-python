@@ -261,15 +261,25 @@ class _WheelBuilder():
         #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
         platform_ = sysconfig.get_platform()
         parts = platform_.split('-')
-        if parts[0] == 'macosx' and parts[1] in ('11', '12'):
-            # Workaround for bug where pypa/packaging does not consider macOS
-            # tags without minor versions valid. Some Python flavors (Homebrew
-            # for example) on macOS started to do this in version 11, and
-            # pypa/packaging should handle things correctly from version 13 and
-            # forward, so we will add a 0 minor version to MacOS 11 and 12.
-            # https://github.com/FFY00/meson-python/issues/91
-            # https://github.com/pypa/packaging/issues/578
-            parts[1] += '.0'
+        if parts[0] == 'macosx':
+            target = os.environ.get('MACOSX_DEPLOYMENT_TARGET')
+            if target:
+                print(
+                    '{yellow}MACOSX_DEPLOYMENT_TARGET is set so we are setting the '
+                    'platform tag to {target}{reset}'.format(target=target, **_STYLES)
+                )
+                parts[1] = target
+
+            if parts[1] in ('11', '12'):
+                # Workaround for bug where pypa/packaging does not consider macOS
+                # tags without minor versions valid. Some Python flavors (Homebrew
+                # for example) on macOS started to do this in version 11, and
+                # pypa/packaging should handle things correctly from version 13 and
+                # forward, so we will add a 0 minor version to MacOS 11 and 12.
+                # https://github.com/FFY00/meson-python/issues/91
+                # https://github.com/pypa/packaging/issues/578
+                parts[1] += '.0'
+
             platform_ = '-'.join(parts)
         elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
             # 32-bit Python running on an x86_64 host
