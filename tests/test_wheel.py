@@ -15,8 +15,11 @@ try:
     import importlib.metadata  # not available in Python 3.7
 
     # Note, this may be None due to an importlib bug, handled in `finally`
-    meson_version = importlib.metadata.version('meson')
-except (importlib.metadata.PackageNotFoundError, ModuleNotFoundError):
+    try:
+        meson_version = importlib.metadata.version('meson')
+    except importlib.metadata.PackageNotFoundError:
+        meson_version = None
+except ModuleNotFoundError:
     # Meson does not have to be installed in the same Python environment
     meson_version = None
 finally:
