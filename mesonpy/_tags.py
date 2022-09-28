@@ -68,8 +68,8 @@ class InterpreterTag(Tag):
                 f'least 2 parts but got {len(parts)}'
             )
 
-        # On Windows, Meson produces tags like `cp311-win_amd64`, so the
-        # implementation part (`cpython-`) is missing. Handle that here:
+        # On Windows, file extensions look like `.cp311-win_amd64.pyd`, so the
+        # implementation part (`cpython-`) is different from Linux. Handle that here:
         if parts[0].startswith('cp3'):
             parts.insert(0, 'cpython')
             parts[1] = parts[1][2:]  # strip 'cp'
