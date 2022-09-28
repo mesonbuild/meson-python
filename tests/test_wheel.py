@@ -53,7 +53,7 @@ if platform.system() == 'Linux':
 elif platform.system() == 'Darwin':
     SHARED_LIB_EXT = 'dylib'
 elif platform.system() == 'Windows':
-    SHARED_LIB_EXT = 'dll.a'
+    SHARED_LIB_EXT = 'pyd'
 else:
     raise NotImplementedError(f'Unknown system: {platform.system()}')
 
@@ -70,6 +70,10 @@ def wheel_filename(artifact):
     return artifact.filename.split(os.sep)[-1]
 
 
+win_py37 = os.name == 'nt' and sys.version_info < (3, 8)
+
+
+@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
@@ -134,6 +138,8 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
+@pytest.mark.skipif(win_py37,
+                    reason='Somehow pkg-config went missing within Nox env, see gh-145')
 @pytest.mark.xfail(meson_version and meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
