@@ -48,7 +48,12 @@ elif platform.python_implementation() == 'PyPy':
 else:
     raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
 
-PLATFORM_TAG = sysconfig.get_platform().replace('-', '_').replace('.', '_')
+platform_ = sysconfig.get_platform()
+if platform.system() == 'Darwin':
+    parts = platform_.split('-')
+    parts[1] = platform.mac_ver()[0]
+    platform_ = '-'.join(parts)
+PLATFORM_TAG = platform_.replace('-', '_').replace('.', '_')
 
 if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
@@ -116,7 +121,7 @@ def test_scipy_like(wheel_scipy_like):
     name = artifact.parsed_filename
     assert name.group('pyver') == PYTHON_TAG
     assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
 
     # Extra checks to doubly-ensure that there are no issues with erroneously
     # considering a package with an extension module as pure
@@ -236,14 +241,14 @@ def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
     assert name.group('pyver') == PYTHON_TAG
     assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG.replace('-', '_').replace('.', '_')
 
 
 def test_detect_wheel_tag_script(wheel_executable):
     name = wheel.wheelfile.WheelFile(wheel_executable).parsed_filename
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG.replace('-', '_').replace('.', '_')
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')

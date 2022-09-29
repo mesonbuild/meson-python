@@ -269,6 +269,12 @@ class _WheelBuilder():
                     'platform tag to {target}{reset}'.format(target=target, **_STYLES)
                 )
                 parts[1] = target
+            else:
+                # If no target macOS version is specified fallback to
+                # platform.mac_ver() instead of sysconfig.get_platform() as the
+                # latter specifies the target macOS version Python was built
+                # against.
+                parts[1] = platform.mac_ver()[0]
 
             if parts[1] in ('11', '12'):
                 # Workaround for bug where pypa/packaging does not consider macOS
