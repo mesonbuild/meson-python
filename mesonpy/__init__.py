@@ -253,7 +253,7 @@ class _WheelBuilder():
             return selected_tag.abi
         return 'none'
 
-    @property
+    @cached_property
     def platform_tag(self) -> str:
         if self.is_pure:
             return 'any'
