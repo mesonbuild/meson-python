@@ -275,9 +275,11 @@ class _WheelBuilder():
                 # latter specifies the target macOS version Python was built
                 # against.
                 parts[1] = platform.mac_ver()[0]
-                # Only pick up the major version
-                # https://github.com/FFY00/meson-python/issues/160
-                parts[1] = parts[1].split('.')[0]
+                if parts[1] >= '11':
+                    # Only pick up the major version, which changed from 10.X
+                    # to X.0 from macOS 11 onwards. See
+                    # https://github.com/FFY00/meson-python/issues/160
+                    parts[1] = parts[1].split('.')[0]
 
             if parts[1] in ('11', '12'):
                 # Workaround for bug where pypa/packaging does not consider macOS

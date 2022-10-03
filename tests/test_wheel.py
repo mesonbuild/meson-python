@@ -51,7 +51,9 @@ else:
 platform_ = sysconfig.get_platform()
 if platform.system() == 'Darwin':
     parts = platform_.split('-')
-    parts[1] = platform.mac_ver()[0].split('.')[0]
+    parts[1] = platform.mac_ver()[0]
+    if parts[1] >= '11':
+        parts[1] = parts[1].split('.')[0]
     if parts[1] in ('11', '12'):
         parts[1] += '.0'
     platform_ = '-'.join(parts)
