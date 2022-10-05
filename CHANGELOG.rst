@@ -3,6 +3,12 @@ Changelog
 +++++++++
 
 
+0.10.0 (05-10-2022)
+===================
+
+- Ignore the macOS minor version on >=11, to match the behavior with pypa/packaging
+
+
 0.9.0 (29-09-2022)
 ==================
 

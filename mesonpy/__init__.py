@@ -56,7 +56,7 @@ else:
     cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
 
 
-__version__ = '0.10.0.dev0'
+__version__ = '0.10.0'
 
 
 class _depstr:
