@@ -107,7 +107,7 @@ def test_scipy_like(wheel_scipy_like):
     # 0.63.2: https://github.com/mesonbuild/meson/pull/10765
     # A backport of the fix may land in 0.63.3, if so then remove the version
     # check here and add the two expected files unconditionally.
-    if meson_version and meson_version >= '0.63.99':
+    if meson_version and meson_version >= '0.63.3':
         expecting |= {
             'mypkg/submod/__init__.py',
             'mypkg/submod/unknown_filetype.npq',
