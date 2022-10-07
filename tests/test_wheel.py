@@ -13,17 +13,12 @@ import wheel.wheelfile
 import mesonpy._elf
 
 
-try:
-    import importlib.metadata  # not available in Python 3.7
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
 
-    # Note, this may be None due to an importlib bug, handled in `finally`
-    try:
-        meson_version = importlib.metadata.version('meson')
-    except importlib.metadata.PackageNotFoundError:
-        meson_version = None
-except ModuleNotFoundError:
-    # Meson does not have to be installed in the same Python environment
-    meson_version = None
+meson_version = importlib_metadata.version('meson')
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
@@ -107,7 +102,7 @@ def test_scipy_like(wheel_scipy_like):
     # 0.63.2: https://github.com/mesonbuild/meson/pull/10765
     # A backport of the fix may land in 0.63.3, if so then remove the version
     # check here and add the two expected files unconditionally.
-    if meson_version and meson_version >= '0.63.3':
+    if meson_version >= '0.63.3':
         expecting |= {
             'mypkg/submod/__init__.py',
             'mypkg/submod/unknown_filetype.npq',
@@ -151,7 +146,7 @@ def test_contents(package_library, wheel_library):
 
 @pytest.mark.skipif(win_py37,
                     reason='Somehow pkg-config went missing within Nox env, see gh-145')
-@pytest.mark.xfail(meson_version and meson_version < '0.63.99', reason='Meson bug')
+@pytest.mark.xfail(meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
