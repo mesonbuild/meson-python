@@ -32,8 +32,8 @@ import typing
 import warnings
 
 from typing import (
-    Any, ClassVar, DefaultDict, Dict, List, Optional, Set, TextIO, Tuple, Type,
-    Union
+    Any, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set, TextIO,
+    Tuple, Type, Union
 )
 
 
@@ -47,7 +47,7 @@ import mesonpy._elf
 import mesonpy._tags
 import mesonpy._util
 
-from mesonpy._compat import Iterator, Path
+from mesonpy._compat import Collection, Iterator, Literal, Mapping, Path
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -132,6 +132,10 @@ def _setup_cli() -> None:
         pass
     else:  # pragma: no cover
         colorama.init()  # fix colors on windows
+
+
+class ConfigError(Exception):
+    """Error in the backend configuration."""
 
 
 class MesonBuilderError(Exception):
@@ -538,6 +542,9 @@ class _WheelBuilder():
         return wheel_file
 
 
+MesonArgs = Mapping[Literal['dist', 'setup', 'compile', 'install'], Collection[str]]
+
+
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
@@ -551,6 +558,7 @@ class Project():
         source_dir: Path,
         working_dir: Path,
         build_dir: Optional[Path] = None,
+        meson_args: Optional[MesonArgs] = None,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
@@ -577,6 +585,13 @@ class Project():
 
         if self._metadata:
             self._validate_metadata()
+
+        # load meson args
+        self._meson_args = collections.defaultdict(tuple, meson_args or {})
+        for key in self._get_config_key('args'):
+            args_from_config = tuple(self._get_config_key(f'args.{key}'))
+            self._meson_args[key] = args_from_config + tuple(self._meson_args[key])
+        # XXX: We should validate the user args to make sure they don't conflict with ours.
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
@@ -608,6 +623,17 @@ class Project():
         if self._metadata and 'version' in self._metadata.dynamic:
             self._metadata.version = self.version
 
+    def _get_config_key(self, key: str) -> Any:
+        value: Any = self._config
+        for part in f'tool.mesonpy.{key}'.split('.'):
+            if not isinstance(value, Mapping):
+                raise ConfigError(
+                    f'Found unexpected value in `{part}` when looking for '
+                    f'config key `tool.mesonpy.{key}` (`{value}`)'
+                )
+            value = value.get(part, {})
+        return value
+
     def _proc(self, *args: str) -> None:
         """Invoke a subprocess."""
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
@@ -628,19 +654,18 @@ class Project():
             f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
             os.fspath(self._build_dir),
+            f'--native-file={os.fspath(self._meson_native_file)}',
+            # TODO: Allow configuring these arguments
+            '-Ddebug=false',
+            '-Doptimization=2',
+            # user args
+            *self._meson_args['setup'],
         ]
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
 
         try:
-            self._meson(
-                'setup',
-                f'--native-file={os.fspath(self._meson_native_file)}',
-                # TODO: Allow configuring these arguments
-                '-Ddebug=false',
-                '-Doptimization=2',
-                *setup_args,
-            )
+            self._meson('setup', *setup_args)
         except subprocess.CalledProcessError:
             if reconfigure:  # if failed reconfiguring, try a normal configure
                 self._configure()
@@ -686,8 +711,8 @@ class Project():
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
         """Trigger the Meson build."""
-        self._meson('compile')
-        self._meson('install', '--destdir', os.fspath(self._install_dir))
+        self._meson('compile', *self._meson_args['compile'],)
+        self._meson('install', '--destdir', os.fspath(self._install_dir), *self._meson_args['install'],)
 
     @classmethod
     @contextlib.contextmanager
@@ -695,10 +720,11 @@ class Project():
         cls,
         source_dir: Path = os.path.curdir,
         build_dir: Optional[Path] = None,
+        meson_args: Optional[MesonArgs] = None,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir)
+            yield cls(source_dir, tmpdir, build_dir, meson_args)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -806,7 +832,7 @@ class Project():
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
-        self._meson('dist', '--allow-dirty', '--no-tests', '--formats', 'gztar')
+        self._meson('dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist'],)
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
@@ -882,8 +908,51 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     if config_settings is None:
         config_settings = {}
 
+    # expand all string values to single element tuples and convert collections to tuple
+    config_settings = {
+        key: tuple(value) if isinstance(value, Collection) and not isinstance(value, str) else (value,)
+        for key, value in config_settings.items()
+    }
+
+    builddir_value = config_settings.get('builddir', {})
+    if len(builddir_value) > 0:
+        if len(builddir_value) != 1:
+            raise ConfigError('Specified multiple values for `builddir`, only one is allowed')
+        builddir = builddir_value[0]
+        if not isinstance(builddir, str):
+            raise ConfigError(f'Config option `builddir` should be a string (found `{type(builddir)}`)')
+    else:
+        builddir = None
+
+    def _validate_string_collection(key: str) -> None:
+        assert isinstance(config_settings, Mapping)
+        problematic_items: Sequence[Any] = list(filter(None, (
+            item if not isinstance(item, str) else None
+            for item in config_settings.get(key, ())
+        )))
+        if problematic_items:
+            raise ConfigError(
+                f'Config option `{key}` should only contain string items, but '
+                'contains the following parameters that do not meet this criteria:' +
+                ''.join((
+                    f'\t- {item} (type: {type(item)})'
+                    for item in problematic_items
+                ))
+            )
+
+    _validate_string_collection('dist_args')
+    _validate_string_collection('setup_args')
+    _validate_string_collection('compile_args')
+    _validate_string_collection('install_args')
+
     with Project.with_temp_working_dir(
-        build_dir=config_settings.get('builddir'),
+        build_dir=builddir,
+        meson_args=typing.cast(MesonArgs, {
+            'dist': config_settings.get('dist_args', ()),
+            'setup': config_settings.get('setup_args', ()),
+            'compile': config_settings.get('compile_args', ()),
+            'install': config_settings.get('install_args', ()),
+        }),
     ) as project:
         yield project
 

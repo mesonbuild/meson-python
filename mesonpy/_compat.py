@@ -10,9 +10,11 @@ from typing import Union
 
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Collection, Iterable, Iterator, Sequence
+    from collections.abc import (
+        Collection, Iterable, Iterator, Mapping, Sequence
+    )
 else:
-    from typing import Collection, Iterable, Iterator, Sequence
+    from typing import Collection, Iterable, Iterator, Mapping, Sequence
 
 
 if sys.version_info >= (3, 8):
@@ -39,6 +41,7 @@ __all__ = [
     'Iterable',
     'Iterator',
     'Literal',
+    'Mapping',
     'Path',
     'Sequence',
 ]
