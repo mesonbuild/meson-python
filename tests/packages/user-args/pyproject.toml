@@ -1,0 +1,9 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[tool.mesonpy.args]
+dist = ['config-dist']
+setup = ['config-setup']
+compile = ['config-compile']
+install = ['config-install']
