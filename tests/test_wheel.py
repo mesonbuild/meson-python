@@ -97,16 +97,9 @@ def test_scipy_like(wheel_scipy_like):
         'mypkg/__config__.py',
         f'mypkg/extmod{EXT_SUFFIX}',
         f'mypkg/cy_extmod{EXT_SUFFIX}',
+        'mypkg/submod/__init__.py',
+        'mypkg/submod/unknown_filetype.npq',
     }
-    # Meson master has a fix for `install_subdir` that is not present in
-    # 0.63.2: https://github.com/mesonbuild/meson/pull/10765
-    # A backport of the fix may land in 0.63.3, if so then remove the version
-    # check here and add the two expected files unconditionally.
-    if meson_version >= '0.63.3':
-        expecting |= {
-            'mypkg/submod/__init__.py',
-            'mypkg/submod/unknown_filetype.npq',
-        }
     if os.name == 'nt':
         # Currently Meson is installing `.dll.a` (import libraries) next to
         # `.pyd` extension modules. Those are very small, so it's not a major
