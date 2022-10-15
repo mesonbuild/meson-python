@@ -935,6 +935,9 @@ class Project():
                 path = self._source_dir.joinpath(*member_parts[1:])
 
                 if not path.is_file():
+                    # Could be a generated file, we still need to copy in that case
+                    if member.isfile():
+                        tar.addfile(member, meson_dist.extractfile(member.name))
                     continue
 
                 info = tarfile.TarInfo(member.name)
@@ -943,6 +946,7 @@ class Project():
                 info.mode = int(oct(file_stat.st_mode)[-3:], 8)
 
                 # rewrite the path if necessary, to match the sdist distribution name
+                #print("File is:", path)
                 if dist_name != meson_dist_name:
                     info.name = pathlib.Path(
                         dist_name,
