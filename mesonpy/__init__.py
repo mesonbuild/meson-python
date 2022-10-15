@@ -934,6 +934,14 @@ class Project():
                     continue
                 path = self._source_dir.joinpath(*member_parts[1:])
 
+                if not path.exists() and member.isfile():
+                    # File doesn't exists on the source diractory but exists on
+                    # the Meson dist, so it is generated file, which we need to
+                    # include.
+                    # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
+                    tar.addfile(member, meson_dist.extractfile(member.name))
+                    continue
+
                 if not path.is_file():
                     # Could be a generated file, we still need to copy in that case
                     if member.isfile():
