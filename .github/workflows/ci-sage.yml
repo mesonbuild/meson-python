@@ -114,6 +114,8 @@ jobs:
       # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
       # (this is a no-op after that ticket is merged)
       sage_trac_ticket: 34081
+      # Docker targets (stages) to tag
+      docker_targets: "with-system-packages with-targets"
       # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
       # 'Package "sage-docker-..." is already associated with another repository.'
       docker_push_repository: ghcr.io/${{ github.repository }}/meson-python-
