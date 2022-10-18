@@ -94,11 +94,11 @@ jobs:
       tox_system_factors: >-
           ["debian-bullseye",
            "fedora-36",
-           "centos-stream-8",
+           "centos-stream-8-python3.9",
            "gentoo-python3.9",
            "archlinux-latest",
-           "opensuse-15.4-gcc_11",
-           "opensuse-tumbleweed",
+           "opensuse-15.4-gcc_11-python3.10",
+           "opensuse-tumbleweed-python3.10",
            "conda-forge",
            ]
       tox_packages_factors: >-
