@@ -150,6 +150,7 @@ class _WheelBuilder():
     def __init__(
         self,
         project: Project,
+        metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
         install_dir: pathlib.Path,
         build_dir: pathlib.Path,
@@ -157,6 +158,7 @@ class _WheelBuilder():
         copy_files: Dict[str, str],
     ) -> None:
         self._project = project
+        self._metadata = metadata
         self._source_dir = source_dir
         self._install_dir = install_dir
         self._build_dir = build_dir
@@ -225,6 +227,28 @@ class _WheelBuilder():
             is_purelib='true' if self.is_pure else 'false',
             tags=f'{self.python_tag}-{self.abi_tag}-{self.platform_tag}',
         ).encode()
+
+    @property
+    def entrypoints_txt(self) -> bytes:
+        """dist-info entry_points.txt."""
+        if not self._metadata:
+            return b''
+
+        data = self._metadata.entrypoints.copy()
+        data.update({
+            'console_scripts': self._metadata.scripts,
+            'gui_scripts': self._metadata.gui_scripts,
+        })
+
+        text = ''
+        for entrypoint in data:
+            if data[entrypoint]:
+                text += f'[{entrypoint}]\n'
+                for name, target in data[entrypoint].items():
+                    text += f'{name} = {target}\n'
+                text += '\n'
+
+        return text.encode()
 
     @property
     def _debian_python(self) -> bool:
@@ -581,6 +605,8 @@ class _WheelBuilder():
             # add metadata
             whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
+            if self.entrypoints_txt:
+                whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
             # add license (see https://github.com/FFY00/meson-python/issues/88)
             if self._project.license_file:
@@ -752,6 +778,7 @@ class Project():
     def _wheel_builder(self) -> _WheelBuilder:
         return _WheelBuilder(
             self,
+            self._metadata,
             self._source_dir,
             self._install_dir,
             self._build_dir,

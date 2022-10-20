@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import sysconfig
+import textwrap
 
 import pytest
 import wheel.wheelfile
@@ -263,3 +264,19 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmpdir):
         # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
         for rpath in elf.rpath:
             assert 'mesonpy.libs' not in rpath
+
+
+def test_entrypoints(wheel_full_metadata):
+    artifact = wheel.wheelfile.WheelFile(wheel_full_metadata)
+
+    with artifact.open('full_metadata-1.2.3.dist-info/entry_points.txt') as f:
+        assert f.read().decode().strip() == textwrap.dedent('''
+            [something.custom]
+            example = example:custom
+
+            [console_scripts]
+            example-cli = example:cli
+
+            [gui_scripts]
+            example-gui = example:gui
+        ''').strip()
