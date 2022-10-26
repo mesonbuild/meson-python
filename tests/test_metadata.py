@@ -32,8 +32,8 @@ def test_pep621(sdist_full_metadata):
         Classifier: Programming Language :: Python
         Project-URL: Homepage, https://example.com
         Project-URL: Documentation, https://readthedocs.org
-        Project-URL: Repository, https://github.com/FFY00/mesonpy
-        Project-URL: Changelog, https://github.com/FFY00/mesonpy/blob/master/CHANGELOG.md
+        Project-URL: Repository, https://github.com/mesonbuild/mesonpy
+        Project-URL: Changelog, https://github.com/mesonbuild/mesonpy/blob/master/CHANGELOG.md
         Requires-Python: >=3.7
         Requires-Dist: a
         Requires-Dist: b>1

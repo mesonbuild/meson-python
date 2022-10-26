@@ -302,7 +302,7 @@ class _WheelBuilder():
                 if parts[1] >= '11':
                     # Only pick up the major version, which changed from 10.X
                     # to X.0 from macOS 11 onwards. See
-                    # https://github.com/FFY00/meson-python/issues/160
+                    # https://github.com/mesonbuild/meson-python/issues/160
                     parts[1] = parts[1].split('.')[0]
 
             if parts[1] in ('11', '12'):
@@ -311,14 +311,14 @@ class _WheelBuilder():
                 # for example) on macOS started to do this in version 11, and
                 # pypa/packaging should handle things correctly from version 13 and
                 # forward, so we will add a 0 minor version to MacOS 11 and 12.
-                # https://github.com/FFY00/meson-python/issues/91
+                # https://github.com/mesonbuild/meson-python/issues/91
                 # https://github.com/pypa/packaging/issues/578
                 parts[1] += '.0'
 
             platform_ = '-'.join(parts)
         elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
             # 32-bit Python running on an x86_64 host
-            # https://github.com/FFY00/meson-python/issues/123
+            # https://github.com/mesonbuild/meson-python/issues/123
             parts[1] = 'i686'
             platform_ = '-'.join(parts)
         return platform_.replace('-', '_').replace('.', '_')
@@ -344,14 +344,14 @@ class _WheelBuilder():
             if extension != '.so':
                 raise NotImplementedError(
                     f"We don't currently support the {extension} extension. "
-                    'Please report this to https://github.com/FFY00/mesonpy/issues '
+                    'Please report this to https://github.com/mesonbuild/mesonpy/issues '
                     'and include information about your operating system.'
                 )
         except KeyError:
             warnings.warn(
                 'sysconfig does not export SHLIB_SUFFIX, so we are unable to '
                 'perform the sanity check regarding the extension suffix. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'Please report this to https://github.com/mesonbuild/mesonpy/issues '
                 'and include the output of `python -m sysconfig`.'
             )
         match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
@@ -608,7 +608,7 @@ class _WheelBuilder():
             if self.entrypoints_txt:
                 whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
-            # add license (see https://github.com/FFY00/meson-python/issues/88)
+            # add license (see https://github.com/mesonbuild/meson-python/issues/88)
             if self._project.license_file:
                 whl.write(
                     self._source_dir / self._project.license_file,
