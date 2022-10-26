@@ -8,7 +8,7 @@ from .conftest import build_project_wheel, examples_dir
 
 
 # This test fails on Ubuntu and MacOS for pypy-3.8;
-# see https://github.com/FFY00/meson-python/pull/136 for more information.
+# see https://github.com/mesonbuild/meson-python/pull/136 for more information.
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 @pytest.mark.skipif(sys.version_info < (3, 8), reason='Example only supports >=3.8')
 @pytest.mark.skipif(platform.python_implementation() == 'PyPy', reason='PyPy bug on creating the venv')

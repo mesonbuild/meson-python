@@ -4,23 +4,23 @@
 meson-python |PyPI badge|
 *************************
 
-.. image:: https://results.pre-commit.ci/badge/github/FFY00/mesonpy/main.svg
-   :target: https://results.pre-commit.ci/latest/github/FFY00/mesonpy/main
+.. image:: https://results.pre-commit.ci/badge/github/mesonbuild/mesonpy/main.svg
+   :target: https://results.pre-commit.ci/latest/github/mesonbuild/mesonpy/main
    :alt: pre-commit.ci status
 
 
-.. image:: https://github.com/FFY00/mesonpy/actions/workflows/checks.yml/badge.svg
-   :target: https://github.com/FFY00/mesonpy/actions/workflows/checks.yml
+.. image:: https://github.com/mesonbuild/mesonpy/actions/workflows/checks.yml/badge.svg
+   :target: https://github.com/mesonbuild/mesonpy/actions/workflows/checks.yml
    :alt: Github Action 'checks' workflow status
 
 
-.. image:: https://github.com/FFY00/mesonpy/actions/workflows/tests.yml/badge.svg
-   :target: https://github.com/FFY00/mesonpy/actions/workflows/tests.yml
+.. image:: https://github.com/mesonbuild/mesonpy/actions/workflows/tests.yml/badge.svg
+   :target: https://github.com/mesonbuild/mesonpy/actions/workflows/tests.yml
    :alt: Github Action 'tests' workflow status
 
 
-.. image:: https://codecov.io/gh/FFY00/mesonpy/branch/main/graph/badge.svg?token=xcb2u2YvVk
-   :target: https://codecov.io/gh/FFY00/mesonpy
+.. image:: https://codecov.io/gh/mesonbuild/mesonpy/branch/main/graph/badge.svg?token=xcb2u2YvVk
+   :target: https://codecov.io/gh/mesonbuild/mesonpy
    :alt: Codecov coverage status
 
 
@@ -162,8 +162,8 @@ If you really need the data to be installed where it was previously (eg.
    :caption: Project Links
    :hidden:
 
-   Source Code <https://github.com/FFY00/mesonpy>
-   Issue Tracker <https://github.com/FFY00/mesonpy/issues>
+   Source Code <https://github.com/mesonbuild/mesonpy>
+   Issue Tracker <https://github.com/mesonbuild/mesonpy/issues>
 
 
 .. |PyPI badge| image:: https://badge.fury.io/py/meson-python.svg
