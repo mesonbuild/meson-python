@@ -939,17 +939,15 @@ class Project():
                     # the Meson dist, so it is generated file, which we need to
                     # include.
                     # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
-                    tar.addfile(member, meson_dist.extractfile(member.name))
+
+                    # MESON_DIST_ROOT could have a different base name
+                    # than the actual sdist basename, so we need to rename here
+                    file = meson_dist.extractfile(member.name)
+                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]))
+                    tar.addfile(member, file)
                     continue
 
                 if not path.is_file():
-                    # Could be a generated file, we still need to copy in that case
-                    if member.isfile():
-                        # MESON_DIST_ROOT could have a different base name
-                        # than the actual sdist basename, so we need to rename here
-                        file = meson_dist.extractfile(member.name)
-                        member.name = str(pathlib.Path(dist_name, *member_parts[1:]))
-                        tar.addfile(member, file)
                     continue
 
                 info = tarfile.TarInfo(member.name)
