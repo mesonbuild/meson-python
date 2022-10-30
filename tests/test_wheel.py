@@ -8,44 +8,20 @@ import sys
 import sysconfig
 import textwrap
 
+import packaging.tags
 import pytest
 import wheel.wheelfile
 
-import mesonpy._elf
+import mesonpy
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
-
-if platform.python_implementation() == 'CPython':
-    INTERPRETER_TAG = f'cp{INTERPRETER_VERSION}'
-    PYTHON_TAG = INTERPRETER_TAG
-    # Py_UNICODE_SIZE has been a runtime option since Python 3.3,
-    # so the u suffix no longer exists
-    if sysconfig.get_config_var('Py_DEBUG'):
-        INTERPRETER_TAG += 'd'
-    # https://github.com/pypa/packaging/blob/5984e3b25f4fdee64aad20e98668c402f7ed5041/packaging/tags.py#L147-L150
-    if sys.version_info < (3, 8):
-        pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
-        if pymalloc or pymalloc is None:  # none is the default value, which is enable
-            INTERPRETER_TAG += 'm'
-elif platform.python_implementation() == 'PyPy':
-    INTERPRETER_TAG = sysconfig.get_config_var('SOABI').replace('-', '_')
-    PYTHON_TAG = f'pp{INTERPRETER_VERSION}'
-else:
-    raise NotImplementedError(f'Unknown implementation: {platform.python_implementation()}')
-
-platform_ = sysconfig.get_platform()
-if platform.system() == 'Darwin':
-    parts = platform_.split('-')
-    parts[1] = platform.mac_ver()[0]
-    if parts[1] >= '11':
-        parts[1] = parts[1].split('.')[0]
-    if parts[1] in ('11', '12'):
-        parts[1] += '.0'
-    platform_ = '-'.join(parts)
-PLATFORM_TAG = platform_.replace('-', '_').replace('.', '_')
+_tag = next(packaging.tags.sys_tags())
+INTERPRETER_TAG = _tag.abi
+PYTHON_TAG = _tag.interpreter
+PLATFORM_TAG = mesonpy._adjust_manylinux_tag(_tag.platform)
 
 if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
@@ -72,7 +48,6 @@ def wheel_filename(artifact):
 win_py37 = os.name == 'nt' and sys.version_info < (3, 8)
 
 
-@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
@@ -125,7 +100,6 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
-@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
@@ -201,7 +175,6 @@ def test_executable_bit(wheel_executable_bit):
             assert not executable_bit, f'{info.filename} should not have the executable bit set!'
 
 
-@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
     assert name.group('pyver') == PYTHON_TAG

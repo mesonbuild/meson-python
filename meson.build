@@ -11,7 +11,6 @@ py.install_sources(
   'mesonpy/__init__.py',
   'mesonpy/_compat.py',
   'mesonpy/_elf.py',
-  'mesonpy/_tags.py',
   'mesonpy/_util.py',
   subdir: 'mesonpy',
 )
