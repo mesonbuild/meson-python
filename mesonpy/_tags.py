@@ -1,130 +1,124 @@
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2021 Quansight, LLC
-# SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
-import abc
-import re
+import os
+import platform
+import sys
+import sysconfig
 
-from typing import Any, Optional
-
-from mesonpy._compat import Literal, Sequence
+from typing import Optional, Union
 
 
-class Tag(abc.ABC):
-    @abc.abstractmethod
-    def __init__(self, value: str) -> None: ...
-
-    @abc.abstractmethod
-    def __str__(self) -> str: ...
-
-    @property
-    @abc.abstractmethod
-    def python(self) -> Optional[str]:
-        """Python tag."""
-
-    @property
-    @abc.abstractmethod
-    def abi(self) -> str:
-        """ABI tag."""
+# https://peps.python.org/pep-0425/#python-tag
+INTERPRETERS = {
+    'python': 'py',
+    'cpython': 'cp',
+    'pypy': 'pp',
+    'ironpython': 'ip',
+    'jython': 'jy',
+}
 
 
-class StableABITag(Tag):
-    _REGEX = re.compile(r'^abi(?P<abi_number>[0-9]+)$')
+def get_interpreter_tag() -> str:
+    name = sys.implementation.name
+    name = INTERPRETERS.get(name, name)
+    version = sys.version_info
+    return f'{name}{version[0]}{version[1]}'
 
-    def __init__(self, value: str) -> None:
-        match = self._REGEX.match(value)
-        if not match:
-            raise ValueError(f'Invalid PEP 3149 stable ABI tag, expecting pattern `{self._REGEX.pattern}`')
-        self._abi_number = int(match.group('abi_number'))
 
-    @property
-    def abi_number(self) -> int:
-        return self._abi_number
+def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[str, int, None]:
+    value = sysconfig.get_config_var(name)
+    if value is None:
+        return default
+    return value
+
+
+def _get_cpython_abi() -> str:
+    version = sys.version_info
+    debug = pymalloc = ''
+    if _get_config_var('Py_DEBUG', hasattr(sys, 'gettotalrefcount')):
+        debug = 'd'
+    if sys.version_info < (3, 8) and _get_config_var('WITH_PYMALLOC', True):
+        pymalloc = 'm'
+    return f'cp{version[0]}{version[1]}{debug}{pymalloc}'
+
+
+def get_abi_tag() -> str:
+    abi = sysconfig.get_config_var('SOABI')
+    if not abi:
+        # CPython on Windows does not have a SOABI sysconfig variable.
+        assert sys.implementation.name == 'cpython'
+        return _get_cpython_abi()
+    if abi.startswith('cpython'):
+        return 'cp' + abi.split('-')[1]
+    if abi.startswith('pypy'):
+        return '_'.join(abi.split('-')[:2])
+    return abi.replace('.', '_').replace('-', '_')
+
+
+def _get_macosx_platform_tag() -> str:
+    ver, x, arch = platform.mac_ver()
+
+    # Override the macOS version if one is provided via the
+    # MACOS_DEPLOYMENT_TARGET environment variable.
+    try:
+        version = tuple(map(int, os.environ.get('MACOS_DEPLOYMENT_TARGET', '').split('.')))[:2]
+    except ValueError:
+        version = tuple(map(int, ver.split('.')))[:2]
+
+    # Python built with older macOS SDK on macOS 11, reports an
+    # unexising macOS 10.16 version instead of the real version.
+    #
+    # The packaging module introduced a workaround
+    # https://github.com/pypa/packaging/commit/67c4a2820c549070bbfc4bfbf5e2a250075048da
+    #
+    # This results in packaging versions up to 21.3 generating
+    # platform tags like "macosx_10_16_x86_64" and later versions
+    # generating "macosx_11_0_x86_64".  Using latter would be more
+    # correct but prevents the resulting wheel from being installed on
+    # systems using packaging 21.3 or earlier (pip 22.3 or earlier).
+    #
+    # Fortunately packaging versions carrying the workaround still
+    # accepts "macosx_11_0_x86_64" as a compatible platform tag.  We
+    # can therefore ignore the issue and generate the slightly
+    # incorrect tag.
+
+    major, minor = version
+
+    if major >= 11:
+        # For macOS reelases up to 10.15, the major version number is
+        # actually part of the OS name and the minor version is the
+        # actual OS release.  Starting with macOS 11, the major
+        # version number is the OS release and the minor version is
+        # the patch level.  Reset the patch level to zero.
+        minor = 0
+
+    if sys.maxsize <= 2**32:
+        # 32-bit Python running on a 64-bit kernel.
+        if arch.startswith('ppc'):
+            arch = 'ppc'
+        arch = 'i386'
+
+    return f'macosx_{major}_{minor}_{arch}'
+
+
+def get_platform_tag() -> str:
+    platform = sysconfig.get_platform()
+    if platform.startswith('macosx'):
+        return _get_macosx_platform_tag()
+    if sys.maxsize <= 2**32:
+        # 32-bit Python running on a 64-bit kernel.
+        if platform == 'linux-x86_64':
+            return 'linux_i686'
+        if platform == 'linux-aarch64':
+            return 'linux_armv7l'
+    return platform.replace('-', '_')
+
+
+class Tag:
+    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None):
+        self.interpreter = interpreter or get_interpreter_tag()
+        self.abi = abi or get_abi_tag()
+        self.platform = platform or get_platform_tag()
 
     def __str__(self) -> str:
-        return f'abi{self.abi_number}'
-
-    @property
-    def python(self) -> Literal[None]:
-        return None
-
-    @property
-    def abi(self) -> str:
-        return f'abi{self.abi_number}'
-
-    def __eq__(self, other: Any) -> bool:
-        return isinstance(other, self.__class__) and other.abi_number == self.abi_number
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-
-class InterpreterTag(Tag):
-    def __init__(self, value: str) -> None:
-        parts = value.split('-')
-        if len(parts) < 2:
-            raise ValueError(
-                'Invalid PEP 3149 interpreter tag, expected at '
-                f'least 2 parts but got {len(parts)}'
-            )
-
-        # On Windows, file extensions look like `.cp311-win_amd64.pyd`, so the
-        # implementation part (`cpython-`) is different from Linux. Handle that here:
-        if parts[0].startswith('cp3'):
-            parts.insert(0, 'cpython')
-            parts[1] = parts[1][2:]  # strip 'cp'
-
-        self._implementation = parts[0]
-        self._interpreter_version = parts[1]
-        self._additional_information = parts[2:]
-
-        if self.implementation != 'cpython' and not self.implementation.startswith('pypy'):
-            raise NotImplementedError(f'Unknown Python implementation: {self.implementation}.')
-
-    @property
-    def implementation(self) -> str:
-        return self._implementation
-
-    @property
-    def interpreter_version(self) -> str:
-        return self._interpreter_version
-
-    @property
-    def additional_information(self) -> Sequence[str]:
-        return tuple(self._additional_information)
-
-    def __str__(self) -> str:
-        return '-'.join((
-            self.implementation,
-            self.interpreter_version,
-            *self.additional_information,
-        ))
-
-    @property
-    def python(self) -> str:
-        if self.implementation == 'cpython':
-            # The Python tag for CPython does not seem to include the flags suffixes.
-            return f'cp{self.interpreter_version}'.rstrip('dmu')
-        elif self.implementation.startswith('pypy'):
-            return f'pp{self.implementation[4:]}'
-            # XXX: FYI older PyPy version use the following model
-            #      pp{self.implementation[4]}{self.interpreter_version[2:]}
-        raise ValueError(f'Unknown implementation: {self.implementation}')
-
-    @property
-    def abi(self) -> str:
-        if self.implementation == 'cpython':
-            return f'cp{self.interpreter_version}'
-        elif self.implementation.startswith('pypy'):
-            return f'{self.implementation}_{self.interpreter_version}'
-        raise ValueError(f'Unknown implementation: {self.implementation}')
-
-    def __eq__(self, other: Any) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and other.implementation == self.implementation
-            and other.interpreter_version == self.interpreter_version
-        )
-
-    def __hash__(self) -> int:
-        return hash(str(self))
+        return f'{self.interpreter}-{self.abi}-{self.platform}'
