@@ -104,6 +104,7 @@ def test_executable_bit(sdist_executable_bit):
             continue
         assert has_execbit(mode) == expected[name], f'Wrong mode for {name}: {mode}'
 
+
 def test_generated_files(sdist_generated_files):
     sdist = tarfile.open(sdist_generated_files, 'r:gz')
     expected = {

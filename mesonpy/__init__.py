@@ -943,7 +943,7 @@ class Project():
                     # MESON_DIST_ROOT could have a different base name
                     # than the actual sdist basename, so we need to rename here
                     file = meson_dist.extractfile(member.name)
-                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]))
+                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]).as_posix())
                     tar.addfile(member, file)
                     continue
 
