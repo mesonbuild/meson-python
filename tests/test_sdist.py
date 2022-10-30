@@ -117,4 +117,3 @@ def test_generated_files(sdist_generated_files):
         'executable_bit-1.0.0/generate_version.py',
     }
     assert set(tar.name for tar in sdist.getmembers()) == expected
-
