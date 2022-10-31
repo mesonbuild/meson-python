@@ -5,7 +5,7 @@ requires = [
   'meson>=0.63.3',
   'ninja',
   'pyproject-metadata>=0.5.0',
-  'tomli>=1.0.0',
+  'tomli>=1.0.0; python_version<"3.11"',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
 
@@ -29,7 +29,7 @@ dependencies = [
   'meson>=0.63.3',
   'ninja',
   'pyproject-metadata>=0.5.0', # not a hard dependency, only needed for projects that use PEP 621 metadata
-  'tomli>=1.0.0',
+  'tomli>=1.0.0; python_version<"3.11"',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
 

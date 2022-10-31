@@ -35,7 +35,11 @@ from typing import (
     Union
 )
 
-import tomli
+
+if sys.version_info < (3, 11):
+    import tomli as tomllib
+else:
+    import tomllib
 
 import mesonpy._compat
 import mesonpy._elf
@@ -662,7 +666,7 @@ class Project():
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
 
         # load config -- PEP 621 support is optional
-        self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+        self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
         self._pep621 = 'project' in self._config
         if self.pep621:
             try:
