@@ -52,5 +52,5 @@ def test(session):
         '--cov', '--cov-config', 'setup.cfg',
         f'--cov-report=html:{htmlcov_output}',
         f'--cov-report=xml:{xmlcov_output}',
-        'tests/', *session.posargs
+        *session.posargs
     )
