@@ -94,16 +94,18 @@ jobs:
       tox_system_factors: >-
           ["debian-bullseye",
            "fedora-36",
-           "centos-stream-8",
+           "centos-stream-8-python3.9",
            "gentoo-python3.9",
            "archlinux-latest",
-           "opensuse-15.4-gcc_11",
-           "opensuse-tumbleweed",
+           "opensuse-15.4-gcc_11-python3.10",
+           "opensuse-tumbleweed-python3.10",
            "conda-forge",
            ]
       tox_packages_factors: >-
-          ["standard-develop",
+          ["minimal-develop",
            ]
+      # Extra packages to install as system packages
+      extra_sage_packages: "liblzma bzip2 libffi libpng python3 ninja_build"
       # Sage distribution packages to build
       targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python" meson_python
       # Standard setting: Test the current beta release of Sage:
@@ -114,6 +116,8 @@ jobs:
       # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
       # (this is a no-op after that ticket is merged)
       sage_trac_ticket: 34081
+      # Docker targets (stages) to tag
+      docker_targets: "with-targets"
       # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
       # 'Package "sage-docker-..." is already associated with another repository.'
       docker_push_repository: ghcr.io/${{ github.repository }}/meson-python-
