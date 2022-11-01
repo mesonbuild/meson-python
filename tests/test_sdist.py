@@ -103,3 +103,18 @@ def test_executable_bit(sdist_executable_bit):
             # this ourselves)
             continue
         assert has_execbit(mode) == expected[name], f'Wrong mode for {name}: {mode}'
+
+
+def test_generated_files(sdist_generated_files):
+    sdist = tarfile.open(sdist_generated_files, 'r:gz')
+    expected = {
+        'executable_bit-1.0.0/PKG-INFO',
+        'executable_bit-1.0.0/example-script.py',
+        'executable_bit-1.0.0/example.c',
+        'executable_bit-1.0.0/executable_module.py',
+        'executable_bit-1.0.0/meson.build',
+        'executable_bit-1.0.0/pyproject.toml',
+        'executable_bit-1.0.0/_version_meson.py',
+        'executable_bit-1.0.0/generate_version.py',
+    }
+    assert set(tar.name for tar in sdist.getmembers()) == expected

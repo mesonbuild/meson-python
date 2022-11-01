@@ -934,6 +934,19 @@ class Project():
                     continue
                 path = self._source_dir.joinpath(*member_parts[1:])
 
+                if not path.exists() and member.isfile():
+                    # File doesn't exists on the source directory but exists on
+                    # the Meson dist, so it is generated file, which we need to
+                    # include.
+                    # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
+
+                    # MESON_DIST_ROOT could have a different base name
+                    # than the actual sdist basename, so we need to rename here
+                    file = meson_dist.extractfile(member.name)
+                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]).as_posix())
+                    tar.addfile(member, file)
+                    continue
+
                 if not path.is_file():
                     continue
 
