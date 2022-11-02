@@ -108,11 +108,6 @@ def test_scipy_like(wheel_scipy_like):
     assert name.group('abi') == INTERPRETER_TAG
     assert name.group('plat') == PLATFORM_TAG
 
-    # Extra checks to doubly-ensure that there are no issues with erroneously
-    # considering a package with an extension module as pure
-    assert 'none' not in wheel_filename(artifact)
-    assert 'any' not in wheel_filename(artifact)
-
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
 def test_contents(package_library, wheel_library):
