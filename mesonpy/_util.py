@@ -47,7 +47,7 @@ def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
     mtime = int(source_date_epoch) if source_date_epoch else None
 
     file = typing.cast(IO[bytes], gzip.GzipFile(
-        os.path.join(path, path),
+        path,
         mode='wb',
         mtime=mtime,
     ))
