@@ -55,8 +55,8 @@ How does it work?
 We implement the Python build system hooks, enabling any standards compliant
 Python tool (pip_, `pypa/build`_, etc.) to build and install the project.
 
-``mesonpy`` will build a Python sdist (source distribution) or wheel (binary
-distribution) from Meson_ project.
+``meson-python`` will build a Python sdist (source distribution) or
+wheel (binary distribution) from Meson_ project.
 
 Source distribution (sdist)
 ---------------------------
@@ -126,7 +126,7 @@ Executables that link against project libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you have an executable in your project that links against a shared library
-that is shipped by your project, ``mesonpy`` will not be able to correctly
+that is shipped by your project, ``meson-python`` will not be able to correctly
 bundle it to the wheel. The executable will be included in the wheel, but it
 will not be able to find the project librar(y/ies) it links against.
 
