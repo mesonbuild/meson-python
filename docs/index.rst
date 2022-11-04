@@ -4,23 +4,23 @@
 meson-python |PyPI badge|
 *************************
 
-.. image:: https://results.pre-commit.ci/badge/github/mesonbuild/mesonpy/main.svg
-   :target: https://results.pre-commit.ci/latest/github/mesonbuild/mesonpy/main
+.. image:: https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg
+   :target: https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main
    :alt: pre-commit.ci status
 
 
-.. image:: https://github.com/mesonbuild/mesonpy/actions/workflows/checks.yml/badge.svg
-   :target: https://github.com/mesonbuild/mesonpy/actions/workflows/checks.yml
+.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml/badge.svg
+   :target: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml
    :alt: Github Action 'checks' workflow status
 
 
-.. image:: https://github.com/mesonbuild/mesonpy/actions/workflows/tests.yml/badge.svg
-   :target: https://github.com/mesonbuild/mesonpy/actions/workflows/tests.yml
+.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg
+   :target: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml
    :alt: Github Action 'tests' workflow status
 
 
-.. image:: https://codecov.io/gh/mesonbuild/mesonpy/branch/main/graph/badge.svg?token=xcb2u2YvVk
-   :target: https://codecov.io/gh/mesonbuild/mesonpy
+.. image:: https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk
+   :target: https://codecov.io/gh/mesonbuild/meson-python
    :alt: Codecov coverage status
 
 
@@ -162,8 +162,8 @@ If you really need the data to be installed where it was previously (eg.
    :caption: Project Links
    :hidden:
 
-   Source Code <https://github.com/mesonbuild/mesonpy>
-   Issue Tracker <https://github.com/mesonbuild/mesonpy/issues>
+   Source Code <https://github.com/mesonbuild/meson-python>
+   Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
 
 
 .. |PyPI badge| image:: https://badge.fury.io/py/meson-python.svg
