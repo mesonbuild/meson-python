@@ -37,8 +37,8 @@ test = [
 [project.urls]
 homepage = 'https://example.com'
 documentation = 'https://readthedocs.org'
-repository = 'https://github.com/mesonbuild/mesonpy'
-changelog = 'https://github.com/mesonbuild/mesonpy/blob/master/CHANGELOG.md'
+repository = 'https://github.com/mesonbuild/meson-python'
+changelog = 'https://github.com/mesonbuild/meson-python/blob/master/CHANGELOG.rst'
 
 [project.scripts]
 example-cli = 'example:cli'
