@@ -2,11 +2,12 @@ name: tests
 
 on:
   push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+      - release-*
+  workflow_dispatch:
+    # Allow to run manually
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -232,8 +233,26 @@ jobs:
           env_vars: PYTHON
           name: homebrew-${{ matrix.python }}
 
+  mypy:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_COLOR: true
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: Install mypy
+        run: python -m pip --disable-pip-version-check install mypy==0.981
+
+      - name: Run mypy
+        run: mypy -p mesonpy
+
   tests-pass:
-    needs: [test, cygwin, pyston, homebrew]
+    needs: [test, cygwin, pyston, homebrew, mypy]
     runs-on: ubuntu-latest
     steps:
       - run: echo "All jobs passed"
