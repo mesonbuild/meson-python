@@ -6,6 +6,13 @@ on:
     branches:
       - main
       - release-*
+    paths-ignore:
+      # This is spelt like this to do not ignore the docs/examples/ folder.
+      - docs/*
+      - docs/usage/*
+      - CHANGELOG.rst
+      - LICENSE
+      - README.md
   workflow_dispatch:
     # Allow to run manually
 
