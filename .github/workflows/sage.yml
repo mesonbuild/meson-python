@@ -1,4 +1,4 @@
-name: Run Sage CI for Linux
+name: sage
 
 ## This GitHub Actions workflow provides:
 ##
@@ -35,14 +35,18 @@ name: Run Sage CI for Linux
 ## systems/configurations.
 
 on:
+  push:
   pull_request:
     branches:
       - main
       - release-*
-  push:
-    branches:
-      - main
-      - release-*
+    paths-ignore:
+      # This is spelt like this to do not ignore the docs/examples/ folder.
+      - docs/*
+      - docs/usage/*
+      - CHANGELOG.rst
+      - LICENSE
+      - README.md
   workflow_dispatch:
     # Allow to run manually
 
@@ -52,10 +56,9 @@ concurrency:
 
 env:
   # Ubuntu packages to install so that the project's can build an sdist
-  DIST_PREREQ:      python3-pip
+  DIST_PREREQ: python3-pip
   # Name of this project in the Sage distribution
-  SPKG:             meson_python
-  ## REMOVE_PATCHES:   "*"
+  SPKG: meson_python
 
 jobs:
 
