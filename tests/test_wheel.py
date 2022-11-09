@@ -16,14 +16,6 @@ import mesonpy._elf
 from .conftest import venv_supported
 
 
-if sys.version_info < (3, 8):
-    import importlib_metadata
-else:
-    import importlib.metadata as importlib_metadata
-
-meson_version = importlib_metadata.version('meson')
-
-
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
@@ -141,7 +133,6 @@ def test_contents(package_library, wheel_library):
 
 
 @pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
-@pytest.mark.xfail(meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
@@ -180,7 +171,6 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-@pytest.mark.xfail(reason='Meson bug')
 def test_interpreter_abi_tag(wheel_purelib_and_platlib):
     expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
     assert wheel_purelib_and_platlib.name == expected
