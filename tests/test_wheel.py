@@ -171,11 +171,6 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-def test_interpreter_abi_tag(wheel_purelib_and_platlib):
-    expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
-    assert wheel_purelib_and_platlib.name == expected
-
-
 @pytest.mark.skipif(not venv_supported, reason='Cannot setup venv')
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
