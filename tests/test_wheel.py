@@ -140,8 +140,7 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
-@pytest.mark.skipif(win_py37,
-                    reason='Somehow pkg-config went missing within Nox env, see gh-145')
+@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 @pytest.mark.xfail(meson_version < '0.63.99', reason='Meson bug')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
