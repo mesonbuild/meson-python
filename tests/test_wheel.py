@@ -187,11 +187,8 @@ def test_interpreter_abi_tag(wheel_purelib_and_platlib):
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 @pytest.mark.xfail(
-    (
-        (sys.version_info >= (3, 9) or platform.python_implementation() == 'PyPy')
-        and os.environ.get('GITHUB_ACTIONS') == 'true'
-    ),
-    reason='github actions',
+    platform.python_implementation() == 'PyPy',
+    reason='venv test fixture does not work with PyPy',
     strict=True,
 )
 def test_local_lib(virtual_env, wheel_link_against_local_lib):
