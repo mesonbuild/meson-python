@@ -8,13 +8,11 @@ example_lib = shared_library(
     install: true,
 )
 
-py_dep = dependency('python3')
 py_mod = import('python')
 py = py_mod.find_installation()
 
 py.extension_module(
     'example', 'examplemod.c',
-    dependencies: py_dep,
     link_with: example_lib,
     install: true,
 )
