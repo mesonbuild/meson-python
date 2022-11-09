@@ -214,14 +214,14 @@ def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
     assert name.group('pyver') == PYTHON_TAG
     assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == PLATFORM_TAG.replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
 
 
 def test_detect_wheel_tag_script(wheel_executable):
     name = wheel.wheelfile.WheelFile(wheel_executable).parsed_filename
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
-    assert name.group('plat') == PLATFORM_TAG.replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
