@@ -13,6 +13,8 @@ import wheel.wheelfile
 
 import mesonpy._elf
 
+from .conftest import venv_supported
+
 
 if sys.version_info < (3, 8):
     import importlib_metadata
@@ -185,16 +187,14 @@ def test_interpreter_abi_tag(wheel_purelib_and_platlib):
     assert wheel_purelib_and_platlib.name == expected
 
 
+@pytest.mark.skipif(not venv_supported, reason='Cannot setup venv')
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-@pytest.mark.xfail(
-    platform.python_implementation() == 'PyPy',
-    reason='venv test fixture does not work with PyPy',
-    strict=True,
-)
-def test_local_lib(virtual_env, wheel_link_against_local_lib):
-    subprocess.check_call([virtual_env, '-m', 'pip', '--disable-pip-version-check', 'install', wheel_link_against_local_lib])
+def test_local_lib(venv, wheel_link_against_local_lib):
+    subprocess.check_call([
+        venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel_link_against_local_lib
+    ])
     assert subprocess.check_output([
-        virtual_env, '-c', 'import example; print(example.example_sum(1, 2))'
+        venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'
     ]).decode().strip() == '3'
 
 
