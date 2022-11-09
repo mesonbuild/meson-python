@@ -24,9 +24,8 @@ def test_build_and_import(venv, tmp_dir_session):
         subprocess.check_call([
             venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel
         ])
-        output, status = subprocess.check_output([
-            venv.executable, '-c', f'import spam; print(spam.system("ls {wheel}"))'
-        ]).decode().strip().split('\n')
+        output = subprocess.check_output([
+            venv.executable, '-c', 'import spam; print(spam.add(1, 2))'
+        ])
 
-        assert output == str(wheel)
-        assert int(status) == 0
+        assert int(output) == 3
