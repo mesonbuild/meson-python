@@ -4,9 +4,11 @@ import contextlib
 import os
 import os.path
 import pathlib
+import platform
 import shutil
 import tempfile
-import venv
+
+from venv import EnvBuilder
 
 import git
 import pytest
@@ -58,19 +60,33 @@ def tmp_dir_session(tmpdir_factory):
     ))
 
 
-@pytest.fixture()
-def virtual_env():
-    path = pathlib.Path(tempfile.mkdtemp(prefix='mesonpy-test-venv-'))
+class VEnv(EnvBuilder):
+    def __init__(self, env_dir):
+        super().__init__(with_pip=True)
+        self.create(env_dir)
 
-    venv.create(path, with_pip=True)
+    def ensure_directories(self, env_dir):
+        context = super().ensure_directories(env_dir)
+        # Store the path to the venv Python interpreter. There does
+        # not seem to be a way to do this without subclassing.
+        self.executable = context.env_exe
+        return context
+
+
+@pytest.fixture()
+def venv():
+    path = pathlib.Path(tempfile.mkdtemp(prefix='mesonpy-test-venv-'))
+    venv = VEnv(path)
     try:
-        # FIXME: windows
-        yield path / 'bin' / 'python'
+        yield venv
     finally:
-        try:
-            shutil.rmtree(path)
-        except PermissionError:  # pragma: no cover
-            pass  # this sometimes fails on windows :/
+        shutil.rmtree(path)
+
+
+# On Linux and macOS the venv creation fails when pip is installed in the newly created environment:
+# subprocess.check_output(['{venv}/bin/python',  '-Im', 'ensurepip', '--upgrade', '--default-pip'], ...)
+# fails with "ModuleNotFoundError: No module named 'encodings'"
+venv_supported = platform.python_implementation() != 'PyPy' or platform.system() not in {'Linux', 'Darwin'}
 
 
 def generate_package_fixture(package):
