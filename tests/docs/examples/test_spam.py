@@ -1,29 +1,32 @@
-import platform
 import subprocess
 import sys
 
 import pytest
 
+import mesonpy
+
+from ...conftest import venv_supported
 from .conftest import build_project_wheel, examples_dir
 
 
-# This test fails on Ubuntu and MacOS for pypy-3.8;
-# see https://github.com/mesonbuild/meson-python/pull/136 for more information.
-@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-@pytest.mark.skipif(sys.version_info < (3, 8), reason='Example only supports >=3.8')
+@pytest.mark.skipif(not venv_supported, reason='Cannot setup venv')
 def test_build_and_import(venv, tmp_dir_session):
     """Test that the wheel for the spam example builds, installs, and imports."""
-    wheel = build_project_wheel(
-        package=examples_dir / 'spam',
-        outdir=tmp_dir_session
-    )
 
-    subprocess.check_call([
-        venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel
-    ])
-    output, status = subprocess.check_output([
-        venv.executable, '-c', f'import spam; print(spam.system("ls {wheel}"))'
-    ]).decode().strip().split('\n')
+    if sys.version_info < (3, 8):
+        # The test project requires Python >= 3.8.
+        with pytest.raises(mesonpy.MesonBuilderError, match=r'Unsupported Python version `3.7.\d+`'):
+            build_project_wheel(package=examples_dir / 'spam', outdir=tmp_dir_session)
 
-    assert output == str(wheel)
-    assert int(status) == 0
+    else:
+        wheel = build_project_wheel(package=examples_dir / 'spam', outdir=tmp_dir_session)
+
+        subprocess.check_call([
+            venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel
+        ])
+        output, status = subprocess.check_output([
+            venv.executable, '-c', f'import spam; print(spam.system("ls {wheel}"))'
+        ]).decode().strip().split('\n')
+
+        assert output == str(wheel)
+        assert int(status) == 0
