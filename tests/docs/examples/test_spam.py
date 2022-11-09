@@ -19,7 +19,7 @@ def test_build_and_import(venv, tmp_dir_session):
     )
 
     subprocess.check_call([
-        venv.executable, '-m', 'pip', '-qqq', 'install', wheel
+        venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel
     ])
     output, status = subprocess.check_output([
         venv.executable, '-c', f'import spam; print(spam.system("ls {wheel}"))'
