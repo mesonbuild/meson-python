@@ -86,8 +86,9 @@ def venv():
 # On Linux and macOS the venv creation fails when pip is installed in the newly created environment:
 # subprocess.check_output(['{venv}/bin/python',  '-Im', 'ensurepip', '--upgrade', '--default-pip'], ...)
 # fails with "ModuleNotFoundError: No module named 'encodings'"
-venv_supported = platform.python_implementation() != 'PyPy' or platform.system() not in {'Linux', 'Darwin'}
+# venv_supported = platform.python_implementation() != 'PyPy' or platform.system() not in {'Linux', 'Darwin'}
 
+venv_supported = True
 
 def generate_package_fixture(package):
     @pytest.fixture
