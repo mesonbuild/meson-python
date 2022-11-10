@@ -5,11 +5,9 @@ import pytest
 
 import mesonpy
 
-from ...conftest import venv_supported
 from .conftest import build_project_wheel, examples_dir
 
 
-@pytest.mark.skipif(not venv_supported, reason='Cannot setup venv')
 def test_build_and_import(venv, tmp_dir_session):
     """Test that the wheel for the spam example builds, installs, and imports."""
 
