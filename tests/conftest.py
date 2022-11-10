@@ -4,7 +4,6 @@ import contextlib
 import os
 import os.path
 import pathlib
-import platform
 import shutil
 import tempfile
 
@@ -81,12 +80,6 @@ def venv():
         yield venv
     finally:
         shutil.rmtree(path)
-
-
-# On Linux and macOS the venv creation fails when pip is installed in the newly created environment:
-# subprocess.check_output(['{venv}/bin/python',  '-Im', 'ensurepip', '--upgrade', '--default-pip'], ...)
-# fails with "ModuleNotFoundError: No module named 'encodings'"
-venv_supported = platform.python_implementation() != 'PyPy' or platform.system() not in {'Linux', 'Darwin'}
 
 
 def generate_package_fixture(package):

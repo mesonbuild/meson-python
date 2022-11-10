@@ -13,8 +13,6 @@ import wheel.wheelfile
 
 import mesonpy._elf
 
-from .conftest import venv_supported
-
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
@@ -171,7 +169,6 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-@pytest.mark.skipif(not venv_supported, reason='Cannot setup venv')
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
     subprocess.check_call([
