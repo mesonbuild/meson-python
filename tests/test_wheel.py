@@ -19,9 +19,9 @@ EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
 _tag = next(packaging.tags.sys_tags())
-INTERPRETER_TAG = _tag.abi
-PYTHON_TAG = _tag.interpreter
-PLATFORM_TAG = mesonpy._adjust_manylinux_tag(_tag.platform)
+ABI = _tag.abi
+INTERPRETER = _tag.interpreter
+PLATFORM = mesonpy._adjust_manylinux_tag(_tag.platform)
 
 if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
@@ -79,9 +79,9 @@ def test_scipy_like(wheel_scipy_like):
         assert wheel_contents(artifact) == expecting
 
     name = artifact.parsed_filename
-    assert name.group('pyver') == PYTHON_TAG
-    assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == PLATFORM_TAG
+    assert name.group('pyver') == INTERPRETER
+    assert name.group('abi') == ABI
+    assert name.group('plat') == PLATFORM
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
@@ -177,16 +177,16 @@ def test_executable_bit(wheel_executable_bit):
 
 def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
-    assert name.group('pyver') == PYTHON_TAG
-    assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == PLATFORM_TAG
+    assert name.group('pyver') == INTERPRETER
+    assert name.group('abi') == ABI
+    assert name.group('plat') == PLATFORM
 
 
 def test_detect_wheel_tag_script(wheel_executable):
     name = wheel.wheelfile.WheelFile(wheel_executable).parsed_filename
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
-    assert name.group('plat') == PLATFORM_TAG
+    assert name.group('plat') == PLATFORM
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
