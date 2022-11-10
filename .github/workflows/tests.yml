@@ -42,33 +42,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Pick environment to run
-        run: |
-          import platform
-          import os
-          import sys
-          if platform.python_implementation() == 'PyPy':
-              base = f'pypy{sys.version_info.major}.{sys.version_info.minor}'
-          else:
-              base = f'{sys.version_info.major}.{sys.version_info.minor}'
-          env = f'BASE={base}\n'
-          print(f'Picked:\n{env}for {sys.version}')
-          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as file:
-              file.write(env)
-        shell: python
-
-      - name: Set up Python for nox
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-
-      - name: Install nox
-        run: |
-            python -m pip install nox
-            nox --version
+      - name: Install
+        run: python -m pip --disable-pip-version-check install .[test]
 
       - name: Run tests
-        run: nox -v -s test-${{ env.BASE }}
+        run: >-
+          python -m pytest --showlocals -vv --cov
+          --cov-config setup.cfg
+          --cov-report=xml:coverage-${{ matrix.python }}.xml
 
       - name: Send coverage report
         uses: codecov/codecov-action@v1
