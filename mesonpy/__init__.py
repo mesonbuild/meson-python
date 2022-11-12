@@ -104,7 +104,7 @@ _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COL
 
 
 _EXTENSION_SUFFIXES = frozenset(importlib.machinery.EXTENSION_SUFFIXES)
-_EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd)$')
+_EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
 
@@ -289,20 +289,22 @@ class _WheelBuilder():
         """Determine stabe ABI compatibility.
 
         Examine all files installed in {platlib} that look like
-        extension modules (extension .pyd on Windows and .so on other
-        platforms) and, if they all share the same PEP 3149 filename
-        stable ABI tag, return it.
+        extension modules (extension .pyd on Windows, .dll on Cygwin,
+        and .so on other platforms) and, if they all share the same
+        PEP 3149 filename stable ABI tag, return it.
 
         All files that look like extension modules are verified to
         have a file name compatibel with what is expected by the
         Python interpreter. An exception is raised otherwise.
 
         Other files are ignored.
+
         """
+        soext = sorted(_EXTENSION_SUFFIXES, key=len)[0]
         abis = []
 
         for path, src in self._wheel_files['platlib']:
-            if os.name == 'nt' and path.suffix == '.pyd' or path.suffix == '.so':
+            if path.suffix == soext:
                 match = re.match(r'^[^.]+(.*)$', path.name)
                 assert match is not None
                 suffix = match.group(1)

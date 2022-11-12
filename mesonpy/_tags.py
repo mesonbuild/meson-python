@@ -111,7 +111,7 @@ def get_platform_tag() -> str:
             return 'linux_i686'
         if platform == 'linux-aarch64':
             return 'linux_armv7l'
-    return platform.replace('-', '_')
+    return platform.replace('-', '_').replace('.', '_')
 
 
 class Tag:
