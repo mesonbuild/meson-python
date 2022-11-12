@@ -98,3 +98,51 @@ jobs:
           flags: tests
           env_vars: PYTHON
           name: pyston
+
+  homebrew:
+    runs-on: macos-latest
+    env:
+      FORCE_COLOR: true
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+          - '3.11'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install homebrew Python
+        run: |
+          brew reinstall python@${{ matrix.python }} || true
+          brew link --overwrite python@${{ matrix.python }}
+          echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+
+      - run: |
+          echo $PATH
+          command -v python
+          python --version
+
+      - name: Install
+        run: python -m pip --disable-pip-version-check install .[test]
+
+      - name: Run tests
+        run: >-
+          python -m pytest --showlocals -vv --cov
+          --cov-config setup.cfg
+          --cov-report=xml:coverage-homebrew-${{ matrix.python }}.xml
+
+      - name: Send coverage report
+        uses: codecov/codecov-action@v1
+        if: ${{ always() }}
+        env:
+          PYTHON: homebrew-${{ matrix.python }}
+        with:
+          flags: tests
+          env_vars: PYTHON
+          name: homebrew-${{ matrix.python }}
