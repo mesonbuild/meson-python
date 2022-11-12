@@ -60,3 +60,41 @@ jobs:
           flags: tests
           env_vars: PYTHON
           name: ${{ matrix.python }}
+
+  pyston:
+    runs-on: ubuntu-20.04
+    env:
+      FORCE_COLOR: true
+    strategy:
+      fail-fast: false
+      matrix:
+        python:
+          - '3.8'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install pyston
+        run: |
+          wget https://github.com/pyston/pyston/releases/download/pyston_2.3.5/pyston_2.3.5_20.04_amd64.deb
+          sudo apt install $(pwd)/pyston_2.3.5_20.04_amd64.deb
+
+      - name: Install
+        run: pyston -m pip --disable-pip-version-check install .[test]
+
+      - name: Run tests
+        run: >-
+          pyston -m pytest --showlocals -vv --cov
+          --cov-config setup.cfg
+          --cov-report=xml:coverage-pyston.xml
+
+      - name: Send coverage report
+        uses: codecov/codecov-action@v1
+        if: ${{ always() }}
+        env:
+          PYTHON: pyston
+        with:
+          flags: tests
+          env_vars: PYTHON
+          name: pyston
