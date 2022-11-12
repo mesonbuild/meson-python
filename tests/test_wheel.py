@@ -27,15 +27,6 @@ ABI = tag.abi
 INTERPRETER = tag.interpreter
 PLATFORM = adjust_packaging_platform_tag(tag.platform)
 
-if platform.system() == 'Linux':
-    SHARED_LIB_EXT = 'so'
-elif platform.system() == 'Darwin':
-    SHARED_LIB_EXT = 'dylib'
-elif platform.system() == 'Windows':
-    SHARED_LIB_EXT = 'pyd'
-else:
-    raise NotImplementedError(f'Unknown system: {platform.system()}')
-
 
 def wheel_contents(artifact):
     # Sometimes directories have entries, sometimes not, so we filter them out.
@@ -93,15 +84,15 @@ def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
     for name, regex in zip(sorted(wheel_contents(artifact)), [
-        re.escape(f'.library.mesonpy.libs/libexample.{SHARED_LIB_EXT}'),
+        re.escape('.library.mesonpy.libs/libexample.so'),
         re.escape('library-1.0.0.data/headers/examplelib.h'),
         re.escape('library-1.0.0.data/scripts/example'),
         re.escape('library-1.0.0.dist-info/METADATA'),
         re.escape('library-1.0.0.dist-info/RECORD'),
         re.escape('library-1.0.0.dist-info/WHEEL'),
-        rf'library\.libs/libexample.*\.{SHARED_LIB_EXT}',
+        re.escape('library.libs/libexample.so'),
     ]):
-        assert re.match(regex, name), f'`{name}` does not match `{regex}`'
+        assert re.match(regex, name), f'{name!r} does not match {regex!r}'
 
 
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
