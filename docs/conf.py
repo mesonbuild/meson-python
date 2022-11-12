@@ -57,7 +57,7 @@ default_role = 'any'
 # a list of builtin themes.
 #
 html_theme = 'furo'
-html_title = f'mesonpy {version}'
+html_title = f'meson-python {version}'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

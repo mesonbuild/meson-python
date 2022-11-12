@@ -3,6 +3,24 @@ Changelog
 +++++++++
 
 
+0.10.0 (05-10-2022)
+===================
+
+- Ignore the macOS minor version on >=11, to match the behavior with pypa/packaging
+
+
+0.9.0 (29-09-2022)
+==================
+
+- More fixes on ABI tag detection
+- Fix incorrect tag on 32-bit Python running on a x86_64 host
+- Fix sdist permissions
+- Fix incorrect PyPy tags
+- Fix ``install_subdirs`` not being included in wheels
+- Take ``MACOSX_DEPLOYMENT_TARGET`` into account for the platform tag
+- Don't set the rpath on binaries if unneeded
+
+
 0.8.1 (28-07-2022)
 ==================
 

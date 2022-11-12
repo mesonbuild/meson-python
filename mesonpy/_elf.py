@@ -17,13 +17,14 @@ class ELF:
         self._needed: Optional[Collection[str]] = None
 
     def _patchelf(self, *args: str) -> str:
-        return subprocess.check_output(['patchelf', *args, self._path]).decode()
+        return subprocess.check_output(['patchelf', *args, self._path], stderr=subprocess.STDOUT).decode()
 
     @property
     def rpath(self) -> Collection[str]:
-        if not self._rpath:
-            self._rpath = self._patchelf('--print-rpath').strip().split(';')
-        return self._rpath
+        if self._rpath is None:
+            rpath = self._patchelf('--print-rpath').strip()
+            self._rpath = rpath.split(':') if rpath else []
+        return frozenset(self._rpath)
 
     @rpath.setter
     def rpath(self, value: Collection[str]) -> None:

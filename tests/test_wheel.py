@@ -6,22 +6,12 @@ import re
 import subprocess
 import sys
 import sysconfig
+import textwrap
 
 import pytest
 import wheel.wheelfile
 
-
-try:
-    import importlib.metadata  # not available in Python 3.7
-
-    # Note, this may be None due to an importlib bug, handled in `finally`
-    try:
-        meson_version = importlib.metadata.version('meson')
-    except importlib.metadata.PackageNotFoundError:
-        meson_version = None
-except ModuleNotFoundError:
-    # Meson does not have to be installed in the same Python environment
-    meson_version = None
+import mesonpy._elf
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
@@ -47,7 +37,16 @@ elif python_implementation == 'PyPy':
 else:
     raise NotImplementedError(f'Unknown implementation: {python_implementation}')
 
-PLATFORM_TAG = sysconfig.get_platform().replace('-', '_').replace('.', '_')
+platform_ = sysconfig.get_platform()
+if platform.system() == 'Darwin':
+    parts = platform_.split('-')
+    parts[1] = platform.mac_ver()[0]
+    if parts[1] >= '11':
+        parts[1] = parts[1].split('.')[0]
+    if parts[1] in ('11', '12'):
+        parts[1] += '.0'
+    platform_ = '-'.join(parts)
+PLATFORM_TAG = platform_.replace('-', '_').replace('.', '_')
 
 if platform.system() == 'Linux':
     SHARED_LIB_EXT = 'so'
@@ -92,16 +91,9 @@ def test_scipy_like(wheel_scipy_like):
         'mypkg/__config__.py',
         f'mypkg/extmod{EXT_SUFFIX}',
         f'mypkg/cy_extmod{EXT_SUFFIX}',
+        'mypkg/submod/__init__.py',
+        'mypkg/submod/unknown_filetype.npq',
     }
-    # Meson master has a fix for `install_subdir` that is not present in
-    # 0.63.2: https://github.com/mesonbuild/meson/pull/10765
-    # A backport of the fix may land in 0.63.3, if so then remove the version
-    # check here and add the two expected files unconditionally.
-    if meson_version and meson_version >= '0.63.99':
-        expecting |= {
-            'mypkg/submod/__init__.py',
-            'mypkg/submod/unknown_filetype.npq',
-        }
     if os.name == 'nt' or sys.platform == 'cygwin':
         # Currently Meson is installing `.dll.a` (import libraries) next to
         # `.pyd` extension modules. Those are very small, so it's not a major
@@ -115,7 +107,7 @@ def test_scipy_like(wheel_scipy_like):
     name = artifact.parsed_filename
     assert name.group('pyver') == PYTHON_TAG
     assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
 
     # Extra checks to doubly-ensure that there are no issues with erroneously
     # considering a package with an extension module as pure
@@ -139,9 +131,7 @@ def test_contents(package_library, wheel_library):
         assert re.match(regex, name), f'`{name}` does not match `{regex}`'
 
 
-@pytest.mark.skipif(win_py37,
-                    reason='Somehow pkg-config went missing within Nox env, see gh-145')
-@pytest.mark.xfail(meson_version and meson_version < '0.63.99', reason='Meson bug')
+@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
@@ -182,26 +172,14 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-@pytest.mark.xfail(reason='Meson bug')
-def test_interpreter_abi_tag(wheel_purelib_and_platlib):
-    expected = f'purelib_and_platlib-1.0.0-{PYTHON_TAG}-{INTERPRETER_TAG}-{PLATFORM_TAG}.whl'
-    assert wheel_purelib_and_platlib.name == expected
-
-
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-@pytest.mark.xfail(
-    (
-        (sys.version_info >= (3, 9) or platform.python_implementation() == 'PyPy')
-        and os.environ.get('GITHUB_ACTIONS') == 'true'
-    ),
-    reason='github actions',
-    strict=True,
-)
-def test_local_lib(virtual_env, wheel_link_against_local_lib):
-    subprocess.check_call([virtual_env, '-m', 'pip', 'install', wheel_link_against_local_lib])
-    subprocess.check_output([
-        virtual_env, '-c', 'import example; print(example.example_sum(1, 2))'
-    ]).decode() == '3'
+def test_local_lib(venv, wheel_link_against_local_lib):
+    subprocess.check_call([
+        venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel_link_against_local_lib
+    ])
+    assert subprocess.check_output([
+        venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'
+    ]).decode().strip() == '3'
 
 
 def test_contents_license_file(wheel_license_file):
@@ -232,17 +210,54 @@ def test_executable_bit(wheel_executable_bit):
             assert not executable_bit, f'{info.filename} should not have the executable bit set!'
 
 
-@pytest.mark.skipif(os.name == 'nt',
-                    reason='Wheel build fixture in conftest.py broken on Windows')
+@pytest.mark.skipif(win_py37, reason='An issue with missing file extension')
 def test_detect_wheel_tag_module(wheel_purelib_and_platlib):
     name = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib).parsed_filename
     assert name.group('pyver') == PYTHON_TAG
     assert name.group('abi') == INTERPRETER_TAG
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
 
 
 def test_detect_wheel_tag_script(wheel_executable):
     name = wheel.wheelfile.WheelFile(wheel_executable).parsed_filename
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
-    assert name.group('plat') == sysconfig.get_platform().replace('-', '_').replace('.', '_')
+    assert name.group('plat') == PLATFORM_TAG
+
+
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+def test_rpath(wheel_link_against_local_lib, tmpdir):
+    artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
+    artifact.extractall(tmpdir)
+
+    elf = mesonpy._elf.ELF(tmpdir / f'example{EXT_SUFFIX}')
+    assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+
+
+@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+def test_uneeded_rpath(wheel_purelib_and_platlib, tmpdir):
+    artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
+    artifact.extractall(tmpdir)
+
+    elf = mesonpy._elf.ELF(tmpdir / f'plat{EXT_SUFFIX}')
+    if elf.rpath:
+        # elf.rpath is a frozenset, so iterate over it. An rpath may be
+        # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
+        for rpath in elf.rpath:
+            assert 'mesonpy.libs' not in rpath
+
+
+def test_entrypoints(wheel_full_metadata):
+    artifact = wheel.wheelfile.WheelFile(wheel_full_metadata)
+
+    with artifact.open('full_metadata-1.2.3.dist-info/entry_points.txt') as f:
+        assert f.read().decode().strip() == textwrap.dedent('''
+            [something.custom]
+            example = example:custom
+
+            [console_scripts]
+            example-cli = example:cli
+
+            [gui_scripts]
+            example-gui = example:gui
+        ''').strip()

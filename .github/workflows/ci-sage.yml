@@ -77,6 +77,7 @@ jobs:
           && mkdir -p upstream && cp build/pkgs/${{ env.SPKG }}/src/dist/*.tar.gz upstream/${{ env.SPKG }}-git.tar.gz \
           && echo "sage-package create ${{ env.SPKG }} --version git --tarball ${{ env.SPKG }}-git.tar.gz --type=standard" > upstream/update-pkgs.sh \
           && if [ -n "${{ env.REMOVE_PATCHES }}" ]; then echo "(cd ../build/pkgs/${{ env.SPKG }}/patches && rm -f ${{ env.REMOVE_PATCHES }}; :)" >> upstream/update-pkgs.sh; fi \
+          && echo "sed -i.bak \"/pushdef.*LT_VERSION/s/3[0-9.]*/4/\" ../build/pkgs/python3/spkg-configure.m4" >> upstream/update-pkgs.sh \
           && ls -l upstream/
       - uses: actions/upload-artifact@v2
         with:
@@ -94,17 +95,20 @@ jobs:
       tox_system_factors: >-
           ["debian-bullseye",
            "fedora-36",
-           "centos-stream-8",
+           "centos-stream-8-python3.9",
            "gentoo-python3.9",
            "archlinux-latest",
-           "opensuse-15.4",
+           "opensuse-15.4-gcc_11-python3.10",
+           "opensuse-tumbleweed-python3.10",
            "conda-forge",
            ]
       tox_packages_factors: >-
-          ["standard",
+          ["minimal-develop",
            ]
+      # Extra packages to install as system packages
+      extra_sage_packages: "liblzma bzip2 libffi libpng python3 ninja_build"
       # Sage distribution packages to build
-      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python,scipy" scipy
+      targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python" meson_python
       # Standard setting: Test the current beta release of Sage:
       sage_repo: sagemath/sage
       sage_ref: develop
@@ -113,6 +117,8 @@ jobs:
       # Temporarily test on the branch from sage ticket https://trac.sagemath.org/ticket/34081 (scipy 1.9.x)
       # (this is a no-op after that ticket is merged)
       sage_trac_ticket: 34081
+      # Docker targets (stages) to tag
+      docker_targets: "with-targets"
       # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
       # 'Package "sage-docker-..." is already associated with another repository.'
       docker_push_repository: ghcr.io/${{ github.repository }}/meson-python-

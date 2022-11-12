@@ -74,14 +74,47 @@ def test_contents_unstaged(package_pure, tmpdir):
 def test_executable_bit(sdist_executable_bit):
     sdist = tarfile.open(sdist_executable_bit, 'r:gz')
 
-    assert set((tar.name, tar.mode) for tar in sdist.getmembers()) == {
-        ('executable_bit-1.0.0/PKG-INFO', 420),
-        # We match the executable bit on everything
-        # but PKG-INFO(we create this ourselves)
-        # Note: File perms are in octal, but Python returns it in int
-        ('executable_bit-1.0.0/example-script.py', int('755', 8)),
-        ('executable_bit-1.0.0/example.c', int('644', 8)),
-        ('executable_bit-1.0.0/executable_module.py', int('755', 8)),
-        ('executable_bit-1.0.0/meson.build', int('644', 8)),
-        ('executable_bit-1.0.0/pyproject.toml', int('644', 8)),
+    expected = {
+        'executable_bit-1.0.0/PKG-INFO': None,
+        'executable_bit-1.0.0/example-script.py': True,
+        'executable_bit-1.0.0/example.c': False,
+        'executable_bit-1.0.0/executable_module.py': True,
+        'executable_bit-1.0.0/meson.build': False,
+        'executable_bit-1.0.0/pyproject.toml': False,
     }
+    assert set(tar.name for tar in sdist.getmembers()) == set(expected.keys())
+
+    def has_execbit(mode):
+        # Note: File perms are in octal, but Python returns it in int
+        # We check multiple modes, because Docker may set group permissions to
+        # match owner permissions
+        modes_execbit = 0o755, 0o775
+        modes_nonexecbit = 0o644, 0o664
+        if mode in modes_execbit:
+            return True
+        elif mode in modes_nonexecbit:
+            return False
+        else:
+            raise RuntimeError(f'Unknown file permissions mode: {mode}')
+
+    for name, mode in set((tar.name, tar.mode) for tar in sdist.getmembers()):
+        if 'PKG-INFO' in name:
+            # We match the executable bit on everything but PKG-INFO (we create
+            # this ourselves)
+            continue
+        assert has_execbit(mode) == expected[name], f'Wrong mode for {name}: {mode}'
+
+
+def test_generated_files(sdist_generated_files):
+    sdist = tarfile.open(sdist_generated_files, 'r:gz')
+    expected = {
+        'executable_bit-1.0.0/PKG-INFO',
+        'executable_bit-1.0.0/example-script.py',
+        'executable_bit-1.0.0/example.c',
+        'executable_bit-1.0.0/executable_module.py',
+        'executable_bit-1.0.0/meson.build',
+        'executable_bit-1.0.0/pyproject.toml',
+        'executable_bit-1.0.0/_version_meson.py',
+        'executable_bit-1.0.0/generate_version.py',
+    }
+    assert set(tar.name for tar in sdist.getmembers()) == expected

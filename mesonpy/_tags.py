@@ -79,11 +79,7 @@ class InterpreterTag(Tag):
         self._additional_information = parts[2:]
 
         if self.implementation != 'cpython' and not self.implementation.startswith('pypy'):
-            raise NotImplementedError(
-                f'Unknown Python implementation: {self.implementation}. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
-                'and include information about the Python distribution you are using.'
-            )
+            raise NotImplementedError(f'Unknown Python implementation: {self.implementation}.')
 
     @property
     def implementation(self) -> str:

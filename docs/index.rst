@@ -4,23 +4,23 @@
 meson-python |PyPI badge|
 *************************
 
-.. image:: https://results.pre-commit.ci/badge/github/FFY00/mesonpy/main.svg
-   :target: https://results.pre-commit.ci/latest/github/FFY00/mesonpy/main
+.. image:: https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg
+   :target: https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main
    :alt: pre-commit.ci status
 
 
-.. image:: https://github.com/FFY00/mesonpy/actions/workflows/checks.yml/badge.svg
-   :target: https://github.com/FFY00/mesonpy/actions/workflows/checks.yml
+.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml/badge.svg
+   :target: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml
    :alt: Github Action 'checks' workflow status
 
 
-.. image:: https://github.com/FFY00/mesonpy/actions/workflows/tests.yml/badge.svg
-   :target: https://github.com/FFY00/mesonpy/actions/workflows/tests.yml
+.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg
+   :target: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml
    :alt: Github Action 'tests' workflow status
 
 
-.. image:: https://codecov.io/gh/FFY00/mesonpy/branch/main/graph/badge.svg?token=xcb2u2YvVk
-   :target: https://codecov.io/gh/FFY00/mesonpy
+.. image:: https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk
+   :target: https://codecov.io/gh/mesonbuild/meson-python
    :alt: Codecov coverage status
 
 
@@ -55,8 +55,8 @@ How does it work?
 We implement the Python build system hooks, enabling any standards compliant
 Python tool (pip_, `pypa/build`_, etc.) to build and install the project.
 
-``mesonpy`` will build a Python sdist (source distribution) or wheel (binary
-distribution) from Meson_ project.
+``meson-python`` will build a Python sdist (source distribution) or
+wheel (binary distribution) from Meson_ project.
 
 Source distribution (sdist)
 ---------------------------
@@ -126,7 +126,7 @@ Executables that link against project libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you have an executable in your project that links against a shared library
-that is shipped by your project, ``mesonpy`` will not be able to correctly
+that is shipped by your project, ``meson-python`` will not be able to correctly
 bundle it to the wheel. The executable will be included in the wheel, but it
 will not be able to find the project librar(y/ies) it links against.
 
@@ -148,6 +148,7 @@ If you really need the data to be installed where it was previously (eg.
 
    usage/start
    usage/build-options
+   usage/specific-behaviors
 
 
 .. toctree::
@@ -161,8 +162,8 @@ If you really need the data to be installed where it was previously (eg.
    :caption: Project Links
    :hidden:
 
-   Source Code <https://github.com/FFY00/mesonpy>
-   Issue Tracker <https://github.com/FFY00/mesonpy/issues>
+   Source Code <https://github.com/mesonbuild/meson-python>
+   Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
 
 
 .. |PyPI badge| image:: https://badge.fury.io/py/meson-python.svg

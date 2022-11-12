@@ -35,7 +35,11 @@ from typing import (
     Union
 )
 
-import tomli
+
+if sys.version_info < (3, 11):
+    import tomli as tomllib
+else:
+    import tomllib
 
 import mesonpy._compat
 import mesonpy._elf
@@ -56,7 +60,7 @@ else:
     cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
 
 
-__version__ = '0.9.0.dev0'
+__version__ = '0.11.0.dev0'
 
 
 class _depstr:
@@ -151,6 +155,7 @@ class _WheelBuilder():
     def __init__(
         self,
         project: Project,
+        metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
         install_dir: pathlib.Path,
         build_dir: pathlib.Path,
@@ -158,6 +163,7 @@ class _WheelBuilder():
         copy_files: Dict[str, str],
     ) -> None:
         self._project = project
+        self._metadata = metadata
         self._source_dir = source_dir
         self._install_dir = install_dir
         self._build_dir = build_dir
@@ -169,6 +175,10 @@ class _WheelBuilder():
     @cached_property
     def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
         return self._map_to_wheel(self._sources, self._copy_files)
+
+    @property
+    def _has_internal_libs(self) -> bool:
+        return bool(self._wheel_files['mesonpy-libs'])
 
     @property
     def basename(self) -> str:
@@ -224,6 +234,28 @@ class _WheelBuilder():
         ).encode()
 
     @property
+    def entrypoints_txt(self) -> bytes:
+        """dist-info entry_points.txt."""
+        if not self._metadata:
+            return b''
+
+        data = self._metadata.entrypoints.copy()
+        data.update({
+            'console_scripts': self._metadata.scripts,
+            'gui_scripts': self._metadata.gui_scripts,
+        })
+
+        text = ''
+        for entrypoint in data:
+            if data[entrypoint]:
+                text += f'[{entrypoint}]\n'
+                for name, target in data[entrypoint].items():
+                    text += f'{name} = {target}\n'
+                text += '\n'
+
+        return text.encode()
+
+    @property
     def _debian_python(self) -> bool:
         """Check if we are running on Debian-patched Python."""
         try:
@@ -250,7 +282,7 @@ class _WheelBuilder():
             return selected_tag.abi
         return 'none'
 
-    @property
+    @cached_property
     def platform_tag(self) -> str:
         if self.is_pure:
             return 'any'
@@ -258,19 +290,40 @@ class _WheelBuilder():
         #      fix it later if there are system dependencies (eg. replace it with a manylinux tag)
         platform_ = sysconfig.get_platform()
         parts = platform_.split('-')
-        if parts[0] == 'macosx' and parts[1] in ('11', '12'):
-            # Workaround for bug where pypa/packaging does not consider macOS
-            # tags without minor versions valid. Some Python flavors (Homebrew
-            # for example) on macOS started to do this in version 11, and
-            # pypa/packaging should handle things correctly from version 13 and
-            # forward, so we will add a 0 minor version to MacOS 11 and 12.
-            # https://github.com/FFY00/meson-python/issues/91
-            # https://github.com/pypa/packaging/issues/578
-            parts[1] += '.0'
+        if parts[0] == 'macosx':
+            target = os.environ.get('MACOSX_DEPLOYMENT_TARGET')
+            if target:
+                print(
+                    '{yellow}MACOSX_DEPLOYMENT_TARGET is set so we are setting the '
+                    'platform tag to {target}{reset}'.format(target=target, **_STYLES)
+                )
+                parts[1] = target
+            else:
+                # If no target macOS version is specified fallback to
+                # platform.mac_ver() instead of sysconfig.get_platform() as the
+                # latter specifies the target macOS version Python was built
+                # against.
+                parts[1] = platform.mac_ver()[0]
+                if parts[1] >= '11':
+                    # Only pick up the major version, which changed from 10.X
+                    # to X.0 from macOS 11 onwards. See
+                    # https://github.com/mesonbuild/meson-python/issues/160
+                    parts[1] = parts[1].split('.')[0]
+
+            if parts[1] in ('11', '12'):
+                # Workaround for bug where pypa/packaging does not consider macOS
+                # tags without minor versions valid. Some Python flavors (Homebrew
+                # for example) on macOS started to do this in version 11, and
+                # pypa/packaging should handle things correctly from version 13 and
+                # forward, so we will add a 0 minor version to MacOS 11 and 12.
+                # https://github.com/mesonbuild/meson-python/issues/91
+                # https://github.com/pypa/packaging/issues/578
+                parts[1] += '.0'
+
             platform_ = '-'.join(parts)
         elif parts[0] == 'linux' and parts[1] == 'x86_64' and sys.maxsize == 0x7fffffff:
             # 32-bit Python running on an x86_64 host
-            # https://github.com/FFY00/meson-python/issues/123
+            # https://github.com/mesonbuild/meson-python/issues/123
             parts[1] = 'i686'
             platform_ = '-'.join(parts)
         return platform_.replace('-', '_').replace('.', '_')
@@ -296,14 +349,14 @@ class _WheelBuilder():
             if extension not in ('.so', '.dll'):
                 raise NotImplementedError(
                     f"We don't currently support the {extension} extension. "
-                    'Please report this to https://github.com/FFY00/mesonpy/issues '
+                    'Please report this to https://github.com/mesonbuild/mesonpy/issues '
                     'and include information about your operating system.'
                 )
         except KeyError:
             warnings.warn(
                 'sysconfig does not export SHLIB_SUFFIX, so we are unable to '
                 'perform the sanity check regarding the extension suffix. '
-                'Please report this to https://github.com/FFY00/mesonpy/issues '
+                'Please report this to https://github.com/mesonbuild/mesonpy/issues '
                 'and include the output of `python -m sysconfig`.'
             )
         if sys.platform == 'cygwin':
@@ -522,19 +575,6 @@ class _WheelBuilder():
         counter.update(location)
 
         # fix file
-        if platform.system() == 'Linux' and not os.path.isdir(origin):
-            # add .mesonpy.libs to the RPATH of ELF files
-            if self._is_native(os.fspath(origin)):
-                # copy ELF to our working directory to avoid Meson having to regenerate the file
-                new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
-                os.makedirs(new_origin.parent, exist_ok=True)
-                shutil.copy2(origin, new_origin)
-                origin = new_origin
-                # add our in-wheel libs folder to the RPATH
-                elf = mesonpy._elf.ELF(origin)
-                libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
-                if libdir_path not in elf.rpath:
-                    elf.rpath = [*elf.rpath, libdir_path]
         if os.path.isdir(origin):
             for root, dirnames, filenames in os.walk(str(origin)):
                 # Sort the directory names so that `os.walk` will walk them in a
@@ -546,6 +586,20 @@ class _WheelBuilder():
                         arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, '/'))
                         wheel_file.write(path, arcname)
         else:
+            if self._has_internal_libs and platform.system() == 'Linux':
+                # add .mesonpy.libs to the RPATH of ELF files
+                if self._is_native(os.fspath(origin)):
+                    # copy ELF to our working directory to avoid Meson having to regenerate the file
+                    new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
+                    os.makedirs(new_origin.parent, exist_ok=True)
+                    shutil.copy2(origin, new_origin)
+                    origin = new_origin
+                    # add our in-wheel libs folder to the RPATH
+                    elf = mesonpy._elf.ELF(origin)
+                    libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
+                    if libdir_path not in elf.rpath:
+                        elf.rpath = [*elf.rpath, libdir_path]
+
             wheel_file.write(origin, location)
 
     def build(self, directory: Path) -> pathlib.Path:
@@ -559,8 +613,10 @@ class _WheelBuilder():
             # add metadata
             whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
+            if self.entrypoints_txt:
+                whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
-            # add license (see https://github.com/FFY00/meson-python/issues/88)
+            # add license (see https://github.com/mesonbuild/meson-python/issues/88)
             if self._project.license_file:
                 whl.write(
                     self._source_dir / self._project.license_file,
@@ -614,7 +670,7 @@ class Project():
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
 
         # load config -- PEP 621 support is optional
-        self._config = tomli.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+        self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
         self._pep621 = 'project' in self._config
         if self.pep621:
             try:
@@ -730,6 +786,7 @@ class Project():
     def _wheel_builder(self) -> _WheelBuilder:
         return _WheelBuilder(
             self,
+            self._metadata,
             self._source_dir,
             self._install_dir,
             self._build_dir,
@@ -880,6 +937,19 @@ class Project():
                 if len(member_parts) <= 1:
                     continue
                 path = self._source_dir.joinpath(*member_parts[1:])
+
+                if not path.exists() and member.isfile():
+                    # File doesn't exists on the source directory but exists on
+                    # the Meson dist, so it is generated file, which we need to
+                    # include.
+                    # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
+
+                    # MESON_DIST_ROOT could have a different base name
+                    # than the actual sdist basename, so we need to rename here
+                    file = meson_dist.extractfile(member.name)
+                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]).as_posix())
+                    tar.addfile(member, file)
+                    continue
 
                 if not path.is_file():
                     continue

@@ -1,9 +1,9 @@
 # meson-python [![PyPI version](https://badge.fury.io/py/meson-python.svg)](https://pypi.org/project/meson-python/)
 
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/FFY00/mesonpy/main.svg)](https://results.pre-commit.ci/latest/github/FFY00/mesonpy/main)
-[![checks](https://github.com/FFY00/mesonpy/actions/workflows/checks.yml/badge.svg)](https://github.com/FFY00/mesonpy/actions/workflows/checks.yml)
-[![tests](https://github.com/FFY00/mesonpy/actions/workflows/tests.yml/badge.svg)](https://github.com/FFY00/mesonpy/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/FFY00/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk)](https://codecov.io/gh/FFY00/meson-python)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg)](https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main)
+[![checks](https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml/badge.svg)](https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml)
+[![tests](https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg)](https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk)](https://codecov.io/gh/mesonbuild/meson-python)
 [![Documentation Status](https://readthedocs.org/projects/meson-python/badge/?version=stable)](https://meson-python.readthedocs.io/en/stable/?badge=stable)
 
 Python build backend ([PEP 517](https://www.python.org/dev/peps/pep-0517/)) for Meson projects.

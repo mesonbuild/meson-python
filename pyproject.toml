@@ -2,10 +2,10 @@
 build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
-  'meson>=0.63.0',
+  'meson>=0.63.3',
   'ninja',
   'pyproject-metadata>=0.5.0',
-  'tomli>=1.0.0',
+  'tomli>=1.0.0; python_version<"3.11"',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
 
@@ -26,10 +26,10 @@ classifiers = [
 
 dependencies = [
   'colorama; os_name == "nt"',
-  'meson>=0.62.0',
+  'meson>=0.63.3',
   'ninja',
   'pyproject-metadata>=0.5.0', # not a hard dependency, only needed for projects that use PEP 621 metadata
-  'tomli>=1.0.0',
+  'tomli>=1.0.0; python_version<"3.11"',
   'typing-extensions>=3.7.4; python_version<"3.8"',
 ]
 
@@ -45,6 +45,8 @@ test = [
   'GitPython',
   'auditwheel',
   'Cython',
+  'pyproject-metadata>=0.6.1',
+  'wheel',
 ]
 docs = [
   'furo>=2021.08.31',
@@ -53,7 +55,7 @@ docs = [
 ]
 
 [project.urls]
-homepage = 'https://github.com/FFY00/mesonpy'
-repository = 'https://github.com/FFY00/mesonpy'
+homepage = 'https://github.com/mesonbuild/meson-python'
+repository = 'https://github.com/mesonbuild/meson-python'
 documentation = 'https://meson-python.readthedocs.io/'
 changelog = 'https://meson-python.readthedocs.io/en/latest/changelog.html'
