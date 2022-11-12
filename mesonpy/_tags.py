@@ -77,6 +77,8 @@ def get_abi_tag() -> str:
         abi = abi.split('-')[0]
     elif abi.startswith('pypy'):
         abi = '_'.join(abi.split('-')[:2])
+    elif abi.startswith('graalpy'):
+        abi = '_'.join(abi.split('-')[:3])
 
     return abi.replace('.', '_').replace('-', '_')
 
@@ -138,7 +140,7 @@ def get_platform_tag() -> str:
             return 'linux_i686'
         if platform == 'linux-aarch64':
             return 'linux_armv7l'
-    return platform.replace('-', '_')
+    return platform.replace('-', '_').replace('.', '_')
 
 
 class Tag:
