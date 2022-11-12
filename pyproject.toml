@@ -42,7 +42,6 @@ test = [
   'pytest',
   'pytest-cov',
   'pytest-mock',
-  'GitPython',
   'auditwheel',
   'Cython',
   'pyproject-metadata>=0.6.1',

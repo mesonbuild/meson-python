@@ -6,11 +6,11 @@ import os.path
 import pathlib
 import re
 import shutil
+import subprocess
 import tempfile
 
 from venv import EnvBuilder
 
-import git
 import pytest
 
 import mesonpy
@@ -42,24 +42,21 @@ def cd_package(package):
 
 @contextlib.contextmanager
 def in_git_repo_context(path=os.path.curdir):
-    path = pathlib.Path(path)
-    assert path.absolute().relative_to(package_dir)
-    shutil.rmtree(path / '.git', ignore_errors=True)
+    # Resist the tentation of using pathlib.Path here: it is not
+    # supporded by subprocess in Python 3.7.
+    path = os.path.abspath(path)
+    shutil.rmtree(os.path.join(path, '.git'), ignore_errors=True)
     try:
-        handler = git.Git(path)
-        handler.init()
-        handler.config('commit.gpgsign', 'false')
-        handler.config('user.name', 'Example')
-        handler.config('user.email', 'example@example.com')
-        handler.add('*')
-        handler.commit('--allow-empty-message', '-m', '')
-        handler.tag('-a', '-m', '', '1.0.0')
+        subprocess.check_call(['git', 'init', '-b', 'main', path])
+        subprocess.check_call(['git', 'config', 'user.email', 'author@example.com'], cwd=path)
+        subprocess.check_call(['git', 'config', 'user.name', 'A U Thor'], cwd=path)
+        subprocess.check_call(['git', 'add', '*'], cwd=path)
+        subprocess.check_call(['git', 'commit', '-q', '-m', 'Test'], cwd=path)
         yield
     finally:
-        try:
-            shutil.rmtree(path / '.git')
-        except PermissionError:
-            pass
+        # PermissionError raised on Windows.
+        with contextlib.suppress(PermissionError):
+            shutil.rmtree(os.path.join(path, '.git'))
 
 
 @pytest.fixture(scope='session')
