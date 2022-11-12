@@ -102,7 +102,7 @@ def test_scipy_like(wheel_scipy_like):
             'mypkg/submod/__init__.py',
             'mypkg/submod/unknown_filetype.npq',
         }
-    if os.name == 'nt':
+    if os.name == 'nt' or sys.platform == 'cygwin':
         # Currently Meson is installing `.dll.a` (import libraries) next to
         # `.pyd` extension modules. Those are very small, so it's not a major
         # issue - just sloppy. For now, ensure we don't fail on those
@@ -154,6 +154,8 @@ def test_purelib_and_platlib(wheel_purelib_and_platlib):
     }
     if platform.system() == 'Windows':
         expecting.add('plat{}'.format(EXT_SUFFIX.replace('pyd', 'dll.a')))
+    elif sys.platform == 'cygwin':
+        expecting.add('plat{}'.format(EXT_SUFFIX.replace('dll', 'dll.a')))
 
     assert wheel_contents(artifact) == expecting
 
@@ -216,6 +218,7 @@ def test_executable_bit(wheel_executable_bit):
     executable_files = {
         'executable_bit-1.0.0.data/purelib/executable_module.py',
         'executable_bit-1.0.0.data/scripts/example',
+        'executable_bit-1.0.0.data/scripts/example.exe',
         'executable_bit-1.0.0.data/scripts/example-script',
         'executable_bit-1.0.0.data/data/bin/example-script',
     }

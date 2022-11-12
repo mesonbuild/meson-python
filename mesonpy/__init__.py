@@ -99,6 +99,7 @@ _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COL
 
 
 _LINUX_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.so$')
+_CYGWIN_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.dll$')
 _WINDOWS_NATIVE_MODULE_REGEX = re.compile(r'^(?P<name>.+)\.(?P<tag>.+)\.pyd$')
 _STABLE_ABI_TAG_REGEX = re.compile(r'^abi(?P<abi_number>[0-9]+)$')
 
@@ -292,7 +293,7 @@ class _WheelBuilder():
         # preventive and check its value to make sure it matches our expectations
         try:
             extension = sysconfig.get_config_vars().get('SHLIB_SUFFIX', '.so')
-            if extension != '.so':
+            if extension not in ('.so', '.dll'):
                 raise NotImplementedError(
                     f"We don't currently support the {extension} extension. "
                     'Please report this to https://github.com/FFY00/mesonpy/issues '
@@ -305,7 +306,10 @@ class _WheelBuilder():
                 'Please report this to https://github.com/FFY00/mesonpy/issues '
                 'and include the output of `python -m sysconfig`.'
             )
-        match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
+        if sys.platform == 'cygwin':
+            match = _CYGWIN_NATIVE_MODULE_REGEX.match(filename)
+        else:
+            match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
         if not match:  # this file does not appear to be a native module
             return None
         tag = match.group('tag')
