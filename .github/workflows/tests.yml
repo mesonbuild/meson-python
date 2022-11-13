@@ -208,8 +208,10 @@ jobs:
 
       - run: |
           echo $PATH
+          echo $PYTHONPATH
           command -v python
           python --version
+          python -c 'import sys; print(sys.version_info)'
 
       - name: Install
         run: python -m pip --disable-pip-version-check install .[test]
