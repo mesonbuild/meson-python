@@ -65,6 +65,16 @@ jobs:
             /usr/bin/python -m pip install nox
             nox --version
 
+      - name: Download setuptools/pip wheels for ensurepip
+        shell: bash.exe -eo pipefail -o igncr "{0}"
+        env:
+          PATH: "/bin:/usr/bin:/usr/local/bin:/usr/lib/lapack"
+          TMP: "/tmp"
+          TEMP: "/tmp"
+        run: |
+          mkdir -p /usr/share/python-wheels
+          /usr/bin/python -m pip wheel --wheel-dir /usr/share/python-wheels setuptools pip wheel
+
       - name: Run tests
         shell: bash.exe -eo pipefail -o igncr "{0}"
         env:
