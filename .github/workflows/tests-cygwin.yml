@@ -44,7 +44,7 @@ jobs:
             python3${{ matrix.python-minor }}
             python3${{ matrix.python-minor }}-pip
             cmake make ninja gcc-core gcc-g++ git
-            gnupg gnupg2 meson
+            gnupg gnupg2 meson pkg-config
 
       - name: Tell Cygwin git about this repository
         # This addresses the "fatal: detected dubious ownership in
