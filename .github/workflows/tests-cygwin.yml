@@ -30,6 +30,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
+      - uses: actions/cache@v3
+        with:
+          path: 'C:\cygwin'
+          key: ${{ runner.os }}-cygwin-python-3${{ matrix.python-minor }}-${{ hashfiles('pyproject.toml') }}
+
       - name: Setup Cygwin
         uses: cygwin/cygwin-install-action@v2
         with:

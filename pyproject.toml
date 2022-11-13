@@ -47,6 +47,7 @@ test = [
   'Cython',
   'pyproject-metadata>=0.6.1',
   'wheel',
+  'importlib_metadata; python_version < "3.8"',
 ]
 docs = [
   'furo>=2021.08.31',
