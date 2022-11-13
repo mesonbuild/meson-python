@@ -17,6 +17,8 @@ jobs:
     runs-on: windows-latest
     env:
       FORCE_COLOR: true
+      SHELLOPTS: igncr
+      CHERE_INVOKING: true
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +45,15 @@ jobs:
             python3${{ matrix.python-minor }}-pip
             cmake make ninja gcc-core gcc-g++ git
             gnupg gnupg2 meson
+
+      - name: Tell Cygwin git about this repository
+        # This addresses the "fatal: detected dubious ownership in
+        # repository" and "fatal: not in a git directory" errors
+        # encountered when trying to run Cygwin git in a directory not
+        # owned by the current user. This happens when the tests run
+        # Cygwin git in a directory outside the Cygwin filesystem.
+        run: git config --global --add safe.directory '*'
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
       - name: Install nox
         shell: bash.exe -eo pipefail -o igncr "{0}"
