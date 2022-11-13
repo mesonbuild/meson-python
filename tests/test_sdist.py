@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 
 import os
+import stat
+import sys
 import tarfile
 import textwrap
 
@@ -70,39 +72,20 @@ def test_contents_unstaged(package_pure, tmpdir):
     assert read_data == new_data.encode()
 
 
-@pytest.mark.skipif(os.name == 'nt', reason='Executable bit does not exist on Windows')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='Platform does not support executable bit')
 def test_executable_bit(sdist_executable_bit):
     sdist = tarfile.open(sdist_executable_bit, 'r:gz')
 
     expected = {
-        'executable_bit-1.0.0/PKG-INFO': None,
+        'executable_bit-1.0.0/PKG-INFO': False,
         'executable_bit-1.0.0/example-script.py': True,
         'executable_bit-1.0.0/example.c': False,
         'executable_bit-1.0.0/executable_module.py': True,
         'executable_bit-1.0.0/meson.build': False,
         'executable_bit-1.0.0/pyproject.toml': False,
     }
-    assert set(tar.name for tar in sdist.getmembers()) == set(expected.keys())
-
-    def has_execbit(mode):
-        # Note: File perms are in octal, but Python returns it in int
-        # We check multiple modes, because Docker may set group permissions to
-        # match owner permissions
-        modes_execbit = 0o755, 0o775
-        modes_nonexecbit = 0o644, 0o664
-        if mode in modes_execbit:
-            return True
-        elif mode in modes_nonexecbit:
-            return False
-        else:
-            raise RuntimeError(f'Unknown file permissions mode: {mode}')
-
-    for name, mode in set((tar.name, tar.mode) for tar in sdist.getmembers()):
-        if 'PKG-INFO' in name:
-            # We match the executable bit on everything but PKG-INFO (we create
-            # this ourselves)
-            continue
-        assert has_execbit(mode) == expected[name], f'Wrong mode for {name}: {mode}'
+    for member in sdist.getmembers():
+        assert bool(member.mode & stat.S_IXUSR) == expected[member.name]
 
 
 def test_generated_files(sdist_generated_files):
