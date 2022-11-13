@@ -202,6 +202,7 @@ jobs:
 
       - name: Install homebrew Python
         run: |
+          rm -rf /usr/local/lib/python${{ matrix.python }}/
           find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -print -delete
           brew reinstall python@${{ matrix.python }}
           echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
