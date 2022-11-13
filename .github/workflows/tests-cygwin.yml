@@ -56,7 +56,6 @@ jobs:
           TMP: "/tmp"
           TEMP: "/tmp"
         run: |
-          cd "${GITHUB_WORKSPACE}"
           nox -s test-3.${{ matrix.python-minor }}
 
       - name: Send coverage report
