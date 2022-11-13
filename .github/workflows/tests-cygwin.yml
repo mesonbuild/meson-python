@@ -42,7 +42,7 @@ jobs:
             python3${{ matrix.python-minor }}
             python3${{ matrix.python-minor }}-pip
             cmake make ninja gcc-core gcc-g++ git
-            gnupg gnupg2
+            gnupg gnupg2 meson
 
       - name: Install nox
         shell: bash.exe -eo pipefail -o igncr "{0}"
