@@ -205,23 +205,23 @@ jobs:
           rm -rf /usr/local/lib/python${{ matrix.python }}/
           find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -print -delete
           brew reinstall python@${{ matrix.python }}
-          echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+          # echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
 
-      - run: |
-          echo $PATH
-          echo $PYTHONPATH
-          command -v python
-          python --version
-          python -c 'import sys; print(sys.version_info)'
+      # - run: |
+      #     echo $PATH
+      #     echo $PYTHONPATH
+      #     command -v python
+      #     python --version
+      #     python -c 'import sys; print(sys.version_info)'
 
       - name: Install
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -vv .[test]
+          python${{ matrix.python }} -m pip install --upgrade pip
+          python${{ matrix.python }} -m pip install -vv .[test]
 
       - name: Run tests
         run: >-
-          python -m pytest --showlocals -vv --cov
+          python${{ matrix.python }} -m pytest --showlocals -vv --cov
           --cov-config setup.cfg
           --cov-report=xml:coverage-homebrew-${{ matrix.python }}.xml
 
