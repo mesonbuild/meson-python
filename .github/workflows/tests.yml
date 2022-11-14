@@ -200,6 +200,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+        
       - name: Install homebrew Python
         run: |
           rm -rf /usr/local/lib/python${{ matrix.python }}/
