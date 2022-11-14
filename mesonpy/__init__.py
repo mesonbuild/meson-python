@@ -327,9 +327,9 @@ class _WheelBuilder():
             platform_ = '-'.join(parts)
         return platform_.replace('-', '_').replace('.', '_')
 
-    def _calculate_file_abi_tag_heuristic_windows(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+    def _calculate_file_abi_tag_heuristic_windows(self, basename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the Windows tag from the Python extension file name."""
-        match = _WINDOWS_NATIVE_MODULE_REGEX.match(filename)
+        match = _WINDOWS_NATIVE_MODULE_REGEX.match(basename)
         if not match:
             return None
         tag = match.group('tag')
@@ -339,7 +339,7 @@ class _WheelBuilder():
         except ValueError:
             return mesonpy._tags.InterpreterTag(tag)
 
-    def _calculate_file_abi_tag_heuristic_posix(self, filename: str) -> Optional[mesonpy._tags.Tag]:
+    def _calculate_file_abi_tag_heuristic_posix(self, basename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the Posix tag from the Python extension file name."""
         # sysconfig is not guaranted to export SHLIB_SUFFIX but let's be
         # preventive and check its value to make sure it matches our expectations
@@ -358,7 +358,7 @@ class _WheelBuilder():
                 'Please report this to https://github.com/mesonbuild/mesonpy/issues '
                 'and include the output of `python -m sysconfig`.'
             )
-        match = _LINUX_NATIVE_MODULE_REGEX.match(filename)
+        match = _LINUX_NATIVE_MODULE_REGEX.match(basename)
         if not match:  # this file does not appear to be a native module
             return None
         tag = match.group('tag')
@@ -370,10 +370,11 @@ class _WheelBuilder():
 
     def _calculate_file_abi_tag_heuristic(self, filename: str) -> Optional[mesonpy._tags.Tag]:
         """Try to calculate the ABI tag from the Python extension file name."""
+        basename = os.path.basename(filename)
         if os.name == 'nt':
-            return self._calculate_file_abi_tag_heuristic_windows(filename)
+            return self._calculate_file_abi_tag_heuristic_windows(basename)
         # everything else *should* follow the POSIX way, at least to my knowledge
-        return self._calculate_file_abi_tag_heuristic_posix(filename)
+        return self._calculate_file_abi_tag_heuristic_posix(basename)
 
     def _file_list_repr(self, files: Collection[str], prefix: str = '\t\t', max_count: int = 3) -> str:
         if len(files) > max_count:
