@@ -202,20 +202,18 @@ jobs:
 
       - name: Install homebrew Python
         run: |
-          rm -rf /usr/local/lib/python${{ matrix.python }}/
-          find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -print -delete
-          brew reinstall python@${{ matrix.python }}
-          echo /usr/local/opt/python@${{ matrix.python }}/bin/ >> $GITHUB_PATH
+          brew install python@${{ matrix.python }} || brew link --overwrite python@${{ matrix.python }}
+          echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
 
-      - run: |
-          echo $PATH
-          echo $PYTHONPATH
-          command -v python
-          python${{ matrix.python }} --version
-          python${{ matrix.python }} -c 'import sys; print(sys.version_info); print(sys.path)'
-          env
-          find /usr/local/lib/python${{ matrix.python }}/
-          cat /usr/local/lib/python${{ matrix.python }}/site-packages/sitecustomize.py
+      # - run: |
+      #     echo $PATH
+      #     echo $PYTHONPATH
+      #     command -v python
+      #     python${{ matrix.python }} --version
+      #     python${{ matrix.python }} -c 'import sys; print(sys.version_info); print(sys.path)'
+      #     env
+      #     find /usr/local/lib/python${{ matrix.python }}/
+      #     cat /usr/local/lib/python${{ matrix.python }}/site-packages/sitecustomize.py || true
 
       - name: Install
         run: |
