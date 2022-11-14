@@ -211,8 +211,8 @@ jobs:
           echo $PATH
           echo $PYTHONPATH
           command -v python
-          python --version
-          python -c 'import sys; print(sys.version_info)'
+          python${{ matrix.python }} --version
+          python${{ matrix.python }} -c 'import sys; print(sys.version_info); print(sys.path)'
           env
 
       - name: Install
