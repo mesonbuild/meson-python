@@ -200,24 +200,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install homebrew Python
+      - name: Install Homebrew Python
         run: |
-          brew install python@${{ matrix.python }} || brew link --overwrite python@${{ matrix.python }}
+          brew install --overwrite python@${{ matrix.python }}
           echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
 
-      # - run: |
-      #     echo $PATH
-      #     echo $PYTHONPATH
-      #     command -v python
-      #     python${{ matrix.python }} --version
-      #     python${{ matrix.python }} -c 'import sys; print(sys.version_info); print(sys.path)'
-      #     env
-      #     find /usr/local/lib/python${{ matrix.python }}/
-      #     cat /usr/local/lib/python${{ matrix.python }}/site-packages/sitecustomize.py || true
+      - name: Fix pip
+        # Patch https://github.com/pypa/pip/issues/11539
+        run: |
+          cat >>/usr/local/lib/python${{ matrix.python }}/site-packages/pip/_internal/locations/_sysconfig.py <<EOF
+          def get_prefixed_libs(prefix: str) -> typing.Tuple[str, str]:
+              if "venv" in sysconfig.get_scheme_names():
+                  paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix}, scheme="venv")
+              else:
+                  paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix})
+              return (paths["purelib"], paths["platlib"])
+          EOF
 
       - name: Install
         run: |
-          python${{ matrix.python }} -m pip install --upgrade pip
           python${{ matrix.python }} -m pip install -vv .[test]
 
       - name: Run tests
