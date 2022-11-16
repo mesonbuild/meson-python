@@ -49,7 +49,7 @@ def test(session):
     session.run(
         'pytest',
         '--showlocals', '-vv',
-        '--cov', '--cov-config', 'setup.cfg',
+        '--cov',
         f'--cov-report=html:{htmlcov_output}',
         f'--cov-report=xml:{xmlcov_output}',
         *session.posargs
