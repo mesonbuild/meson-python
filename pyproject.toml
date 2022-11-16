@@ -40,8 +40,8 @@ dynamic = [
 [project.optional-dependencies]
 test = [
   'build',
-  'pytest',
-  'pytest-cov',
+  'pytest>=6.0',
+  'pytest-cov[toml]',
   'pytest-mock',
   'auditwheel',
   'Cython',
@@ -59,3 +59,28 @@ homepage = 'https://github.com/mesonbuild/meson-python'
 repository = 'https://github.com/mesonbuild/meson-python'
 documentation = 'https://meson-python.readthedocs.io/'
 changelog = 'https://meson-python.readthedocs.io/en/latest/changelog.html'
+
+
+[tool.mypy]
+show_error_codes = true
+ignore_missing_imports = true
+strict = true
+
+
+[tool.isort]
+lines_between_types = 1
+lines_after_imports = 2
+multi_line_output = 5
+known_first_party = "mesonpy"
+
+
+[tool.coverage.html]
+show_contexts = true
+
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+log_cli_level = "info"
+norecursedirs = "tests/packages/*"
+testpaths = ["tests"]
