@@ -39,6 +39,7 @@ dynamic = [
 
 [project.optional-dependencies]
 test = [
+  'build',
   'pytest',
   'pytest-cov',
   'pytest-mock',
