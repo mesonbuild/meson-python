@@ -126,47 +126,17 @@ for package in os.listdir(package_dir):
 @pytest.fixture(scope='session')
 def pep518_wheelhouse(tmpdir_factory):
     wheelhouse = tmpdir_factory.mktemp('wheelhouse')
-    dist = tmpdir_factory.mktemp('dist')
-    subprocess.run(
-        [sys.executable, '-m', 'build', '--wheel', '--outdir', str(dist)],
-        cwd=str(package_dir.parent.parent),
-        check=True,
-    )
-    (wheel_path,) = dist.visit('*.whl')
-    subprocess.run(
-        [
-            sys.executable,
-            '-m',
-            'pip',
-            'download',
-            '-q',
-            '-d',
-            str(wheelhouse),
-            str(wheel_path),
-        ],
-        check=True,
-    )
-    subprocess.run(
-        [
-            sys.executable,
-            '-m',
-            'pip',
-            'download',
-            '-q',
-            '-d',
-            str(wheelhouse),
-            'build',
-            'colorama',
-            'meson',
-            'ninja',
-            'patchelf',
-            'pyproject-metadata',
-            'tomli',
-            'typing-extensions',
-            'wheel',
-        ],
-        check=True,
-    )
+    meson_python = str(package_dir.parent.parent)
+    # Populate wheelhouse with wheel for the following packages and
+    # their dependencies.  Wheels are downloaded from PyPI or built
+    # from the source distribution as needed.  Sources or wheels in
+    # the pip cache are used when available.
+    packages = [
+        meson_python,
+        'build',
+        'wheel',
+    ]
+    subprocess.run([sys.executable, '-m', 'pip', 'wheel', '--wheel-dir', str(wheelhouse), *packages], check=True)
     return str(wheelhouse)
 
 
