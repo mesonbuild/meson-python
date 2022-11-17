@@ -41,12 +41,10 @@ test = [
   'pytest>=6.0',
   'pytest-cov[toml]',
   'pytest-mock',
-  'GitPython',
   'auditwheel',
   'Cython',
   'pyproject-metadata>=0.6.1',
   'wheel',
-  'importlib_metadata; python_version<"3.8"',
   'ninja',
 ]
 docs = [
