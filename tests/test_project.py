@@ -65,7 +65,7 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
 
     # create the build directory ourselves because Project._meson is mocked
     builddir = str(tmp_dir_session / 'build')
-    subprocess.check_call(['meson', 'setup', '.', builddir])
+    subprocess.run(['meson', 'setup', '.', builddir], check=True)
 
     config_settings = {
         'builddir': builddir,  # use the build directory we created

@@ -48,11 +48,11 @@ def in_git_repo_context(path=os.path.curdir):
     path = os.path.abspath(path)
     shutil.rmtree(os.path.join(path, '.git'), ignore_errors=True)
     try:
-        subprocess.check_call(['git', 'init', '-b', 'main', path])
-        subprocess.check_call(['git', 'config', 'user.email', 'author@example.com'], cwd=path)
-        subprocess.check_call(['git', 'config', 'user.name', 'A U Thor'], cwd=path)
-        subprocess.check_call(['git', 'add', '*'], cwd=path)
-        subprocess.check_call(['git', 'commit', '-q', '-m', 'Test'], cwd=path)
+        subprocess.run(['git', 'init', '-b', 'main', path], check=True)
+        subprocess.run(['git', 'config', 'user.email', 'author@example.com'], cwd=path, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'A U Thor'], cwd=path, check=True)
+        subprocess.run(['git', 'add', '*'], cwd=path, check=True)
+        subprocess.run(['git', 'commit', '-q', '-m', 'Test'], cwd=path, check=True)
         yield
     finally:
         # PermissionError raised on Windows.
