@@ -141,12 +141,14 @@ def test_configure_data(wheel_configure_data):
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
-    subprocess.check_call([
-        venv.executable, '-m', 'pip', 'install', wheel_link_against_local_lib
-    ])
-    assert subprocess.check_output([
-        venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'
-    ]).decode().strip() == '3'
+    subprocess.run(
+        [venv.executable, '-m', 'pip', 'install', wheel_link_against_local_lib],
+        check=True)
+    output = subprocess.run(
+        [venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'],
+        stdout=subprocess.PIPE,
+        check=True).stdout
+    assert int(output) == 3
 
 
 def test_contents_license_file(wheel_license_file):
