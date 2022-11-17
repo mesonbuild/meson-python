@@ -123,6 +123,14 @@ for package in os.listdir(package_dir):
     globals()[f'wheel_{normalized}'] = generate_wheel_fixture(package)
 
 
+@pytest.fixture(autouse=True, scope='session')
+def disable_pip_version_check():
+    # Cannot use the 'monkeypatch' fixture because of scope mismatch.
+    mpatch = pytest.MonkeyPatch()
+    yield mpatch.setenv('PIP_DISABLE_PIP_VERSION_CHECK', '1')
+    mpatch.undo()
+
+
 @pytest.fixture(scope='session')
 def pep518_wheelhouse(tmpdir_factory):
     wheelhouse = tmpdir_factory.mktemp('wheelhouse')

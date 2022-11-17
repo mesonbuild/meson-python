@@ -142,7 +142,7 @@ def test_configure_data(wheel_configure_data):
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
     subprocess.check_call([
-        venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel_link_against_local_lib
+        venv.executable, '-m', 'pip', 'install', wheel_link_against_local_lib
     ])
     assert subprocess.check_output([
         venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'

@@ -20,7 +20,7 @@ def test_build_and_import(venv, tmp_dir_session):
         wheel = build_project_wheel(package=examples_dir / 'spam', outdir=tmp_dir_session)
 
         subprocess.check_call([
-            venv.executable, '-m', 'pip', '--disable-pip-version-check', 'install', wheel
+            venv.executable, '-m', 'pip', 'install', wheel
         ])
         output = subprocess.check_output([
             venv.executable, '-c', 'import spam; print(spam.add(1, 2))'
