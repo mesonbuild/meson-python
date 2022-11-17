@@ -2,7 +2,7 @@
 build-backend = 'mesonpy'
 requires = ['meson-python']
 
-[tool.mesonpy.args]
+[tool.meson-python.args]
 dist = ['config-dist']
 setup = ['config-setup']
 compile = ['config-compile']

@@ -625,11 +625,11 @@ class Project():
 
     def _get_config_key(self, key: str) -> Any:
         value: Any = self._config
-        for part in f'tool.mesonpy.{key}'.split('.'):
+        for part in f'tool.meson-python.{key}'.split('.'):
             if not isinstance(value, Mapping):
                 raise ConfigError(
                     f'Found unexpected value in `{part}` when looking for '
-                    f'config key `tool.mesonpy.{key}` (`{value}`)'
+                    f'config key `tool.meson-python.{key}` (`{value}`)'
                 )
             value = value.get(part, {})
         return value
