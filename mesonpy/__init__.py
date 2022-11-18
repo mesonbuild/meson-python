@@ -48,7 +48,9 @@ import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import Collection, Iterator, Literal, Mapping, Path
+from mesonpy._compat import (
+    Collection, Iterator, Literal, Mapping, Path, typing_get_args
+)
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -541,7 +543,8 @@ class _WheelBuilder():
         return wheel_file
 
 
-MesonArgs = Mapping[Literal['dist', 'setup', 'compile', 'install'], Collection[str]]
+MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
+MesonArgs = Mapping[MesonArgsKeys, Collection[str]]
 
 
 class Project():
@@ -944,18 +947,21 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
                 ))
             )
 
-    _validate_string_collection('dist-args')
-    _validate_string_collection('setup-args')
-    _validate_string_collection('compile-args')
-    _validate_string_collection('install-args')
+    meson_args_keys = typing_get_args(MesonArgsKeys)
+    meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
+
+    for key in config_settings:
+        if key not in ('builddir', *meson_args_cli_keys):
+            raise ConfigError(f'Unknown config setting: {key}')
+
+    for key in meson_args_cli_keys:
+        _validate_string_collection(key)
 
     with Project.with_temp_working_dir(
         build_dir=builddir,
         meson_args=typing.cast(MesonArgs, {
-            'dist': config_settings.get('dist-args', ()),
-            'setup': config_settings.get('setup-args', ()),
-            'compile': config_settings.get('compile-args', ()),
-            'install': config_settings.get('install-args', ()),
+            key: config_settings.get(f'{key}-args', ())
+            for key in meson_args_keys
         }),
     ) as project:
         yield project
