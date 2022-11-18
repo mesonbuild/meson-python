@@ -19,8 +19,10 @@ else:
 
 if sys.version_info >= (3, 8):
     from typing import Literal
+    from typing import get_args as typing_get_args
 else:
     from typing_extensions import Literal
+    from typing_extensions import get_args as typing_get_args
 
 
 Path = Union[str, os.PathLike]
@@ -37,6 +39,7 @@ def is_relative_to(path: pathlib.Path, other: Union[pathlib.Path, str]) -> bool:
 
 __all__ = [
     'is_relative_to',
+    'typing_get_args',
     'Collection',
     'Iterable',
     'Iterator',
