@@ -13,5 +13,6 @@ py.install_sources(
   'mesonpy/_elf.py',
   'mesonpy/_tags.py',
   'mesonpy/_util.py',
+  'mesonpy/_wheelfile.py',
   subdir: 'mesonpy',
 )
