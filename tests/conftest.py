@@ -141,8 +141,6 @@ def pep518_wheelhouse(tmpdir_factory):
     # the pip cache are used when available.
     packages = [
         meson_python,
-        'build',
-        'wheel',
     ]
     subprocess.run([sys.executable, '-m', 'pip', 'wheel', '--wheel-dir', str(wheelhouse), *packages], check=True)
     return str(wheelhouse)

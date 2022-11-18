@@ -46,13 +46,13 @@ import mesonpy._compat
 import mesonpy._elf
 import mesonpy._tags
 import mesonpy._util
+import mesonpy._wheelfile
 
 from mesonpy._compat import Collection, Iterator, Literal, Mapping, Path
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import pyproject_metadata  # noqa: F401
-    import wheel.wheelfile  # noqa: F401
 
 
 if sys.version_info >= (3, 8):
@@ -82,7 +82,6 @@ class _depstr:
     need at runtime. Having them in one place makes it easier to update.
     """
     patchelf = 'patchelf >= 0.11.0'
-    wheel = 'wheel >= 0.36.0'  # noqa: F811
     ninja = f'ninja >= {_NINJA_REQUIRED_VERSION}'
 
 
@@ -455,7 +454,7 @@ class _WheelBuilder():
 
     def _install_path(
         self,
-        wheel_file: wheel.wheelfile.WheelFile,  # type: ignore[name-defined]
+        wheel_file: mesonpy._wheelfile.WheelFile,
         counter: mesonpy._util.CLICounter,
         origin: Path,
         destination: pathlib.Path,
@@ -498,13 +497,11 @@ class _WheelBuilder():
             wheel_file.write(origin, location)
 
     def build(self, directory: Path) -> pathlib.Path:
-        import wheel.wheelfile
-
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
-        with wheel.wheelfile.WheelFile(wheel_file, 'w') as whl:
+        with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             # add metadata
             whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
             whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
@@ -1009,7 +1006,7 @@ def build_sdist(
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    dependencies = [_depstr.wheel]
+    dependencies = []
 
     if _env_ninja_command() is None:
         dependencies.append(_depstr.ninja)

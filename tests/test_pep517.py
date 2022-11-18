@@ -36,7 +36,7 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
     monkeypatch.setattr(shutil, 'which', which)
     monkeypatch.setattr(subprocess, 'run', run)
 
-    expected = {mesonpy._depstr.wheel}
+    expected = set()
 
     ninja_available = ninja is not None and [int(x) for x in ninja.split('.')] >= [1, 8, 2]
 
