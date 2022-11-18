@@ -601,6 +601,10 @@ class Project():
             self._meson_args[key] = args_from_config + tuple(self._meson_args[key])
         # XXX: We should validate the user args to make sure they don't conflict with ours.
 
+        self._check_for_unknown_config_keys({
+            'args': typing_get_args(MesonArgsKeys),
+        })
+
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
         self._install_dir.mkdir(exist_ok=True)
@@ -703,6 +707,17 @@ class Project():
                     f'Unsupported Python version `{platform.python_version()}`, '
                     f'expected `{self._metadata.requires_python}`'
                 )
+
+    def _check_for_unknown_config_keys(self, valid_args: Mapping[str, Collection[str]]) -> None:
+        config = self._config.get('tool', {}).get('meson-python', {})
+
+        for key, valid_subkeys in config.items():
+            if key not in valid_args:
+                raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}')
+
+            for subkey in valid_args[key]:
+                if subkey not in valid_subkeys:
+                    raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}.{subkey}')
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
