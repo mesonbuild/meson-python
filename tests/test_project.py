@@ -9,7 +9,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import cd_package
+from .conftest import cd_package, package_dir
 
 
 @pytest.mark.parametrize(
@@ -89,3 +89,9 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
         ('config-compile', 'cli-compile'),
         ('config-install', 'cli-install'),
     ]
+
+
+@pytest.mark.parametrize('package', ('top-level', 'meson-args'))
+def test_unknown_user_args(package, tmp_dir_session):
+    with pytest.raises(mesonpy.ConfigError):
+        mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_dir_session)
