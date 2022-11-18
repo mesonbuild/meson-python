@@ -1019,7 +1019,15 @@ def get_requires_for_build_wheel(
         # we may need patchelf
         if not shutil.which('patchelf'):
             # patchelf not already accessible on the system
-            dependencies.append(_depstr.patchelf)
+            if _env_ninja_command() is not None:
+                # we have ninja available, so we can run Meson and check if the project needs patchelf
+                with _project(config_settings) as project:
+                    if not project.is_pure:
+                        dependencies.append(_depstr.patchelf)
+            else:
+                # we can't check if the project needs patchelf, so always add it
+                # XXX: wait for https://github.com/mesonbuild/meson/pull/10779
+                dependencies.append(_depstr.patchelf)
 
     return dependencies
 

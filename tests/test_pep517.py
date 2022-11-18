@@ -37,10 +37,17 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
     monkeypatch.setattr(subprocess, 'run', run)
 
     expected = {mesonpy._depstr.wheel}
-    if system_patchelf is None and sys.platform.startswith('linux'):
-        expected |= {mesonpy._depstr.patchelf}
-    if ninja is None or [int(x) for x in ninja.split('.')] < [1, 8, 2]:
+
+    ninja_available = ninja is not None and [int(x) for x in ninja.split('.')] >= [1, 8, 2]
+
+    if not ninja_available:
         expected |= {mesonpy._depstr.ninja}
+
+    if (
+        system_patchelf is None and sys.platform.startswith('linux')
+        and (not ninja_available or (ninja_available and package != 'pure'))
+    ):
+        expected |= {mesonpy._depstr.patchelf}
 
     with cd_package(package):
         assert set(mesonpy.get_requires_for_build_wheel()) == expected
