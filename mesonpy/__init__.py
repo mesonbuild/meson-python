@@ -64,14 +64,6 @@ else:
 __version__ = '0.11.0.dev0'
 
 
-class _depstr:
-    """Namespace that holds the requirement strings for dependencies we *might*
-    need at runtime. Having them in one place makes it easier to update.
-    """
-    patchelf = 'patchelf >= 0.11.0'
-    wheel = 'wheel >= 0.36.0'  # noqa: F811
-
-
 _COLORS = {
     'cyan': '\33[36m',
     'yellow': '\33[93m',
@@ -82,6 +74,16 @@ _COLORS = {
     'reset': '\33[0m',
 }
 _NO_COLORS = {color: '' for color in _COLORS}
+_NINJA_REQUIRED_VERSION = '1.8.2'
+
+
+class _depstr:
+    """Namespace that holds the requirement strings for dependencies we *might*
+    need at runtime. Having them in one place makes it easier to update.
+    """
+    patchelf = 'patchelf >= 0.11.0'
+    wheel = 'wheel >= 0.36.0'  # noqa: F811
+    ninja = f'ninja >= {_NINJA_REQUIRED_VERSION}'
 
 
 def _init_colors() -> Dict[str, str]:
@@ -565,6 +567,12 @@ class Project():
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
         self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
+        self._env = os.environ.copy()
+
+        # prepare environment
+        ninja_path = _env_ninja_command()
+        if ninja_path is not None:
+            self._env.setdefault('NINJA', str(ninja_path))
 
         # load config -- PEP 621 support is optional
         self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
@@ -637,7 +645,7 @@ class Project():
     def _proc(self, *args: str) -> None:
         """Invoke a subprocess."""
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
-        subprocess.check_call(list(args))
+        subprocess.check_call(list(args), env=self._env)
 
     def _meson(self, *args: str) -> None:
         """Invoke Meson."""
@@ -957,6 +965,37 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
         yield project
 
 
+def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pathlib.Path]:
+    """
+    Returns the path to ninja, or None if no ninja found.
+    """
+    required_version = tuple(int(v) for v in version.split('.'))
+    env_ninja = os.environ.get('NINJA', None)
+    ninja_candidates = [env_ninja] if env_ninja else ['ninja', 'ninja-build', 'samu']
+    for ninja in ninja_candidates:
+        ninja_path = shutil.which(ninja)
+        if ninja_path is None:
+            continue
+
+        result = subprocess.run([ninja_path, '--version'], check=False, text=True, capture_output=True)
+
+        try:
+            candidate_version = tuple(int(x) for x in result.stdout.split('.')[:3])
+        except ValueError:
+            continue
+        if candidate_version < required_version:
+            continue
+        return pathlib.Path(ninja_path)
+
+    return None
+
+
+def get_requires_for_build_sdist(
+    config_settings: Optional[Dict[str, str]] = None,
+) -> List[str]:
+    return [_depstr.ninja] if _env_ninja_command() is None else []
+
+
 def build_sdist(
     sdist_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -972,12 +1011,24 @@ def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     dependencies = [_depstr.wheel]
-    with _project(config_settings) as project:
-        if not project.is_pure and platform.system() == 'Linux':
-            # we may need patchelf
-            if not shutil.which('patchelf'):  # XXX: This is slightly dangerous.
-                # patchelf not already acessible on the system
+
+    if _env_ninja_command() is None:
+        dependencies.append(_depstr.ninja)
+
+    if sys.platform.startswith('linux'):
+        # we may need patchelf
+        if not shutil.which('patchelf'):
+            # patchelf not already accessible on the system
+            if _env_ninja_command() is not None:
+                # we have ninja available, so we can run Meson and check if the project needs patchelf
+                with _project(config_settings) as project:
+                    if not project.is_pure:
+                        dependencies.append(_depstr.patchelf)
+            else:
+                # we can't check if the project needs patchelf, so always add it
+                # XXX: wait for https://github.com/mesonbuild/meson/pull/10779
                 dependencies.append(_depstr.patchelf)
+
     return dependencies
 
 

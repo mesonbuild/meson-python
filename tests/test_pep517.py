@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
 
-import platform
+import shutil
+import subprocess
+import sys
+
+from typing import List
 
 import pytest
 
@@ -9,28 +13,41 @@ import mesonpy
 from .conftest import cd_package
 
 
-if platform.system() == 'Linux':
-    VENDORING_DEPS = {mesonpy._depstr.patchelf}
-else:
-    VENDORING_DEPS = set()
+@pytest.mark.parametrize('package', ['pure', 'library'])
+@pytest.mark.parametrize('system_patchelf', ['patchelf', None], ids=['patchelf', 'nopatchelf'])
+@pytest.mark.parametrize('ninja', [None, '1.8.1', '1.8.3'], ids=['noninja', 'oldninja', 'newninja'])
+def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, ninja):
+    def which(prog: str) -> bool:
+        if prog == 'patchelf':
+            return system_patchelf
+        if prog == 'ninja':
+            return ninja and 'ninja'
+        if prog in ('ninja-build', 'samu'):
+            return None
+        # smoke check for the future if we add another usage
+        raise AssertionError(f'Called with {prog}, tests not expecting that usage')
 
+    def run(cmd: List[str], *args: object, **kwargs: object) -> subprocess.CompletedProcess:
+        if cmd != ['ninja', '--version']:
+            # smoke check for the future if we add another usage
+            raise AssertionError(f'Called with {cmd}, tests not expecting that usage')
+        return subprocess.CompletedProcess(cmd, 0, f'{ninja}\n', '')
 
-@pytest.mark.parametrize(
-    ('package', 'system_patchelf', 'expected'),
-    [
-        ('pure', True, set()),  # pure and system patchelf
-        ('library', True, set()),  # not pure and system patchelf
-        ('pure', False, set()),  # pure and no system patchelf
-        ('library', False, VENDORING_DEPS),  # not pure and no system patchelf
-    ]
-)
-def test_get_requires_for_build_wheel(mocker, package, expected, system_patchelf):
-    mock = mocker.patch('shutil.which', return_value=system_patchelf)
+    monkeypatch.setattr(shutil, 'which', which)
+    monkeypatch.setattr(subprocess, 'run', run)
 
-    if mock.called:  # sanity check for the future if we add another usage
-        mock.assert_called_once_with('patchelf')
+    expected = {mesonpy._depstr.wheel}
+
+    ninja_available = ninja is not None and [int(x) for x in ninja.split('.')] >= [1, 8, 2]
+
+    if not ninja_available:
+        expected |= {mesonpy._depstr.ninja}
+
+    if (
+        system_patchelf is None and sys.platform.startswith('linux')
+        and (not ninja_available or (ninja_available and package != 'pure'))
+    ):
+        expected |= {mesonpy._depstr.patchelf}
 
     with cd_package(package):
-        assert set(mesonpy.get_requires_for_build_wheel()) == expected | {
-            mesonpy._depstr.wheel,
-        }
+        assert set(mesonpy.get_requires_for_build_wheel()) == expected
