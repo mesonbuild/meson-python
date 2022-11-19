@@ -23,8 +23,6 @@ concurrency:
 jobs:
   test:
     runs-on: ${{ matrix.os }}-latest
-    env:
-      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:
@@ -70,8 +68,6 @@ jobs:
 
   cygwin:
     runs-on: windows-latest
-    env:
-      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:
@@ -152,8 +148,6 @@ jobs:
 
   pyston:
     runs-on: ubuntu-20.04
-    env:
-      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:
@@ -189,8 +183,6 @@ jobs:
 
   homebrew:
     runs-on: macos-latest
-    env:
-      FORCE_COLOR: true
     strategy:
       fail-fast: false
       matrix:
@@ -242,8 +234,6 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_COLOR: true
     steps:
       - uses: actions/checkout@v2
 
