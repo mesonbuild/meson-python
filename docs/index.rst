@@ -149,6 +149,7 @@ If you really need the data to be installed where it was previously (eg.
    usage/start
    usage/build-options
    usage/specific-behaviors
+   usage/example
 
 
 .. toctree::
