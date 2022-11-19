@@ -1,0 +1,23 @@
+name: docs
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+      - release-*
+    paths:
+      - docs/**
+      - CHANGELOG.rst
+      - README.md
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - uses: actions/checkout@v3
+      - run: python -m pip install .[docs]
+      - run: python -m sphinx -W -b html docs/ build/html/
