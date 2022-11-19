@@ -69,10 +69,10 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
 
     config_settings = {
         'builddir': builddir,  # use the build directory we created
-        'dist_args': ('cli-dist',),
-        'setup_args': ('cli-setup',),
-        'compile_args': ('cli-compile',),
-        'install_args': ('cli-install',),
+        'dist-args': ('cli-dist',),
+        'setup-args': ('cli-setup',),
+        'compile-args': ('cli-compile',),
+        'install-args': ('cli-install',),
     }
 
     with contextlib.suppress(Exception):
