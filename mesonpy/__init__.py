@@ -800,9 +800,8 @@ class Project():
         assert isinstance(version, str)
         return version
 
-    @property
-    @functools.lru_cache(maxsize=1)
-    def metadata(self) -> bytes:  # noqa: C901
+    @cached_property
+    def metadata(self) -> bytes:
         """Project metadata."""
         # the rest of the keys are only available when using PEP 621 metadata
         if not self.pep621:
@@ -896,8 +895,8 @@ class Project():
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             if mtime:
                 pkginfo_info.mtime = mtime
-            pkginfo_info.size = len(self.metadata)  # type: ignore[arg-type]
-            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))  # type: ignore[arg-type]
+            pkginfo_info.size = len(self.metadata)
+            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))
 
         return sdist
 
