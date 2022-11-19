@@ -23,6 +23,6 @@ static struct PyModuleDef spammodule = {
     methods
 };
 
-PyMODINIT_FUNC PyInit__spam(void) {
+PyMODINIT_FUNC PyInit_spam(void) {
     return PyModule_Create(&spammodule);
 }

@@ -23,7 +23,7 @@ def test_build_and_import(venv, tmp_dir_session):
             [venv.executable, '-m', 'pip', 'install', wheel],
             check=True)
         output = subprocess.run(
-            [venv.executable, '-c', 'import spam; print(spam.add(1, 2))'],
+            [venv.executable, '-c', 'import spam; print(spam.spam.add(1, 2))'],
             check=True, stdout=subprocess.PIPE).stdout
 
         assert int(output) == 3

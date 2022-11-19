@@ -1,1 +1,1 @@
-from ._spam import add  # noqa: F401
+from . import bacon, spam
