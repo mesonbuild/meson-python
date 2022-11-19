@@ -948,18 +948,18 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
                 ))
             )
 
-    _validate_string_collection('dist_args')
-    _validate_string_collection('setup_args')
-    _validate_string_collection('compile_args')
-    _validate_string_collection('install_args')
+    _validate_string_collection('dist-args')
+    _validate_string_collection('setup-args')
+    _validate_string_collection('compile-args')
+    _validate_string_collection('install-args')
 
     with Project.with_temp_working_dir(
         build_dir=builddir,
         meson_args=typing.cast(MesonArgs, {
-            'dist': config_settings.get('dist_args', ()),
-            'setup': config_settings.get('setup_args', ()),
-            'compile': config_settings.get('compile_args', ()),
-            'install': config_settings.get('install_args', ()),
+            'dist': config_settings.get('dist-args', ()),
+            'setup': config_settings.get('setup-args', ()),
+            'compile': config_settings.get('compile-args', ()),
+            'install': config_settings.get('install-args', ()),
         }),
     ) as project:
         yield project
