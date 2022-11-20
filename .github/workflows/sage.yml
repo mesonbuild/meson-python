@@ -64,6 +64,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    outputs:
+      systems: ${{ steps.push-to-main-systems.outputs.systems }} ${{ steps.pull-request-systems.outputs.systems }}
     steps:
       - name: Check out ${{ env.SPKG }}
         uses: actions/checkout@v3
@@ -83,7 +85,34 @@ jobs:
           && echo "sed -i.bak \"/pushdef.*LT_VERSION/s/3[0-9.]*/4/\" ../build/pkgs/python3/spkg-configure.m4" >> upstream/update-pkgs.sh \
           && echo "sed -i.bak \"/export.*proxy/d\" ../build/bin/sage-spkg" >> upstream/update-pkgs.sh \
           && ls -l upstream/
-      - uses: actions/upload-artifact@v2
+      - name: System factors for pull requests
+        # See https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml for available systems
+        id: pull-request-systems
+        if: ${{ github.event_name == 'pull_request' }}
+        run: >-
+          echo 'systems=[
+          "archlinux-latest",
+          "conda-forge",
+          ]' >> $GITHUB_OUTPUT
+      - name: System factors for push to main
+        # See https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml for available systems
+        id: push-to-main-systems
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: >-
+          echo 'systems=[
+          "debian-bullseye",
+          "fedora-36",
+          "centos-stream-8-python3.9",
+          "gentoo-python3.9",
+          "archlinux-latest",
+          "opensuse-15.4-gcc_11-python3.10",
+          "opensuse-tumbleweed-python3.10",
+          "conda-forge",
+          "archlinux-latest",
+          "conda-forge",
+          ]' >> $GITHUB_OUTPUT
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
         with:
           path: upstream
           name: upstream
@@ -96,19 +125,9 @@ jobs:
       # Reduced list of systems to test: Only those that bring python >= 3.8
       # Full list at https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
       # See also https://github.com/sagemath/sage/blob/develop/tox.ini
-      tox_system_factors: >-
-          ["debian-bullseye",
-           "fedora-36",
-           "centos-stream-8-python3.9",
-           "gentoo-python3.9",
-           "archlinux-latest",
-           "opensuse-15.4-gcc_11-python3.10",
-           "opensuse-tumbleweed-python3.10",
-           "conda-forge",
-           ]
+      tox_system_factors: ${{ needs.build.outputs.systems }}
       tox_packages_factors: >-
-          ["minimal-develop",
-           ]
+        ["minimal-develop",]
       # Extra packages to install as system packages
       extra_sage_packages: "liblzma bzip2 libffi libpng python3 ninja_build"
       # Sage distribution packages to build
