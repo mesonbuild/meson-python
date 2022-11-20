@@ -253,8 +253,8 @@ jobs:
       - name: Run mypy
         run: mypy -p mesonpy
 
-  tests-pass:
-    needs: [test, cygwin, pyston, homebrew, mypy]
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "All jobs passed"
+  # tests-pass:
+  #   needs: [test, cygwin, pyston, homebrew, mypy]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: echo "All jobs passed"
