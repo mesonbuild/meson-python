@@ -112,7 +112,7 @@ jobs:
           "conda-forge",
           ]' >> $GITHUB_OUTPUT
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: upstream
           name: upstream
