@@ -31,13 +31,20 @@ jobs:
           - macos
           - windows
         python:
-          - 'pypy-3.8'
-          - 'pypy-3.9'
           - '3.7'
-          - '3.8'
-          - '3.9'
-          - '3.10'
           - '3.11'
+        include:
+          # Skip this interpreter version.
+          # - os: ubuntu
+          #   python: 'pypy-3.8'
+          - os: ubuntu
+            python: 'pypy-3.9'
+          - os: ubuntu
+            python: '3.8'
+          - os: ubuntu
+            python: '3.9'
+          - os: ubuntu
+            python: '3.10'
 
     steps:
       - name: Checkout
@@ -188,9 +195,6 @@ jobs:
       matrix:
         python:
           - '3.7'
-          - '3.8'
-          - '3.9'
-          - '3.10'
           - '3.11'
 
     steps:
