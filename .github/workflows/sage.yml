@@ -62,7 +62,7 @@ env:
 
 jobs:
 
-  dist:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out ${{ env.SPKG }}
@@ -88,7 +88,7 @@ jobs:
           path: upstream
           name: upstream
 
-  linux:
+  test:
     # https://github.com/sagemath/sage/blob/develop/.github/workflows/docker.yml
     # Use branch u/mkoeppe/numpy_1_23_x__scipy_1_9_x for a fix for uppercase github repo names (FFY00)
     uses: sagemath/sagetrac-mirror/.github/workflows/docker.yml@u/mkoeppe/numpy_1_23_x__scipy_1_9_x
@@ -126,10 +126,10 @@ jobs:
       # We prefix the image name with the SPKG name ("meson-python-") to avoid the error
       # 'Package "sage-docker-..." is already associated with another repository.'
       docker_push_repository: ghcr.io/${{ github.repository }}/meson-python-
-    needs: [dist]
+    needs: [build]
 
   # sage-pass:
-  #   needs: [linux]
+  #   needs: [test]
   #   runs-on: ubuntu-latest
   #   steps:
   #     - run: echo "All jobs passed"
