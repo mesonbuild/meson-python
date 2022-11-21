@@ -9,7 +9,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import cd_package, package_dir
+from .conftest import chdir, package_dir
 
 
 @pytest.mark.parametrize(
@@ -20,7 +20,7 @@ from .conftest import cd_package, package_dir
     ]
 )
 def test_name(package):
-    with cd_package(package), mesonpy.Project.with_temp_working_dir() as project:
+    with chdir(package_dir / package), mesonpy.Project.with_temp_working_dir() as project:
         assert project.name == package.replace('-', '_')
 
 
@@ -32,7 +32,7 @@ def test_name(package):
     ]
 )
 def test_version(package):
-    with cd_package(package), mesonpy.Project.with_temp_working_dir() as project:
+    with chdir(package_dir / package), mesonpy.Project.with_temp_working_dir() as project:
         assert project.version == '1.0.0'
 
 

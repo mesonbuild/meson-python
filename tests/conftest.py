@@ -32,14 +32,13 @@ package_dir = pathlib.Path(__file__).parent / 'packages'
 
 
 @contextlib.contextmanager
-def cd_package(package):
-    cur_dir = os.getcwd()
-    package_path = package_dir / package
-    os.chdir(package_path)
+def chdir(path):
+    current = os.getcwd()
+    os.chdir(path)
     try:
-        yield package_path
+        yield path
     finally:
-        os.chdir(cur_dir)
+        os.chdir(current)
 
 
 @contextlib.contextmanager
@@ -100,7 +99,7 @@ def venv():
 def generate_package_fixture(package):
     @pytest.fixture
     def fixture():
-        with cd_package(package) as new_path:
+        with chdir(package_dir / package) as new_path:
             yield new_path
     return fixture
 
@@ -108,7 +107,7 @@ def generate_package_fixture(package):
 def generate_sdist_fixture(package):
     @pytest.fixture(scope='session')
     def fixture(tmp_path_session):
-        with cd_package(package), in_git_repo_context():
+        with chdir(package_dir / package), in_git_repo_context():
             return tmp_path_session / mesonpy.build_sdist(tmp_path_session)
     return fixture
 
@@ -116,7 +115,7 @@ def generate_sdist_fixture(package):
 def generate_wheel_fixture(package):
     @pytest.fixture(scope='session')
     def fixture(tmp_path_session):
-        with cd_package(package), in_git_repo_context():
+        with chdir(package_dir / package), in_git_repo_context():
             return tmp_path_session / mesonpy.build_wheel(tmp_path_session)
     return fixture
 
