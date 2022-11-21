@@ -42,7 +42,7 @@ def test_contents_subdirs(sdist_subdirs):
     }
 
 
-def test_contents_unstaged(package_pure, tmpdir):
+def test_contents_unstaged(package_pure, tmp_path):
     new_data = textwrap.dedent('''
     def bar():
         return 'foo'
@@ -56,13 +56,13 @@ def test_contents_unstaged(package_pure, tmpdir):
             with open('pure.py', 'w') as f, open('crap', 'x'):
                 f.write(new_data)
 
-            sdist_path = mesonpy.build_sdist(os.fspath(tmpdir))
+            sdist_path = mesonpy.build_sdist(os.fspath(tmp_path))
     finally:
         with open('pure.py', 'w') as f:
             f.write(old_data)
         os.unlink('crap')
 
-    with tarfile.open(tmpdir / sdist_path, 'r:gz') as sdist:
+    with tarfile.open(tmp_path / sdist_path, 'r:gz') as sdist:
         names = set(sdist.getnames())
         read_data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
 
