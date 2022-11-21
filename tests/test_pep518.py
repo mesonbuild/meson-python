@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from .conftest import cd_package, in_git_repo_context
+from .conftest import chdir, in_git_repo_context, package_dir
 
 
 @pytest.mark.usefixtures('pep518')
@@ -19,6 +19,6 @@ from .conftest import cd_package, in_git_repo_context
 def test_pep518(package, build_arg, tmp_path):
     dist = tmp_path / 'dist'
 
-    with cd_package(package), in_git_repo_context():
+    with chdir(package_dir / package), in_git_repo_context():
         build_args = [build_arg] if build_arg else []
         subprocess.run([sys.executable, '-m', 'build', '--outdir', str(dist), *build_args], check=True)

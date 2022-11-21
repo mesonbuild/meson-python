@@ -10,7 +10,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import cd_package
+from .conftest import chdir, package_dir
 
 
 @pytest.mark.parametrize('package', ['pure', 'library'])
@@ -49,7 +49,7 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
     ):
         expected |= {mesonpy._depstr.patchelf}
 
-    with cd_package(package):
+    with chdir(package_dir / package):
         assert set(mesonpy.get_requires_for_build_wheel()) == expected
 
 
