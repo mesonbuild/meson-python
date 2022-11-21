@@ -70,7 +70,7 @@ strict = true
 lines_between_types = 1
 lines_after_imports = 2
 multi_line_output = 5
-known_first_party = "mesonpy"
+known_first_party = 'mesonpy'
 
 
 [tool.coverage.html]
@@ -78,8 +78,8 @@ show_contexts = true
 
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = ["-ra", "--strict-markers", "--strict-config"]
-log_cli_level = "info"
-norecursedirs = "tests/packages/*"
-testpaths = ["tests"]
+minversion = '6.0'
+addopts = ['-ra', '--strict-markers', '--strict-config']
+log_cli_level = 'info'
+norecursedirs = 'tests/packages/*'
+testpaths = ['tests']
