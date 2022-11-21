@@ -14,9 +14,10 @@ from .conftest import in_git_repo_context
 
 
 def test_contents(sdist_library):
-    sdist = tarfile.open(sdist_library, 'r:gz')
+    with tarfile.open(sdist_library, 'r:gz') as sdist:
+        names = set(sdist.getnames())
 
-    assert set(sdist.getnames()) == {
+    assert names == {
         'library-1.0.0/example.c',
         'library-1.0.0/examplelib.c',
         'library-1.0.0/examplelib.h',
@@ -27,9 +28,10 @@ def test_contents(sdist_library):
 
 
 def test_contents_subdirs(sdist_subdirs):
-    sdist = tarfile.open(sdist_subdirs, 'r:gz')
+    with tarfile.open(sdist_subdirs, 'r:gz') as sdist:
+        names = set(sdist.getnames())
 
-    assert set(sdist.getnames()) == {
+    assert names == {
         'subdirs-1.0.0/PKG-INFO',
         'subdirs-1.0.0/meson.build',
         'subdirs-1.0.0/pyproject.toml',
@@ -60,22 +62,21 @@ def test_contents_unstaged(package_pure, tmpdir):
             f.write(old_data)
         os.unlink('crap')
 
-    sdist = tarfile.open(tmpdir / sdist_path, 'r:gz')
+    with tarfile.open(tmpdir / sdist_path, 'r:gz') as sdist:
+        names = set(sdist.getnames())
+        read_data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
 
-    assert set(sdist.getnames()) == {
+    assert names == {
         'pure-1.0.0/PKG-INFO',
         'pure-1.0.0/meson.build',
         'pure-1.0.0/pure.py',
         'pure-1.0.0/pyproject.toml',
     }
-    read_data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
     assert read_data == new_data.encode()
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='Platform does not support executable bit')
 def test_executable_bit(sdist_executable_bit):
-    sdist = tarfile.open(sdist_executable_bit, 'r:gz')
-
     expected = {
         'executable_bit-1.0.0/PKG-INFO': False,
         'executable_bit-1.0.0/example-script.py': True,
@@ -84,12 +85,13 @@ def test_executable_bit(sdist_executable_bit):
         'executable_bit-1.0.0/meson.build': False,
         'executable_bit-1.0.0/pyproject.toml': False,
     }
-    for member in sdist.getmembers():
-        assert bool(member.mode & stat.S_IXUSR) == expected[member.name]
+
+    with tarfile.open(sdist_executable_bit, 'r:gz') as sdist:
+        for member in sdist.getmembers():
+            assert bool(member.mode & stat.S_IXUSR) == expected[member.name]
 
 
 def test_generated_files(sdist_generated_files):
-    sdist = tarfile.open(sdist_generated_files, 'r:gz')
     expected = {
         'executable_bit-1.0.0/PKG-INFO',
         'executable_bit-1.0.0/example-script.py',
@@ -100,4 +102,5 @@ def test_generated_files(sdist_generated_files):
         'executable_bit-1.0.0/_version_meson.py',
         'executable_bit-1.0.0/generate_version.py',
     }
-    assert set(tar.name for tar in sdist.getmembers()) == expected
+    with tarfile.open(sdist_generated_files, 'r:gz') as sdist:
+        assert set(tar.name for tar in sdist.getmembers()) == expected
