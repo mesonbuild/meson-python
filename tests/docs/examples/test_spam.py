@@ -8,16 +8,16 @@ import mesonpy
 from .conftest import build_project_wheel, examples_dir
 
 
-def test_build_and_import(venv, tmp_dir_session):
+def test_build_and_import(venv, tmp_path_session):
     """Test that the wheel for the spam example builds, installs, and imports."""
 
     if sys.version_info < (3, 8):
         # The test project requires Python >= 3.8.
         with pytest.raises(mesonpy.MesonBuilderError, match=r'Unsupported Python version `3.7.\d+`'):
-            build_project_wheel(package=examples_dir / 'spam', outdir=tmp_dir_session)
+            build_project_wheel(package=examples_dir / 'spam', outdir=tmp_path_session)
 
     else:
-        wheel = build_project_wheel(package=examples_dir / 'spam', outdir=tmp_dir_session)
+        wheel = build_project_wheel(package=examples_dir / 'spam', outdir=tmp_path_session)
 
         subprocess.run(
             [venv.executable, '-m', 'pip', 'install', wheel],

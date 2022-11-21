@@ -62,10 +62,10 @@ def in_git_repo_context(path=os.path.curdir):
 
 
 @pytest.fixture(scope='session')
-def tmp_dir_session(tmpdir_factory):
+def tmp_path_session(tmp_path_factory):
     return pathlib.Path(tempfile.mkdtemp(
         prefix='mesonpy-test-',
-        dir=tmpdir_factory.mktemp('test'),
+        dir=tmp_path_factory.mktemp('test'),
     ))
 
 
@@ -107,17 +107,17 @@ def generate_package_fixture(package):
 
 def generate_sdist_fixture(package):
     @pytest.fixture(scope='session')
-    def fixture(tmp_dir_session):
+    def fixture(tmp_path_session):
         with cd_package(package), in_git_repo_context():
-            return tmp_dir_session / mesonpy.build_sdist(tmp_dir_session)
+            return tmp_path_session / mesonpy.build_sdist(tmp_path_session)
     return fixture
 
 
 def generate_wheel_fixture(package):
     @pytest.fixture(scope='session')
-    def fixture(tmp_dir_session):
+    def fixture(tmp_path_session):
         with cd_package(package), in_git_repo_context():
-            return tmp_dir_session / mesonpy.build_wheel(tmp_dir_session)
+            return tmp_path_session / mesonpy.build_wheel(tmp_path_session)
     return fixture
 
 
@@ -138,8 +138,8 @@ def disable_pip_version_check():
 
 
 @pytest.fixture(scope='session')
-def pep518_wheelhouse(tmpdir_factory):
-    wheelhouse = tmpdir_factory.mktemp('wheelhouse')
+def pep518_wheelhouse(tmp_path_factory):
+    wheelhouse = tmp_path_factory.mktemp('wheelhouse')
     meson_python = str(package_dir.parent.parent)
     # Populate wheelhouse with wheel for the following packages and
     # their dependencies.  Wheels are downloaded from PyPI or built

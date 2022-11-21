@@ -53,10 +53,10 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
         assert set(mesonpy.get_requires_for_build_wheel()) == expected
 
 
-def test_invalid_config_settings(package_pure, tmp_dir_session):
+def test_invalid_config_settings(package_pure, tmp_path_session):
     raises_error = pytest.raises(mesonpy.ConfigError, match='Unknown config setting: invalid')
 
     with raises_error:
-        mesonpy.build_sdist(tmp_dir_session, {'invalid': ()})
+        mesonpy.build_sdist(tmp_path_session, {'invalid': ()})
     with raises_error:
-        mesonpy.build_wheel(tmp_dir_session, {'invalid': ()})
+        mesonpy.build_wheel(tmp_path_session, {'invalid': ()})

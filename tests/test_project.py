@@ -55,7 +55,7 @@ def test_unsupported_python_version(package_unsupported_python_version):
     sys.version_info < (3, 8),
     reason="unittest.mock doesn't support the required APIs for this test",
 )
-def test_user_args(package_user_args, mocker, tmp_dir_session):
+def test_user_args(package_user_args, mocker, tmp_path_session):
     mocker.patch('mesonpy.Project._meson')
 
     def last_two_meson_args():
@@ -64,7 +64,7 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
         ]
 
     # create the build directory ourselves because Project._meson is mocked
-    builddir = str(tmp_dir_session / 'build')
+    builddir = str(tmp_path_session / 'build')
     subprocess.run(['meson', 'setup', '.', builddir], check=True)
 
     config_settings = {
@@ -76,9 +76,9 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
     }
 
     with contextlib.suppress(Exception):
-        mesonpy.build_sdist(tmp_dir_session / 'dist', config_settings)
+        mesonpy.build_sdist(tmp_path_session / 'dist', config_settings)
     with contextlib.suppress(Exception):
-        mesonpy.build_wheel(tmp_dir_session / 'dist', config_settings)
+        mesonpy.build_wheel(tmp_path_session / 'dist', config_settings)
 
     assert last_two_meson_args() == [
         # sdist
@@ -92,6 +92,6 @@ def test_user_args(package_user_args, mocker, tmp_dir_session):
 
 
 @pytest.mark.parametrize('package', ('top-level', 'meson-args'))
-def test_unknown_user_args(package, tmp_dir_session):
+def test_unknown_user_args(package, tmp_path_session):
     with pytest.raises(mesonpy.ConfigError):
-        mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_dir_session)
+        mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_path_session)

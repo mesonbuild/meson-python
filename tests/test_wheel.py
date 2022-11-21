@@ -188,20 +188,20 @@ def test_detect_wheel_tag_script(wheel_executable):
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-def test_rpath(wheel_link_against_local_lib, tmpdir):
+def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
-    artifact.extractall(tmpdir)
+    artifact.extractall(tmp_path)
 
-    elf = mesonpy._elf.ELF(tmpdir / f'example{EXT_SUFFIX}')
+    elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
     assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
 
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
-def test_uneeded_rpath(wheel_purelib_and_platlib, tmpdir):
+def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
-    artifact.extractall(tmpdir)
+    artifact.extractall(tmp_path)
 
-    elf = mesonpy._elf.ELF(tmpdir / f'plat{EXT_SUFFIX}')
+    elf = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
     if elf.rpath:
         # elf.rpath is a frozenset, so iterate over it. An rpath may be
         # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
