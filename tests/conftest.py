@@ -156,4 +156,3 @@ def pep518_wheelhouse(tmpdir_factory):
 def pep518(pep518_wheelhouse, monkeypatch):
     monkeypatch.setenv('PIP_FIND_LINKS', pep518_wheelhouse)
     monkeypatch.setenv('PIP_NO_INDEX', 'true')
-    return pep518_wheelhouse

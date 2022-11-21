@@ -6,6 +6,7 @@ import pytest
 from .conftest import cd_package, in_git_repo_context
 
 
+@pytest.mark.usefixtures('pep518')
 @pytest.mark.parametrize(
     ('package'),
     [
@@ -15,7 +16,7 @@ from .conftest import cd_package, in_git_repo_context
 @pytest.mark.parametrize(
     'build_arg', ['', '--wheel'], ids=['sdist_to_wheel', 'wheel_directly']
 )
-def test_pep518(pep518, package, build_arg, tmp_path):
+def test_pep518(package, build_arg, tmp_path):
     dist = tmp_path / 'dist'
 
     with cd_package(package), in_git_repo_context():
