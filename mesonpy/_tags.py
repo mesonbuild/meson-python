@@ -84,7 +84,19 @@ def get_abi_tag() -> str:
 
 
 def _get_macosx_platform_tag() -> str:
-    ver, x, arch = platform.mac_ver()
+    ver, _, arch = platform.mac_ver()
+
+    # Override the architecture with the one provided in the
+    # _PYTHON_HOST_PLATFORM environment variable.  This environment
+    # variable affects the sysconfig.get_platform() return value and
+    # is used to cross-compile python extensions on macOS for a
+    # different architecture.  We base the platform tag computation on
+    # platform.mac_ver() but respect the content of the environment
+    # variable.
+    try:
+        arch = os.environ.get('_PYTHON_HOST_PLATFORM', '').split('-')[2]
+    except IndexError:
+        pass
 
     # Override the macOS version if one is provided via the
     # MACOS_DEPLOYMENT_TARGET environment variable.
