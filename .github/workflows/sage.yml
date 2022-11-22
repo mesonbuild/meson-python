@@ -133,7 +133,7 @@ jobs:
       # Extra system packages to install. See available packages at
       # https://github.com/sagemath/sage/tree/develop/build/pkgs
       # liblzma, bzip2, and libffi are python3 dependencies.
-      extra_sage_packages: "liblzma bzip2 libffi python3 ninja_build"
+      extra_sage_packages: "patch liblzma bzip2 libffi python3 ninja_build"
       # Sage distribution packages to build
       targets: SAGE_CHECK=no SAGE_CHECK_PACKAGES="meson_python" python_build meson_python
       sage_repo: sagemath/sage
