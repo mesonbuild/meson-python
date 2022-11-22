@@ -1,3 +1,4 @@
+import pathlib
 import subprocess
 import sys
 
@@ -5,25 +6,25 @@ import pytest
 
 import mesonpy
 
-from .conftest import build_project_wheel, examples_dir
+from .conftest import chdir
 
 
-def test_build_and_import(venv, tmp_path_session):
-    """Test that the wheel for the spam example builds, installs, and imports."""
+examples_dir = pathlib.Path(__file__).parent.parent / 'docs' / 'examples'
 
-    if sys.version_info < (3, 8):
-        # The test project requires Python >= 3.8.
-        with pytest.raises(mesonpy.MesonBuilderError, match=r'Unsupported Python version `3.7.\d+`'):
-            build_project_wheel(package=examples_dir / 'spam', outdir=tmp_path_session)
 
-    else:
-        wheel = build_project_wheel(package=examples_dir / 'spam', outdir=tmp_path_session)
-
-        subprocess.run(
-            [venv.executable, '-m', 'pip', 'install', wheel],
-            check=True)
-        output = subprocess.run(
-            [venv.executable, '-c', 'import spam; print(spam.add(1, 2))'],
-            check=True, stdout=subprocess.PIPE).stdout
-
-        assert int(output) == 3
+def test_spam(venv, tmp_path):
+    """Test that the wheel for the example builds, installs, and imports."""
+    with chdir(examples_dir / 'spam'):
+        if sys.version_info < (3, 8):
+            # The test project requires Python >= 3.8.
+            with pytest.raises(mesonpy.MesonBuilderError, match=r'Unsupported Python version `3.7.\d+`'):
+                mesonpy.build_wheel(tmp_path)
+        else:
+            wheel = mesonpy.build_wheel(tmp_path)
+            subprocess.run(
+                [venv.executable, '-m', 'pip', 'install', tmp_path / wheel],
+                check=True)
+            output = subprocess.run(
+                [venv.executable, '-c', 'import spam; print(spam.add(1, 2))'],
+                check=True, stdout=subprocess.PIPE).stdout
+            assert int(output) == 3
