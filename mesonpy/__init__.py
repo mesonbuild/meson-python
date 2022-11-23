@@ -966,8 +966,15 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
 
     for key in config_settings:
-        if key not in ('builddir', *meson_args_cli_keys):
-            raise ConfigError(f'Unknown config setting: {key}')
+        known_keys = ('builddir', *meson_args_cli_keys)
+        if key not in known_keys:
+            import difflib
+            matches = difflib.get_close_matches(key, known_keys, n=3)
+            if len(matches):
+                postfix = f'Did you mean one of: {matches}'
+            else:
+                postfix = 'There are no close valid keys.'
+            raise ConfigError(f'Unknown config setting: {key!r}.  {postfix}')
 
     for key in meson_args_cli_keys:
         _validate_string_collection(key)
