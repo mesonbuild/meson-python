@@ -33,10 +33,9 @@ jobs:
         python:
           - '3.7'
           - '3.11'
+        meson:
+          -
         include:
-          # Skip this interpreter version.
-          # - os: ubuntu
-          #   python: 'pypy-3.8'
           - os: ubuntu
             python: 'pypy-3.9'
           - os: ubuntu
@@ -45,6 +44,10 @@ jobs:
             python: '3.9'
           - os: ubuntu
             python: '3.10'
+          # Test with the oldest supported Meson version.
+          - os: ubuntu
+            python: '3.11'
+            meson: '0.63.3'
 
     steps:
       - name: Checkout
@@ -54,6 +57,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Install Meson
+        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
 
       - name: Install
         run: python -m pip --disable-pip-version-check install .[test]
