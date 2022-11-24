@@ -17,6 +17,8 @@ import pytest
 
 import mesonpy
 
+from mesonpy._util import chdir
+
 
 def adjust_packaging_platform_tag(platform: str) -> str:
     if platform.startswith(('manylinux', 'musllinux')):
@@ -41,16 +43,6 @@ def adjust_packaging_platform_tag(platform: str) -> str:
 
 
 package_dir = pathlib.Path(__file__).parent / 'packages'
-
-
-@contextlib.contextmanager
-def chdir(path):
-    current = os.getcwd()
-    os.chdir(path)
-    try:
-        yield path
-    finally:
-        os.chdir(current)
 
 
 @contextlib.contextmanager
