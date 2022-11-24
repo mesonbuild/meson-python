@@ -16,6 +16,9 @@ on:
   workflow_dispatch:
     # Allow to run manually
 
+env:
+  FORCE_COLOR: 1
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
