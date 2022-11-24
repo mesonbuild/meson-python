@@ -29,11 +29,12 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
         # smoke check for the future if we add another usage
         raise AssertionError(f'Called with {prog}, tests not expecting that usage')
 
+    subprocess_run = subprocess.run
+
     def run(cmd: List[str], *args: object, **kwargs: object) -> subprocess.CompletedProcess:
-        if cmd != ['ninja', '--version']:
-            # smoke check for the future if we add another usage
-            raise AssertionError(f'Called with {cmd}, tests not expecting that usage')
-        return subprocess.CompletedProcess(cmd, 0, f'{ninja}\n', '')
+        if cmd == ['ninja', '--version']:
+            return subprocess.CompletedProcess(cmd, 0, f'{ninja}\n', '')
+        return subprocess_run(cmd, *args, **kwargs)
 
     monkeypatch.setattr(shutil, 'which', which)
     monkeypatch.setattr(subprocess, 'run', run)
