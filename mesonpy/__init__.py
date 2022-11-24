@@ -680,7 +680,9 @@ class Project():
     def _proc(self, *args: str) -> None:
         """Invoke a subprocess."""
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
-        subprocess.check_call(list(args), env=self._env)
+        r = subprocess.run(list(args), env=self._env)
+        if r.returncode != 0:
+            raise SystemExit(r.returncode)
 
     def _meson(self, *args: str) -> None:
         """Invoke Meson."""
