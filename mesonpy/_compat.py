@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
+import functools
 import os
 import pathlib
 import sys
@@ -30,6 +31,12 @@ else:
     from typing_extensions import get_args as typing_get_args
 
 
+if sys.version_info >= (3, 8):
+    from functools import cached_property
+else:
+    cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
+
+
 Path = Union[str, os.PathLike]
 
 
@@ -43,6 +50,7 @@ def is_relative_to(path: pathlib.Path, other: Union[pathlib.Path, str]) -> bool:
 
 
 __all__ = [
+    'cached_property',
     'is_relative_to',
     'typing_get_args',
     'Collection',
