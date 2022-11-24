@@ -160,13 +160,10 @@ def test_contents_license_file(wheel_license_file):
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
 
-    # With Meson 0.63.x we see `data/bin/`, with master `scripts/`. The latter
-    # seems correct - see gh-115 for more details.
     executable_files = {
         'executable_bit-1.0.0.data/purelib/executable_module.py',
         'executable_bit-1.0.0.data/scripts/example',
         'executable_bit-1.0.0.data/scripts/example-script',
-        'executable_bit-1.0.0.data/data/bin/example-script',
     }
     for info in artifact.infolist():
         mode = (info.external_attr >> 16) & 0o777
