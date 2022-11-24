@@ -543,7 +543,7 @@ class _WheelBuilder():
 
 
 MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
-MesonArgs = Mapping[MesonArgsKeys, Collection[str]]
+MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
 class Project():
@@ -554,7 +554,7 @@ class Project():
     ]
     _metadata: Optional[pyproject_metadata.StandardMetadata]
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         source_dir: Path,
         working_dir: Path,
@@ -566,12 +566,40 @@ class Project():
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
         self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
+        self._meson_cross_file = self._source_dir / '.mesonpy-cross-file.ini'
+        self._meson_args: MesonArgs = collections.defaultdict(list)
         self._env = os.environ.copy()
 
         # prepare environment
         ninja_path = _env_ninja_command()
         if ninja_path is not None:
             self._env.setdefault('NINJA', str(ninja_path))
+
+        # setuptools-like ARCHFLAGS environment variable support
+        if sysconfig.get_platform().startswith('macosx-'):
+            archflags = self._env.get('ARCHFLAGS')
+            if archflags is not None:
+                arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
+                if other:
+                    raise ConfigError(f'multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
+                macver, _, nativearch = platform.mac_ver()
+                if arch != nativearch:
+                    x = self._env.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
+                    if not x.endswith(arch):
+                        raise ConfigError(f'$ARCHFLAGS={archflags!r} and $_PYTHON_HOST_PLATFORM={x!r} do not agree')
+                    family = 'aarch64' if arch == 'arm64' else arch
+                    cross_file_data = textwrap.dedent(f'''
+                        [binaries]
+                        c = ['cc', '-arch', {arch!r}]
+                        cpp = ['cpp', '-arch', {arch!r}]
+                        [host_machine]
+                        system = 'Darwin'
+                        cpu = {arch!r}
+                        cpu_family = {family!r}
+                        endian = 'little'
+                    ''')
+                    self._meson_cross_file.write_text(cross_file_data)
+                    self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
         # load config -- PEP 621 support is optional
         self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
@@ -594,15 +622,19 @@ class Project():
             self._validate_metadata()
 
         # load meson args
-        self._meson_args = collections.defaultdict(tuple, meson_args or {})
         for key in self._get_config_key('args'):
-            args_from_config = tuple(self._get_config_key(f'args.{key}'))
-            self._meson_args[key] = args_from_config + tuple(self._meson_args[key])
+            self._meson_args[key].extend(self._get_config_key(f'args.{key}'))
         # XXX: We should validate the user args to make sure they don't conflict with ours.
 
         self._check_for_unknown_config_keys({
             'args': typing_get_args(MesonArgsKeys),
         })
+
+        # meson arguments from the command line take precedence over
+        # arguments from the configuration file thus are added later
+        if meson_args:
+            for key, value in meson_args.items():
+                self._meson_args[key].extend(value)
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True)
