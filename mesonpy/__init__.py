@@ -49,18 +49,13 @@ import mesonpy._util
 import mesonpy._wheelfile
 
 from mesonpy._compat import (
-    Collection, Iterator, Literal, Mapping, ParamSpec, Path, typing_get_args
+    Collection, Iterator, Literal, Mapping, ParamSpec, Path, cached_property,
+    typing_get_args
 )
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import pyproject_metadata  # noqa: F401
-
-
-if sys.version_info >= (3, 8):
-    from functools import cached_property
-else:
-    cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
 
 
 __version__ = '0.13.0.dev0'
