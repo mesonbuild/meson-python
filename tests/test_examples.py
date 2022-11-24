@@ -6,7 +6,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir
+from mesonpy._util import chdir
 
 
 examples_dir = pathlib.Path(__file__).parent.parent / 'docs' / 'examples'

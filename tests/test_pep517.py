@@ -10,7 +10,9 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir, package_dir
+from mesonpy._util import chdir
+
+from .conftest import package_dir
 
 
 @pytest.mark.parametrize('package', ['pure', 'library'])

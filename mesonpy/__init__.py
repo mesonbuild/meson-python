@@ -652,7 +652,7 @@ class Project():
 
     def _meson(self, *args: str) -> None:
         """Invoke Meson."""
-        with mesonpy._util.cd(self._build_dir):
+        with mesonpy._util.chdir(self._build_dir):
             return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
