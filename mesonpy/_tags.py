@@ -29,7 +29,7 @@ def get_interpreter_tag() -> str:
 
 
 def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[str, int, None]:
-    value = sysconfig.get_config_var(name)
+    value: Union[str, int, None] = sysconfig.get_config_var(name)
     if value is None:
         return default
     return value
