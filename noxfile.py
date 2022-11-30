@@ -30,7 +30,7 @@ def docs(session):
 
 @nox.session(python='3.7')
 def mypy(session):
-    session.install('mypy==0.981')
+    session.install('mypy==0.991')
 
     session.run('mypy', '-p', 'mesonpy')
 
