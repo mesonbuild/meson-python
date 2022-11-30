@@ -194,10 +194,14 @@ class _WheelBuilder():
         return bool(self._wheel_files['platlib'])
 
     @property
+    def normalized_name(self) -> str:
+        return self._project.name.replace('-', '_')
+
+    @property
     def basename(self) -> str:
         """Normalized wheel name and version (eg. meson_python-1.0.0)."""
         return '{distribution}-{version}'.format(
-            distribution=self._project.name.replace('-', '_'),
+            distribution=self.normalized_name,
             version=self._project.version,
         )
 
@@ -541,6 +545,9 @@ class _WheelBuilder():
                         self._install_path(whl, counter, origin, destination)
 
         return wheel_file
+
+    def build_editable(self, directory: Path) -> pathlib.Path:
+        self._build()
 
 
 MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
