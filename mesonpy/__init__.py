@@ -1105,11 +1105,9 @@ class Project():
 
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory."""
-        wheel = self._wheel_builder.build(self._build_dir)
-
-        final_wheel = pathlib.Path(directory, wheel.name)
-        shutil.move(os.fspath(wheel), final_wheel)
-        return final_wheel
+        file = self._wheel_builder.build(directory)
+        assert isinstance(file, pathlib.Path)
+        return file
 
     def editable(self, directory: Path) -> pathlib.Path:
         file = self._wheel_builder.build_editable(directory)
