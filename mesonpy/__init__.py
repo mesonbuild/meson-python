@@ -519,7 +519,7 @@ class _WheelBuilder():
         Some files might need to be fixed up to set the RPATH to the internal
         library directory on Linux wheels for eg.
         """
-        location = os.fspath(destination).replace(os.path.sep, '/')
+        location = destination.as_posix()
         counter.update(location)
 
         # fix file
