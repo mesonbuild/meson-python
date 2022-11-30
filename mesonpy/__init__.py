@@ -427,7 +427,6 @@ class _WheelBuilder():
         copy_files: Dict[str, str],
     ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
         """Map files to the wheel, organized by scheme."""
-        relative_destination: Optional[pathlib.Path]
         wheel_files = collections.defaultdict(list)
         for files in sources.values():  # entries in intro-install_plan.json
             for file, details in files.items():  # install path -> {destination, tag}
