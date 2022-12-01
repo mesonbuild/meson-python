@@ -427,7 +427,6 @@ class _WheelBuilder():
         copy_files: Dict[str, str],
     ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
         """Map files to the wheel, organized by scheme."""
-        relative_destination: Optional[pathlib.Path]
         wheel_files = collections.defaultdict(list)
         for files in sources.values():  # entries in intro-install_plan.json
             for file, details in files.items():  # install path -> {destination, tag}
@@ -976,8 +975,15 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
 
     for key in config_settings:
-        if key not in ('builddir', *meson_args_cli_keys):
-            raise ConfigError(f'Unknown config setting: {key}')
+        known_keys = ('builddir', *meson_args_cli_keys)
+        if key not in known_keys:
+            import difflib
+            matches = difflib.get_close_matches(key, known_keys, n=3)
+            if len(matches):
+                postfix = f'Did you mean one of: {matches}'
+            else:
+                postfix = 'There are no close valid keys.'
+            raise ConfigError(f'Unknown config setting: {key!r}.  {postfix}')
 
     for key in meson_args_cli_keys:
         _validate_string_collection(key)
