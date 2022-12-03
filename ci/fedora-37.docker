@@ -1,0 +1,3 @@
+# 20221203
+FROM fedora:37
+RUN dnf -y update && dnf -y install python3-devel python3-pip gcc ninja-build git patchelf && dnf clean all

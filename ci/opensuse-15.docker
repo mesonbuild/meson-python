@@ -1,0 +1,3 @@
+# 20221203
+FROM opensuse/leap:latest
+RUN zypper --non-interactive install python310 python310-pip python310-devel gcc ninja git patchelf && zypper clean --all && ln -s python3.10 /usr/bin/python3
