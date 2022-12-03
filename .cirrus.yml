@@ -1,0 +1,64 @@
+test_template: &test
+  test_script:
+    - command -v python3
+    - python3 --version
+    - python3 -m pip install .[test]
+    - python3 -m pytest
+
+alpine-3_task:
+  container:
+    dockerfile: ci/alpine-3.docker
+    cpu: 1
+  << : *test
+
+archlinux_task:
+  container:
+    dockerfile: ci/archlinux.docker
+    cpu: 1
+  << : *test
+
+debian-11_task:
+  container:
+    dockerfile: ci/debian-11.docker
+    cpu: 1
+  << : *test
+
+debian-unstable_task:
+  container:
+    dockerfile: ci/debian-unstable.docker
+    cpu: 1
+  << : *test
+
+fedora-37_task:
+  container:
+    dockerfile: ci/fedora-37.docker
+    cpu: 1
+  << : *test
+
+manylinux-python3.11_task:
+  container:
+    dockerfile: ci/manylinux.docker
+    cpu: 1
+  env:
+    PATH: "/opt/python/cp311-cp311/bin/:${PATH}"
+  << : *test
+
+manylinux-python3.7_task:
+  container:
+    dockerfile: ci/manylinux.docker
+    cpu: 1
+  env:
+    PATH: "/opt/python/cp37-cp37m/bin/:${PATH}"
+  << : *test
+
+miniconda_task:
+  container:
+    dockerfile: ci/miniconda.docker
+    cpu: 1
+  << : *test
+
+opensuse-15_task:
+  container:
+    dockerfile: ci/opensuse-15.docker
+    cpu: 1
+  << : *test

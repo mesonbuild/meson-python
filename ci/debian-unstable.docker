@@ -1,0 +1,3 @@
+# 20221203
+FROM debian:unstable
+RUN apt-get update && apt-get install -y git ninja-build patchelf python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
