@@ -21,12 +21,18 @@ debian-11_task:
   container:
     dockerfile: ci/debian-11.docker
     cpu: 1
+  fix-pip_script:
+    # see https://github.com/pypa/pip/pull/11623
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@refs/pull/11623/merge"
   << : *test
 
 debian-unstable_task:
   container:
     dockerfile: ci/debian-unstable.docker
     cpu: 1
+  fix-pip_script:
+    # see https://github.com/pypa/pip/pull/11623
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@refs/pull/11623/merge"
   << : *test
 
 fedora-37_task:
