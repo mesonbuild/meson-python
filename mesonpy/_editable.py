@@ -3,9 +3,10 @@ import importlib.abc
 import os
 import subprocess
 import sys
+import warnings
 
 from types import ModuleType
-from typing import List, Optional, Union
+from typing import List, Mapping, Optional, Union
 
 
 if sys.version_info >= (3, 9):
@@ -16,6 +17,37 @@ else:
 
 # This file should be standalone!
 # It is copied during the editable hook installation.
+
+
+_COLORS = {
+    'cyan': '\33[36m',
+    'yellow': '\33[93m',
+    'light_blue': '\33[94m',
+    'bold': '\33[1m',
+    'dim': '\33[2m',
+    'underline': '\33[4m',
+    'reset': '\33[0m',
+}
+_NO_COLORS = {color: '' for color in _COLORS}
+
+
+def _init_colors() -> Mapping[str, str]:
+    """Detect if we should be using colors in the output. We will enable colors
+    if running in a TTY, and no environment variable overrides it. Setting the
+    NO_COLOR (https://no-color.org/) environment variable force-disables colors,
+    and FORCE_COLOR forces color to be used, which is useful for thing like
+    Github actions.
+    """
+    if 'NO_COLOR' in os.environ:
+        if 'FORCE_COLOR' in os.environ:
+            warnings.warn('Both NO_COLOR and FORCE_COLOR environment variables are set, disabling color')
+        return _NO_COLORS
+    elif 'FORCE_COLOR' in os.environ or sys.stdout.isatty():
+        return _COLORS
+    return _NO_COLORS
+
+
+_STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
 
 
 class MesonpyFinder(importlib.abc.MetaPathFinder):
@@ -32,30 +64,44 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         import_paths: List[str],
         top_level_modules: List[str],
         rebuild_commands: List[List[str]],
+        verbose: bool = False,
     ) -> None:
         self._project_path = project_path
         self._build_path = build_path
         self._import_paths = import_paths
         self._top_level_modules = top_level_modules
         self._rebuild_commands = rebuild_commands
+        self._verbose = verbose
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._project_path})'
 
+    def _debug(self, msg: str) -> None:
+        if self._verbose:
+            print(msg.format(**_STYLES))
+
+    def _proc(self, command: List[str]) -> None:
+        # skip editable hook installation in subprocesses, as during the build
+        # commands the module we are rebuilding might be imported, causing a
+        # rebuild loop
+        # see https://github.com/mesonbuild/meson-python/pull/87#issuecomment-1342548894
+        env = os.environ.copy()
+        env['_MESONPY_EDITABLE_SKIP'] = os.pathsep.join((
+            env.get('_MESONPY_EDITABLE_SKIP', ''),
+            self._project_path,
+        ))
+
+        if self._verbose:
+            subprocess.check_call(command, cwd=self._build_path, env=env)
+        else:
+            subprocess.check_output(command, cwd=self._build_path, env=env)
+
     @functools.lru_cache(maxsize=1)
     def rebuild(self) -> None:
+        self._debug(f'{{cyan}}{{bold}}+ rebuilding {self._project_path}{{reset}}')
         for command in self._rebuild_commands:
-            # skip editable hook installation in subprocesses, as during the
-            # build commands the module we are rebuilding might be imported,
-            # causing a rebuild loop
-            # see https://github.com/mesonbuild/meson-python/pull/87#issuecomment-1342548894
-            env = os.environ.copy()
-            env['_MESONPY_EDITABLE_SKIP'] = os.pathsep.join((
-                env.get('_MESONPY_EDITABLE_SKIP', ''),
-                self._project_path,
-            ))
-
-            subprocess.check_output(command, cwd=self._build_path, env=env)
+            self._proc(command)
+        self._debug('{cyan}{bold}+ successfully rebuilt{reset}')
 
     def find_spec(
         self,
@@ -87,11 +133,14 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         import_paths: List[str],
         top_level_modules: List[str],
         rebuild_commands: List[List[str]],
+        verbose: bool = False,
     ) -> None:
         if project_path in os.environ.get('_MESONPY_EDITABLE_SKIP', '').split(os.pathsep):
             return
+        if os.environ.get('MESONPY_EDITABLE_VERBOSE', ''):
+            verbose = True
         # install our finder
-        finder = cls(project_path, build_path, import_paths, top_level_modules, rebuild_commands)
+        finder = cls(project_path, build_path, import_paths, top_level_modules, rebuild_commands, verbose)
         if finder not in sys.meta_path:
             # prepend our finder to sys.meta_path, so that it is queried before
             # the normal finders, and can trigger a project rebuild

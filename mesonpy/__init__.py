@@ -597,7 +597,7 @@ class _WheelBuilder():
 
         return wheel_file
 
-    def build_editable(self, directory: Path) -> pathlib.Path:
+    def build_editable(self, directory: Path, verbose: bool = False) -> pathlib.Path:
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
@@ -631,6 +631,7 @@ class _WheelBuilder():
                     import_paths={_as_python_declaration(import_paths)},
                     top_level_modules={_as_python_declaration(top_level_modules)},
                     rebuild_commands={_as_python_declaration(rebuild_commands)},
+                    verbose={verbose},
                 )
             ''').strip().encode()
             whl.writestr(
@@ -672,10 +673,12 @@ class Project():
         working_dir: Path,
         build_dir: Optional[Path] = None,
         meson_args: Optional[MesonArgs] = None,
+        editable_verbose: bool = False,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
+        self._editable_verbose = editable_verbose
         self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
         self._meson_cross_file = self._source_dir / '.mesonpy-cross-file.ini'
@@ -897,10 +900,11 @@ class Project():
         source_dir: Path = os.path.curdir,
         build_dir: Optional[Path] = None,
         meson_args: Optional[MesonArgs] = None,
+        editable_verbose: bool = False,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir, meson_args)
+            yield cls(source_dir, tmpdir, build_dir, meson_args, editable_verbose)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -1110,7 +1114,7 @@ class Project():
         return file
 
     def editable(self, directory: Path) -> pathlib.Path:
-        file = self._wheel_builder.build_editable(directory)
+        file = self._wheel_builder.build_editable(directory, self._editable_verbose)
         assert isinstance(file, pathlib.Path)
         return file
 
@@ -1151,7 +1155,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
 
     for key in config_settings:
-        known_keys = ('builddir', *meson_args_cli_keys)
+        known_keys = ('builddir', 'editable-verbose', *meson_args_cli_keys)
         if key not in known_keys:
             import difflib
             matches = difflib.get_close_matches(key, known_keys, n=3)
@@ -1170,6 +1174,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             key: config_settings.get(f'{key}-args', ())
             for key in meson_args_keys
         }),
+        editable_verbose=bool(config_settings.get('editable-verbose'))
     ) as project:
         yield project
 
