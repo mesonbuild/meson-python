@@ -101,12 +101,12 @@ def _get_macosx_platform_tag() -> str:
     #
     # This results in packaging versions up to 21.3 generating
     # platform tags like "macosx_10_16_x86_64" and later versions
-    # generating "macosx_11_0_x86_64".  Using latter would be more
+    # generating "macosx_11_0_x86_64".  Using the latter would be more
     # correct but prevents the resulting wheel from being installed on
     # systems using packaging 21.3 or earlier (pip 22.3 or earlier).
     #
     # Fortunately packaging versions carrying the workaround still
-    # accepts "macosx_11_0_x86_64" as a compatible platform tag.  We
+    # accepts "macosx_10_16_x86_64" as a compatible platform tag.  We
     # can therefore ignore the issue and generate the slightly
     # incorrect tag.
 
