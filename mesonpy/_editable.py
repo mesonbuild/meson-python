@@ -1,5 +1,6 @@
 import functools
 import importlib.abc
+import os
 import subprocess
 import sys
 
@@ -44,7 +45,17 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
     @functools.lru_cache(maxsize=1)
     def rebuild(self) -> None:
         for command in self._rebuild_commands:
-            subprocess.check_output(command, cwd=self._build_path)
+            # skip editable hook installation in subprocesses, as during the
+            # build commands the module we are rebuilding might be imported,
+            # causing a rebuild loop
+            # see https://github.com/mesonbuild/meson-python/pull/87#issuecomment-1342548894
+            env = os.environ.copy()
+            env['_MESONPY_EDITABLE_SKIP'] = os.pathsep.join((
+                env.get('_MESONPY_EDITABLE_SKIP', ''),
+                self._project_path,
+            ))
+
+            subprocess.check_output(command, cwd=self._build_path, env=env)
 
     def find_spec(
         self,
@@ -77,6 +88,9 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         top_level_modules: List[str],
         rebuild_commands: List[List[str]],
     ) -> None:
+        if project_path in os.environ.get('_MESONPY_EDITABLE_SKIP', '').split(os.pathsep):
+            return
+        # install our finder
         finder = cls(project_path, build_path, import_paths, top_level_modules, rebuild_commands)
         if finder not in sys.meta_path:
             # prepend our finder to sys.meta_path, so that it is queried before
