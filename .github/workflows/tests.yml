@@ -61,6 +61,18 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+        if: ${{ matrix.os == 'ubuntu' }}
+
+      - name: Install Ninja
+        run: brew install ninja
+        if: ${{ matrix.os == 'macos' }}
+
+      - name: Install Ninja
+        run: python -m pip --disable-pip-version-check install ninja
+        if: ${{ matrix.os == 'windows' }}
+
       - name: Install Meson
         run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
         if: ${{ matrix.meson }}
@@ -180,6 +192,9 @@ jobs:
           wget https://github.com/pyston/pyston/releases/download/pyston_2.3.5/pyston_2.3.5_20.04_amd64.deb
           sudo apt install $(pwd)/pyston_2.3.5_20.04_amd64.deb
 
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+
       - name: Install
         run: pyston -m pip --disable-pip-version-check install .[test]
 
@@ -215,6 +230,9 @@ jobs:
         run: |
           brew install --overwrite python@${{ matrix.python }}
           echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+
+      - name: Install Ninja
+        run: brew install ninja
 
       - name: Patch pip
         # Patch https://github.com/pypa/pip/issues/11539

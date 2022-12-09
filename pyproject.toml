@@ -44,7 +44,6 @@ test = [
   'auditwheel',
   'Cython',
   'wheel',
-  'ninja',
 ]
 docs = [
   'furo>=2021.08.31',
