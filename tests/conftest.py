@@ -89,6 +89,12 @@ class VEnv(EnvBuilder):
         self.executable = context.env_exe
         return context
 
+    def python(self, *args: str):
+        return subprocess.check_output([self.executable, *args]).decode()
+
+    def pip(self, *args: str):
+        return self.python('-m', 'pip', *args)
+
 
 @pytest.fixture()
 def venv():
