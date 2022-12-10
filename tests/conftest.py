@@ -126,12 +126,21 @@ def generate_wheel_fixture(package):
     return fixture
 
 
+def generate_editable_fixture(package):
+    @pytest.fixture(scope='session')
+    def fixture(tmp_path_session):
+        with chdir(package_dir / package), in_git_repo_context():
+            return tmp_path_session / mesonpy.build_editable(tmp_path_session)
+    return fixture
+
+
 # inject {package,sdist,wheel}_* fixtures (https://github.com/pytest-dev/pytest/issues/2424)
 for package in os.listdir(package_dir):
     normalized = package.replace('-', '_')
     globals()[f'package_{normalized}'] = generate_package_fixture(package)
     globals()[f'sdist_{normalized}'] = generate_sdist_fixture(package)
     globals()[f'wheel_{normalized}'] = generate_wheel_fixture(package)
+    globals()[f'editable_{normalized}'] = generate_editable_fixture(package)
 
 
 @pytest.fixture(autouse=True, scope='session')
