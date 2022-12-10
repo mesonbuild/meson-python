@@ -146,13 +146,8 @@ def test_configure_data(wheel_configure_data):
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
-    subprocess.run(
-        [venv.executable, '-m', 'pip', 'install', wheel_link_against_local_lib],
-        check=True)
-    output = subprocess.run(
-        [venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'],
-        stdout=subprocess.PIPE,
-        check=True).stdout
+    venv.pip('install', wheel_link_against_local_lib)
+    output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
     assert int(output) == 3
 
 
