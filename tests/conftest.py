@@ -97,13 +97,9 @@ class VEnv(EnvBuilder):
 
 
 @pytest.fixture()
-def venv():
-    path = pathlib.Path(tempfile.mkdtemp(prefix='mesonpy-test-venv-'))
-    venv = VEnv(path)
-    try:
-        yield venv
-    finally:
-        shutil.rmtree(path)
+def venv(tmp_path_factory):
+    path = pathlib.Path(tmp_path_factory.mktemp('mesonpy-test-venv'))
+    return VEnv(path)
 
 
 def generate_package_fixture(package):
