@@ -148,6 +148,56 @@ def _as_python_declaration(value: Any) -> str:
     raise NotImplementedError(f'Unsupported type: {type(value)}')
 
 
+@functools.lru_cache()
+def _debian_python() -> bool:
+    """Check if we are running on Debian-patched Python."""
+    if sys.version_info >= (3, 10):
+        return 'deb_system' in sysconfig.get_scheme_names()
+    try:
+        import distutils
+        try:
+            import distutils.command.install
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
+        return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
+    except ModuleNotFoundError:
+        return False
+
+
+@functools.lru_cache()
+def _debian_distutils_paths() -> Mapping[str, str]:
+    # https://ffy00.github.io/blog/02-python-debian-and-the-install-locations/
+    assert sys.version_info < (3, 12) and _debian_python()
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=DeprecationWarning)
+        import distutils.dist
+
+    distribution = distutils.dist.Distribution()
+    install_cmd = distribution.get_command_obj('install')
+    install_cmd.install_layout = 'deb'  # type: ignore[union-attr]
+    install_cmd.finalize_options()  # type: ignore[union-attr]
+
+    return {
+        'data': install_cmd.install_data,  # type: ignore[union-attr]
+        'platlib': install_cmd.install_platlib,  # type: ignore[union-attr]
+        'purelib': install_cmd.install_purelib,  # type: ignore[union-attr]
+        'scripts': install_cmd.install_scripts,  # type: ignore[union-attr]
+    }
+
+
+@functools.lru_cache()
+def _sysconfig_paths() -> Mapping[str, str]:
+    sys_vars = sysconfig.get_config_vars().copy()
+    sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
+    if _debian_python():
+        if sys.version_info >= (3, 10):
+            return sysconfig.get_paths('deb_system', vars=sys_vars)
+        else:
+            return _debian_distutils_paths()
+    return sysconfig.get_paths(vars=sys_vars)
+
+
 class Error(RuntimeError):
     def __str__(self) -> str:
         return str(self.args[0])
@@ -298,56 +348,6 @@ class _WheelBuilder():
 
         return text.encode()
 
-    @property
-    def _debian_python(self) -> bool:
-        """Check if we are running on Debian-patched Python."""
-        if sys.version_info >= (3, 10):
-            return 'deb_system' in sysconfig.get_scheme_names()
-        try:
-            import distutils
-            try:
-                import distutils.command.install
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
-            return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
-        except ModuleNotFoundError:
-            return False
-
-    @property
-    def _debian_distutils_paths(self) -> Mapping[str, str]:
-        # https://ffy00.github.io/blog/02-python-debian-and-the-install-locations/
-        assert sys.version_info < (3, 12) and self._debian_python
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=DeprecationWarning)
-            import distutils.dist
-
-        distribution = distutils.dist.Distribution({
-            'name': self._project.name,
-        })
-        install_cmd = distribution.get_command_obj('install')
-        install_cmd.install_layout = 'deb'  # type: ignore[union-attr]
-        install_cmd.finalize_options()  # type: ignore[union-attr]
-
-        return {
-            'data': install_cmd.install_data,  # type: ignore[union-attr]
-            'headers': install_cmd.install_headers,  # type: ignore[union-attr]
-            'platlib': install_cmd.install_platlib,  # type: ignore[union-attr]
-            'purelib': install_cmd.install_purelib,  # type: ignore[union-attr]
-            'scripts': install_cmd.install_scripts,  # type: ignore[union-attr]
-        }
-
-    @property
-    def _sysconfig_paths(self) -> Mapping[str, str]:
-        sys_vars = sysconfig.get_config_vars().copy()
-        sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
-        if self._debian_python:
-            if sys.version_info >= (3, 10):
-                return sysconfig.get_paths('deb_system', vars=sys_vars)
-            else:
-                return self._debian_distutils_paths
-        return sysconfig.get_paths(vars=sys_vars)
-
     @cached_property
     def _stable_abi(self) -> Optional[str]:
         """Determine stabe ABI compatibility.
@@ -461,9 +461,9 @@ class _WheelBuilder():
         origin file and the Meson destination path.
         """
         warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
-        sys_paths = self._sysconfig_paths
+        sys_paths = _sysconfig_paths()
         # Try to map to Debian dist-packages
-        if self._debian_python:
+        if _debian_python():
             search_path = origin
             while search_path != search_path.parent:
                 search_path = search_path.parent
@@ -634,7 +634,7 @@ class _WheelBuilder():
         rebuild_commands = self._project.build_commands(install_path)
 
         import_paths = set()
-        for name, raw_path in self._sysconfig_paths.items():
+        for name, raw_path in _sysconfig_paths().items():
             if name not in ('purelib', 'platlib'):
                 continue
             path = pathlib.Path(raw_path)
@@ -833,6 +833,7 @@ class Project():
         We will try to reconfigure the build directory if possible to avoid
         expensive rebuilds.
         """
+        sys_paths = _sysconfig_paths()
         setup_args = [
             f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
@@ -841,6 +842,15 @@ class Project():
             # TODO: Allow configuring these arguments
             '-Ddebug=false',
             '-Doptimization=2',
+
+            # XXX: This should not be needed, but Meson is using the wrong paths
+            #      in some scenarios, like on macOS.
+            #      https://github.com/mesonbuild/meson-python/pull/87#discussion_r1047041306
+            '--python.purelibdir',
+            sys_paths['purelib'],
+            '--python.platlibdir',
+            sys_paths['platlib'],
+
             # user args
             *self._meson_args['setup'],
         ]
