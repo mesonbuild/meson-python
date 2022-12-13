@@ -12,6 +12,7 @@ py.install_sources(
   'mesonpy/_compat.py',
   'mesonpy/_editable.py',
   'mesonpy/_elf.py',
+  'mesonpy/_introspection.py',
   'mesonpy/_tags.py',
   'mesonpy/_util.py',
   'mesonpy/_wheelfile.py',
