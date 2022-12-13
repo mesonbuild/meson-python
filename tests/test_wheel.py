@@ -19,6 +19,14 @@ from .conftest import adjust_packaging_platform_tag
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
+if sys.version_info <= (3, 8, 7):
+    meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+    meson_version = tuple(map(int, meson_ver_str.split('.')[:2]))
+    if meson_version >= (0, 99):
+        # Fixed in Meson 1.0, see https://github.com/mesonbuild/meson/pull/10961.
+        from distutils.sysconfig import get_config_var
+        EXT_SUFFIX = get_config_var('EXT_SUFFIX')
+
 EXT_IMP_SUFFIX = re.sub(r'.pyd$', '.dll', EXT_SUFFIX) + '.a'
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
