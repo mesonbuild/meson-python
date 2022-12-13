@@ -73,6 +73,11 @@ multi_line_output = 5
 known_first_party = 'mesonpy'
 
 
+[tool.coverage.run]
+disable_warnings = [
+  'couldnt-parse',
+]
+
 [tool.coverage.html]
 show_contexts = true
 
