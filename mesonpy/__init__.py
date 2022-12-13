@@ -301,6 +301,8 @@ class _WheelBuilder():
     @property
     def _debian_python(self) -> bool:
         """Check if we are running on Debian-patched Python."""
+        if sys.version_info >= (3, 10):
+            return 'deb_system' in sysconfig.get_scheme_names()
         try:
             import distutils
             try:
