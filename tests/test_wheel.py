@@ -222,6 +222,16 @@ def test_entrypoints(wheel_full_metadata):
         ''').strip()
 
 
+def test_top_level_modules(package_module_types):
+    with mesonpy.Project.with_temp_working_dir() as project:
+        assert set(project._wheel_builder.top_level_modules) == {
+            'file',
+            'package',
+            'namespace',
+            'native',
+        }
+
+
 def test_editable(
     package_imports_itself_during_build,
     editable_imports_itself_during_build,

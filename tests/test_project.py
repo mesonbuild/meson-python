@@ -95,13 +95,3 @@ def test_user_args(package_user_args, mocker, tmp_path_session):
 def test_unknown_user_args(package, tmp_path_session):
     with pytest.raises(mesonpy.ConfigError):
         mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_path_session)
-
-
-def test_top_level_modules(package_module_types):
-    with mesonpy.Project.with_temp_working_dir() as project:
-        assert set(project.top_level_modules) == {
-            'file',
-            'package',
-            'namespace',
-            'native',
-        }
