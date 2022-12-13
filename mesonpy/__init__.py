@@ -385,6 +385,32 @@ class _WheelBuilder():
             return stable[0]
         return None
 
+    @property
+    def top_level_modules(self) -> Collection[str]:
+        modules = set()
+        for type_ in self._wheel_files:
+            for path, _ in self._wheel_files[type_]:
+                top_part = path.parts[0]
+                # file module
+                if top_part.endswith('.py'):
+                    modules.add(top_part[:-3])
+                else:
+                    # native module
+                    for extension in _EXTENSION_SUFFIXES:
+                        if top_part.endswith(extension):
+                            modules.add(top_part[:-len(extension)])
+                            # XXX: We assume the order in _EXTENSION_SUFFIXES
+                            #      goes from more specific to last, so we go
+                            #      with the first match we find.
+                            break
+                    else:  # nobreak
+                        # skip Windows import libraries
+                        if top_part.endswith('.a'):
+                            continue
+                        # package module
+                        modules.add(top_part)
+        return modules
+
     def _is_native(self, file: Union[str, pathlib.Path]) -> bool:
         """Check if file is a native file."""
         self._project.build()  # the project needs to be built for this :/
@@ -605,7 +631,6 @@ class _WheelBuilder():
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
         install_path = self._source_dir / '.mesonpy' / 'editable' / 'install'
-        top_level_modules = self._project.top_level_modules
         rebuild_commands = self._project.build_commands(install_path)
 
         import_paths = set()
@@ -631,7 +656,7 @@ class _WheelBuilder():
                     project_path={_as_python_declaration(self._source_dir)},
                     build_path={_as_python_declaration(self._build_dir)},
                     import_paths={_as_python_declaration(import_paths)},
-                    top_level_modules={_as_python_declaration(top_level_modules)},
+                    top_level_modules={_as_python_declaration(self.top_level_modules)},
                     rebuild_commands={_as_python_declaration(rebuild_commands)},
                     verbose={verbose},
                 )
@@ -973,34 +998,6 @@ class Project():
             version = self._meson_version
         assert isinstance(version, str)
         return version
-
-    @property
-    def top_level_modules(self) -> Collection[str]:
-        modules = set()
-        for type_ in self._install_plan:
-            for _, details in self._install_plan[type_].items():
-                path = pathlib.Path(details['destination'])
-                if len(path.parts) >= 2 and path.parts[0]:
-                    top_part = path.parts[1]
-                    # file module
-                    if top_part.endswith('.py'):
-                        modules.add(top_part[:-3])
-                    else:
-                        # native module
-                        for extension in _EXTENSION_SUFFIXES:
-                            if top_part.endswith(extension):
-                                modules.add(top_part[:-len(extension)])
-                                # XXX: We assume the order in _EXTENSION_SUFFIXES
-                                #      goes from more specific to last, so we go
-                                #      with the first match we find.
-                                break
-                        else:  # nobreak
-                            # skip Windows import libraries
-                            if top_part.endswith('.a'):
-                                continue
-                            # package module
-                            modules.add(top_part)
-        return modules
 
     @cached_property
     def metadata(self) -> bytes:
