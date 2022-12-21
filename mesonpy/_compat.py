@@ -9,6 +9,11 @@ import sys
 from typing import Union
 
 
+if sys.version_info >= (3, 10):
+    from typing import ParamSpec
+else:
+    from typing_extensions import ParamSpec
+
 if sys.version_info >= (3, 9):
     from collections.abc import (
         Collection, Iterable, Iterator, Mapping, Sequence
@@ -46,5 +51,6 @@ __all__ = [
     'Literal',
     'Mapping',
     'Path',
+    'ParamSpec',
     'Sequence',
 ]
