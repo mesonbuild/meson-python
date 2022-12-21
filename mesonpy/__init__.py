@@ -587,7 +587,7 @@ class Project():
             if archflags is not None:
                 arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
                 if other:
-                    raise ConfigError(f'multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
+                    raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
                 macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:
                     x = self._env.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
@@ -676,10 +676,7 @@ class Project():
         value: Any = self._config
         for part in f'tool.meson-python.{key}'.split('.'):
             if not isinstance(value, Mapping):
-                raise ConfigError(
-                    f'Found unexpected value in `{part}` when looking for '
-                    f'config key `tool.meson-python.{key}` (`{value}`)'
-                )
+                raise ConfigError(f'Configuration entry "tool.meson-python.{key}" should be a TOML table not {type(value)}')
             value = value.get(part, {})
         return value
 
@@ -734,17 +731,16 @@ class Project():
             if key not in self._ALLOWED_DYNAMIC_FIELDS
         }
         if unsupported_dynamic:
-            raise MesonBuilderError('Unsupported dynamic fields: {}'.format(
-                ', '.join(unsupported_dynamic)),
-            )
+            s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
+            raise MesonBuilderError(f'Unsupported dynamic fields: {s}')
 
         # check if we are running on an unsupported interpreter
         if self._metadata.requires_python:
             self._metadata.requires_python.prereleases = True
             if platform.python_version().rstrip('+') not in self._metadata.requires_python:
                 raise MesonBuilderError(
-                    f'Unsupported Python version `{platform.python_version()}`, '
-                    f'expected `{self._metadata.requires_python}`'
+                    f'Unsupported Python version {platform.python_version()}, '
+                    f'expected {self._metadata.requires_python}'
                 )
 
     def _check_for_unknown_config_keys(self, valid_args: Mapping[str, Collection[str]]) -> None:
@@ -752,11 +748,11 @@ class Project():
 
         for key, valid_subkeys in config.items():
             if key not in valid_args:
-                raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}')
+                raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}"')
 
             for subkey in valid_args[key]:
                 if subkey not in valid_subkeys:
-                    raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}.{subkey}')
+                    raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}.{subkey}"')
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
@@ -978,10 +974,10 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     builddir_value = config_settings.get('builddir', {})
     if len(builddir_value) > 0:
         if len(builddir_value) != 1:
-            raise ConfigError('Specified multiple values for `builddir`, only one is allowed')
+            raise ConfigError('Only one value for configuration entry "builddir" can be specified')
         builddir = builddir_value[0]
         if not isinstance(builddir, str):
-            raise ConfigError(f'Config option `builddir` should be a string (found `{type(builddir)}`)')
+            raise ConfigError(f'Configuration entry "builddir" should be a string not {type(builddir)}')
     else:
         builddir = None
 
@@ -992,14 +988,8 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             for item in config_settings.get(key, ())
         )))
         if problematic_items:
-            raise ConfigError(
-                f'Config option `{key}` should only contain string items, but '
-                'contains the following parameters that do not meet this criteria:' +
-                ''.join((
-                    f'\t- {item} (type: {type(item)})'
-                    for item in problematic_items
-                ))
-            )
+            s = ', '.join(f'"{item}" ({type(item)})' for item in problematic_items)
+            raise ConfigError(f'Configuration entries for "{key}" must be strings but contain: {s}')
 
     meson_args_keys = typing_get_args(MesonArgsKeys)
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
@@ -1010,10 +1000,10 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             import difflib
             matches = difflib.get_close_matches(key, known_keys, n=3)
             if len(matches):
-                postfix = f'Did you mean one of: {matches}'
+                alternatives = ' or '.join(f'"{match}"' for match in matches)
+                raise ConfigError(f'Unknown configuration entry "{key}". Did you mean {alternatives}?')
             else:
-                postfix = 'There are no close valid keys.'
-            raise ConfigError(f'Unknown config setting: {key!r}.  {postfix}')
+                raise ConfigError(f'Unknown configuration entry "{key}"')
 
     for key in meson_args_cli_keys:
         _validate_string_collection(key)
