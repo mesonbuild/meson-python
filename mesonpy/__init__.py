@@ -32,8 +32,8 @@ import typing
 import warnings
 
 from typing import (
-    Any, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set, TextIO,
-    Tuple, Type, Union
+    Any, Callable, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set,
+    TextIO, Tuple, Type, TypeVar, Union
 )
 
 
@@ -49,7 +49,7 @@ import mesonpy._util
 import mesonpy._wheelfile
 
 from mesonpy._compat import (
-    Collection, Iterator, Literal, Mapping, Path, typing_get_args
+    Collection, Iterator, Literal, Mapping, ParamSpec, Path, typing_get_args
 )
 
 
@@ -67,6 +67,7 @@ __version__ = '0.11.0'
 
 
 _COLORS = {
+    'red': '\33[31m',
     'cyan': '\33[36m',
     'yellow': '\33[93m',
     'light_blue': '\33[94m',
@@ -137,11 +138,16 @@ def _setup_cli() -> None:
         colorama.init()  # fix colors on windows
 
 
-class ConfigError(Exception):
+class Error(RuntimeError):
+    def __str__(self) -> str:
+        return str(self.args[0])
+
+
+class ConfigError(Error):
     """Error in the backend configuration."""
 
 
-class MesonBuilderError(Exception):
+class MesonBuilderError(Error):
     """Error when building the Meson package."""
 
 
@@ -1047,12 +1053,29 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pa
     return None
 
 
+P = ParamSpec('P')
+T = TypeVar('T')
+
+
+def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return func(*args, **kwargs)
+        except Error as exc:
+            print('{red}meson-python: error:{reset} {msg}'.format(msg=str(exc), **_STYLES))
+            raise SystemExit(1)
+    return wrapper
+
+
+@_pyproject_hook
 def get_requires_for_build_sdist(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     return [_depstr.ninja] if _env_ninja_command() is None else []
 
 
+@_pyproject_hook
 def build_sdist(
     sdist_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -1064,6 +1087,7 @@ def build_sdist(
         return project.sdist(out).name
 
 
+@_pyproject_hook
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
@@ -1089,6 +1113,7 @@ def get_requires_for_build_wheel(
     return dependencies
 
 
+@_pyproject_hook
 def build_wheel(
     wheel_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
