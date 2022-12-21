@@ -50,7 +50,7 @@ def sysconfig_paths() -> Mapping[str, str]:
     sys_vars = sysconfig.get_config_vars().copy()
     sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
     if DEBIAN_PYTHON:
-        if sys.version_info >= (3, 10):
+        if sys.version_info >= (3, 10, 3):
             return sysconfig.get_paths('deb_system', vars=sys_vars)
         else:
             return debian_distutils_paths()
