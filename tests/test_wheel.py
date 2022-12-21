@@ -49,9 +49,6 @@ def wheel_filename(artifact):
     return artifact.filename.split(os.sep)[-1]
 
 
-win_py37 = os.name == 'nt' and sys.version_info < (3, 8)
-
-
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
