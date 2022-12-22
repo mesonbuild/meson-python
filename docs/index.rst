@@ -49,6 +49,56 @@ frontend, like ``builddir``, to specify the build directory to use/re-use. You
 can find more information about them in the `build options page`_.
 
 
+Editable installs
+-----------------
+
+Editable installs allow you to install the project in such a way where you can
+edit the project source and have those changes be reflected in the installed
+module, without having to explicitly rebuild and reinstall.
+
+The way it works on ``meson-python`` specifically, is that when you import a
+module of the project, it will be rebuilt on the fly. This means that project
+imports will take more time than usual.
+
+You can use pip to install the project in editable mode.
+
+
+.. code-block::
+
+   python -m pip install -e .
+
+
+It might be helpful to see the output of the Meson_ commands. This is offered
+as a **provisional** feature, meaning it is subject to change.
+
+If you want to temporarily enable the output, you can set the
+``MESONPY_EDITABLE_VERBOSE`` environment variable to a non-empty value. If this
+environment variable is present during import, the Meson_ commands and their
+output will be printed.
+
+
+.. code-block::
+
+   MESONPY_EDITABLE_VERBOSE=1 python my_script.py
+
+
+
+This behavior can also be enabled by default by passing the ``editable-verbose``
+config setting when installing the project.
+
+
+.. code-block::
+
+   python -m pip install -e . --config-settings editable-verbose=true
+
+
+This way, you won't need to always set ``MESONPY_EDITABLE_VERBOSE`` environment
+variable, the Meson_ commands and their output will always be printed.
+
+The ``MESONPY_EDITABLE_VERBOSE`` won't have any effect during the project
+install step.
+
+
 How does it work?
 =================
 
