@@ -3,6 +3,16 @@ Changelog
 +++++++++
 
 
+0.12.0 (22-12-2022)
+===================
+
+- Raise ``SystemExit`` on expected errors
+- Revise error messages for consistency
+- Support setuptools-style macOS cross compilation via ``ARCHFLAGS``
+- Allow to overwrite macOS platform tag via ``_PYTHON_HOST_PLATFORM``
+- Include (similar) allowed keys in error messages
+
+
 0.11.0 (21-11-2022)
 ===================
 
