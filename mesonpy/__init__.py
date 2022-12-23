@@ -604,6 +604,8 @@ class _WheelBuilder():
             hook_module_name = f'_mesonpy_hook_{self.normalized_name.replace(".", "_")}'
             hook_install_code = textwrap.dedent(f'''
                 MesonpyFinder.install(
+                    project_name={_as_python_declaration(self._project.name)},
+                    hook_name={_as_python_declaration(hook_module_name)},
                     project_path={_as_python_declaration(self._source_dir)},
                     build_path={_as_python_declaration(self._build_dir)},
                     import_paths={_as_python_declaration(import_paths)},
