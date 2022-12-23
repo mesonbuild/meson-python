@@ -59,6 +59,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
 
     def __init__(
         self,
+        project_name: str,
+        hook_name: str,
         project_path: str,
         build_path: str,
         import_paths: List[str],
@@ -66,12 +68,26 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         rebuild_commands: List[List[str]],
         verbose: bool = False,
     ) -> None:
+        self._project_name = project_name
+        self._hook_name = hook_name
         self._project_path = project_path
         self._build_path = build_path
         self._import_paths = import_paths
         self._top_level_modules = top_level_modules
         self._rebuild_commands = rebuild_commands
         self._verbose = verbose
+
+        for path in (self._project_path, self._build_path):
+            if not os.path.isdir(path):
+                raise ImportError(
+                    f'{path} is not a directory, but it is required to rebuild '
+                    f'"{self._project_name}", which is installed in editable '
+                    'mode. Please reinstall the project to get it back to '
+                    'working condition. If there are any issues uninstalling '
+                    'this installation, you can manually remove '
+                    f'{self._hook_name} and {os.path.basename(__file__)}, '
+                    f'located in {os.path.dirname(__file__)}.'
+                )
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._project_path})'
@@ -128,6 +144,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
     @classmethod
     def install(
         cls,
+        project_name: str,
+        hook_name: str,
         project_path: str,
         build_path: str,
         import_paths: List[str],
@@ -140,7 +158,16 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         if os.environ.get('MESONPY_EDITABLE_VERBOSE', ''):
             verbose = True
         # install our finder
-        finder = cls(project_path, build_path, import_paths, top_level_modules, rebuild_commands, verbose)
+        finder = cls(
+            project_name,
+            hook_name,
+            project_path,
+            build_path,
+            import_paths,
+            top_level_modules,
+            rebuild_commands,
+            verbose,
+        )
         if finder not in sys.meta_path:
             # prepend our finder to sys.meta_path, so that it is queried before
             # the normal finders, and can trigger a project rebuild
