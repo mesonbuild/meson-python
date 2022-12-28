@@ -42,10 +42,6 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
-if sys.version_info >= (3, 10):
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
 
 import mesonpy._compat
 import mesonpy._elf
@@ -56,7 +52,7 @@ import mesonpy._wheelfile
 
 from mesonpy._compat import (
     Collection, Iterable, Iterator, Literal, Mapping, ParamSpec, Path,
-    cached_property, typing_get_args
+    cached_property, read_binary, typing_get_args
 )
 
 
@@ -616,7 +612,7 @@ class _WheelBuilder():
             ''').strip().encode()
             whl.writestr(
                 f'{hook_module_name}.py',
-                (importlib_resources.files('mesonpy') / '_editable.py').read_bytes() + hook_install_code,
+                read_binary('mesonpy', '_editable.py') + hook_install_code,
             )
             # install .pth file
             whl.writestr(
