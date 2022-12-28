@@ -2,6 +2,8 @@
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
+from __future__ import annotations
+
 import contextlib
 import gzip
 import os
@@ -9,9 +11,13 @@ import sys
 import tarfile
 import typing
 
-from typing import IO, Optional, Tuple
+from typing import IO
 
-from mesonpy._compat import Iterable, Iterator, Path
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from typing import Optional, Tuple
+
+    from mesonpy._compat import Iterable, Iterator, Path
 
 
 @contextlib.contextmanager

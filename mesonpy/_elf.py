@@ -2,12 +2,17 @@
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
+from __future__ import annotations
+
 import os
 import subprocess
+import typing
 
-from typing import Optional
 
-from mesonpy._compat import Collection, Path
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from typing import Optional
+
+    from mesonpy._compat import Collection, Path
 
 
 class ELF:
