@@ -31,17 +31,13 @@ import textwrap
 import typing
 import warnings
 
-from typing import (
-    Any, Callable, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set,
-    TextIO, Tuple, Type, TypeVar, Union
-)
+from typing import Dict
 
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
 else:
     import tomllib
-
 
 import mesonpy._compat
 import mesonpy._elf
@@ -51,16 +47,37 @@ import mesonpy._util
 import mesonpy._wheelfile
 
 from mesonpy._compat import (
-    Collection, Iterable, Iterator, Literal, Mapping, ParamSpec, Path,
-    cached_property, read_binary, typing_get_args
+    Collection, Iterable, Mapping, cached_property, read_binary
 )
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
+    from typing import (
+        Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set,
+        TextIO, Tuple, Type, TypeVar, Union
+    )
+
     import pyproject_metadata  # noqa: F401
+
+    from mesonpy._compat import Iterator, Literal, ParamSpec, Path
+
+    P = ParamSpec('P')
+    T = TypeVar('T')
 
 
 __version__ = '0.13.0.dev0'
+
+
+# XXX: Once Python 3.8 is our minimum supported version, get rid of
+#      meson_args_keys and use typing.get_args(MesonArgsKeys) instead.
+
+# Keep both definitions in sync!
+_MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
+if typing.TYPE_CHECKING:
+    MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
+    MesonArgs = Mapping[MesonArgsKeys, List[str]]
+else:
+    MesonArgs = None
 
 
 _COLORS = {
@@ -631,10 +648,6 @@ class _WheelBuilder():
         return wheel_file
 
 
-MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
-MesonArgs = Mapping[MesonArgsKeys, List[str]]
-
-
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
@@ -718,7 +731,7 @@ class Project():
         # XXX: We should validate the user args to make sure they don't conflict with ours.
 
         self._check_for_unknown_config_keys({
-            'args': typing_get_args(MesonArgsKeys),
+            'args': _MESON_ARGS_KEYS,
         })
 
         # meson arguments from the command line take precedence over
@@ -1112,7 +1125,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             s = ', '.join(f'"{item}" ({type(item)})' for item in problematic_items)
             raise ConfigError(f'Configuration entries for "{key}" must be strings but contain: {s}')
 
-    meson_args_keys = typing_get_args(MesonArgsKeys)
+    meson_args_keys = _MESON_ARGS_KEYS
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
 
     for key in config_settings:
@@ -1163,10 +1176,6 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pa
         return pathlib.Path(ninja_path)
 
     return None
-
-
-P = ParamSpec('P')
-T = TypeVar('T')
 
 
 def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
