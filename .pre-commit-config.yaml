@@ -1,6 +1,6 @@
 ci:
   autofix_prs: false
-  autoupdate_commit_msg: 'pre-commit: bump repositories'
+  autoupdate_commit_msg: 'MAINT: bump repositories'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
