@@ -750,8 +750,15 @@ class Project():
                 self._meson_native_file = self._working_dir / '.mesonpy-native-file.ini'
                 self._meson_native_file.write_text(native_file_data)
 
-        # configure the meson project; reconfigure if the user provided a build directory
-        self._configure(reconfigure=bool(build_dir) and not native_file_mismatch)
+        # Don't reconfigure if build directory doesn't have meson-private/coredata.data
+        # (means something went wrong)
+        # See https://github.com/mesonbuild/meson-python/pull/257#discussion_r1067385517
+        reconfigure = bool(build_dir)
+        if reconfigure:
+            if not os.path.exists(os.path.join(self._build_dir, 'meson-private/coredata.dat')):
+                reconfigure = False
+        reconfigure = reconfigure and not native_file_mismatch
+        self._configure(reconfigure=reconfigure)
 
         # set version if dynamic (this fetches it from Meson)
         if self._metadata and 'version' in self._metadata.dynamic:
