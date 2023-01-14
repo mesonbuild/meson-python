@@ -147,7 +147,7 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
     venv.pip('install', wheel_link_against_local_lib)
     output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
@@ -187,25 +187,32 @@ def test_detect_wheel_tag_script(wheel_executable):
     assert name.group('plat') == PLATFORM
 
 
-@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
 def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
-    elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
-    assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+    if platform.system() == 'Linux':
+        elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
+        assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+    else:  # 'Darwin'
+        dylib = mesonpy._dylib.Dylib(tmp_path / f'example{EXT_SUFFIX}')
+        assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
 
 
-@pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
+@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
 def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmp_path)
 
-    elf = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
-    if elf.rpath:
-        # elf.rpath is a frozenset, so iterate over it. An rpath may be
+    if platform.system() == 'Linux':
+        shared_lib = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
+    else:  # 'Darwin'
+        shared_lib = mesonpy._dylib.Dylib(tmp_path / f'plat{EXT_SUFFIX}')
+    if shared_lib.rpath:
+        # shared_lib.rpath is a frozenset, so iterate over it. An rpath may be
         # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
-        for rpath in elf.rpath:
+        for rpath in shared_lib.rpath:
             assert 'mesonpy.libs' not in rpath
 
 
