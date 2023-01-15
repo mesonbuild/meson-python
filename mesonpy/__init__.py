@@ -682,7 +682,7 @@ class Project():
                     cross_file_data = textwrap.dedent(f'''
                         [binaries]
                         c = ['cc', '-arch', {arch!r}]
-                        cpp = ['cpp', '-arch', {arch!r}]
+                        cpp = ['c++', '-arch', {arch!r}]
                         [host_machine]
                         system = 'Darwin'
                         cpu = {arch!r}
