@@ -37,7 +37,7 @@ jobs:
           - '3.7'
           - '3.11'
         meson:
-          - '1.0.0rc1'
+          -
         include:
           - os: ubuntu
             python: 'pypy-3.9'
@@ -106,7 +106,7 @@ jobs:
         python:
           - '3.9'
         meson:
-          - '1.0.0rc1'
+          -
 
     steps:
       - name: Checkout
@@ -193,7 +193,7 @@ jobs:
         python:
           - '3.8'
         meson:
-          - '1.0.0rc1'
+          -
 
     steps:
       - name: Checkout
@@ -238,7 +238,7 @@ jobs:
           - '3.7'
           - '3.11'
         meson:
-          - '1.0.0rc1'
+          -
 
     steps:
       - name: Checkout
