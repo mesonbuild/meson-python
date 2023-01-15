@@ -23,7 +23,7 @@ debian-11_task:
     cpu: 1
   fix-pip_script:
     # see https://github.com/pypa/pip/pull/11623
-    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@refs/pull/11623/merge"
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@a057c9bc99ad7eab2e3b1539e79eee7d9a923f4f"
   << : *test
 
 debian-unstable_task:
@@ -32,7 +32,7 @@ debian-unstable_task:
     cpu: 1
   fix-pip_script:
     # see https://github.com/pypa/pip/pull/11623
-    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@refs/pull/11623/merge"
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@a057c9bc99ad7eab2e3b1539e79eee7d9a923f4f"
   << : *test
 
 fedora-37_task:
