@@ -910,7 +910,7 @@ class Project():
         install_plan = self._info('intro-install_plan').copy()
 
         for files in install_plan.values():
-            for file,details in list(files.items()):
+            for file, details in list(files.items()):
                 if details['tag'] not in self._meson_args['install-tags']:
                     del files[file]
         """Meson install_plan metadata."""
