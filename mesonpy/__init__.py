@@ -32,8 +32,8 @@ import typing
 import warnings
 
 from typing import (
-    Any, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set, TextIO,
-    Tuple, Type, Union
+    Any, Callable, ClassVar, DefaultDict, Dict, List, Optional, Sequence, Set,
+    TextIO, Tuple, Type, TypeVar, Union
 )
 
 
@@ -42,14 +42,17 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+
 import mesonpy._compat
 import mesonpy._elf
+import mesonpy._introspection
 import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
 from mesonpy._compat import (
-    Collection, Iterator, Literal, Mapping, Path, typing_get_args
+    Collection, Iterable, Iterator, Literal, Mapping, ParamSpec, Path,
+    cached_property, read_binary, typing_get_args
 )
 
 
@@ -57,16 +60,11 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     import pyproject_metadata  # noqa: F401
 
 
-if sys.version_info >= (3, 8):
-    from functools import cached_property
-else:
-    cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
-
-
-__version__ = '0.11.0'
+__version__ = '0.13.0.dev0'
 
 
 _COLORS = {
+    'red': '\33[31m',
     'cyan': '\33[36m',
     'yellow': '\33[93m',
     'light_blue': '\33[94m',
@@ -106,7 +104,7 @@ def _init_colors() -> Dict[str, str]:
 _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
 
 
-_EXTENSION_SUFFIXES = frozenset(importlib.machinery.EXTENSION_SUFFIXES)
+_EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES.copy()
 _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
@@ -137,11 +135,26 @@ def _setup_cli() -> None:
         colorama.init()  # fix colors on windows
 
 
-class ConfigError(Exception):
+def _as_python_declaration(value: Any) -> str:
+    if isinstance(value, str):
+        return f"r'{value}'"
+    elif isinstance(value, os.PathLike):
+        return _as_python_declaration(os.fspath(value))
+    elif isinstance(value, Iterable):
+        return '[' + ', '.join(map(_as_python_declaration, value)) + ']'
+    raise NotImplementedError(f'Unsupported type: {type(value)}')
+
+
+class Error(RuntimeError):
+    def __str__(self) -> str:
+        return str(self.args[0])
+
+
+class ConfigError(Error):
     """Error in the backend configuration."""
 
 
-class MesonBuilderError(Exception):
+class MesonBuilderError(Error):
     """Error when building the Meson package."""
 
 
@@ -193,10 +206,14 @@ class _WheelBuilder():
         return bool(self._wheel_files['platlib'])
 
     @property
+    def normalized_name(self) -> str:
+        return self._project.name.replace('-', '_')
+
+    @property
     def basename(self) -> str:
         """Normalized wheel name and version (eg. meson_python-1.0.0)."""
         return '{distribution}-{version}'.format(
-            distribution=self._project.name.replace('-', '_'),
+            distribution=self.normalized_name,
             version=self._project.version,
         )
 
@@ -278,19 +295,6 @@ class _WheelBuilder():
 
         return text.encode()
 
-    @property
-    def _debian_python(self) -> bool:
-        """Check if we are running on Debian-patched Python."""
-        try:
-            import distutils
-            try:
-                import distutils.command.install
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
-            return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
-        except ModuleNotFoundError:
-            return False
-
     @cached_property
     def _stable_abi(self) -> Optional[str]:
         """Determine stabe ABI compatibility.
@@ -327,6 +331,32 @@ class _WheelBuilder():
         if len(stable) > 0 and len(stable) == len(abis) and all(x == stable[0] for x in stable[1:]):
             return stable[0]
         return None
+
+    @property
+    def top_level_modules(self) -> Collection[str]:
+        modules = set()
+        for type_ in self._wheel_files:
+            for path, _ in self._wheel_files[type_]:
+                top_part = path.parts[0]
+                # file module
+                if top_part.endswith('.py'):
+                    modules.add(top_part[:-3])
+                else:
+                    # native module
+                    for extension in _EXTENSION_SUFFIXES:
+                        if top_part.endswith(extension):
+                            modules.add(top_part[:-len(extension)])
+                            # XXX: We assume the order in _EXTENSION_SUFFIXES
+                            #      goes from more specific to last, so we go
+                            #      with the first match we find.
+                            break
+                    else:  # nobreak
+                        # skip Windows import libraries
+                        if top_part.endswith('.a'):
+                            continue
+                        # package module
+                        modules.add(top_part)
+        return modules
 
     def _is_native(self, file: Union[str, pathlib.Path]) -> bool:
         """Check if file is a native file."""
@@ -378,11 +408,9 @@ class _WheelBuilder():
         origin file and the Meson destination path.
         """
         warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
-        sys_vars = sysconfig.get_config_vars().copy()
-        sys_vars['base'] = sys_vars['platbase'] = sys.base_prefix
-        sys_paths = sysconfig.get_paths(vars=sys_vars)
+        sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
         # Try to map to Debian dist-packages
-        if self._debian_python:
+        if mesonpy._introspection.DEBIAN_PYTHON:
             search_path = origin
             while search_path != search_path.parent:
                 search_path = search_path.parent
@@ -466,7 +494,7 @@ class _WheelBuilder():
         Some files might need to be fixed up to set the RPATH to the internal
         library directory on Linux wheels for eg.
         """
-        location = os.fspath(destination).replace(os.path.sep, '/')
+        location = destination.as_posix()
         counter.update(location)
 
         # fix file
@@ -497,24 +525,27 @@ class _WheelBuilder():
 
             wheel_file.write(origin, location)
 
+    def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
+        # add metadata
+        whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
+        whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
+        if self.entrypoints_txt:
+            whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
+
+        # add license (see https://github.com/mesonbuild/meson-python/issues/88)
+        if self._project.license_file:
+            whl.write(
+                self._source_dir / self._project.license_file,
+                f'{self.distinfo_dir}/{os.path.basename(self._project.license_file)}',
+            )
+
     def build(self, directory: Path) -> pathlib.Path:
         self._project.build()  # ensure project is built
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            # add metadata
-            whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
-            whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
-            if self.entrypoints_txt:
-                whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
-
-            # add license (see https://github.com/mesonbuild/meson-python/issues/88)
-            if self._project.license_file:
-                whl.write(
-                    self._source_dir / self._project.license_file,
-                    f'{self.distinfo_dir}/{os.path.basename(self._project.license_file)}',
-                )
+            self._wheel_write_metadata(whl)
 
             print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
@@ -541,9 +572,67 @@ class _WheelBuilder():
 
         return wheel_file
 
+    def build_editable(self, directory: Path, verbose: bool = False) -> pathlib.Path:
+        self._project.build()  # ensure project is built
+
+        wheel_file = pathlib.Path(directory, f'{self.name}.whl')
+
+        install_path = self._source_dir / '.mesonpy' / 'editable' / 'install'
+        rebuild_commands = self._project.build_commands(install_path)
+
+        import_paths = set()
+        for name, raw_path in mesonpy._introspection.SYSCONFIG_PATHS.items():
+            if name not in ('purelib', 'platlib'):
+                continue
+            path = pathlib.Path(raw_path)
+            import_paths.add(install_path / path.relative_to(path.anchor))
+
+        install_path.mkdir(parents=True, exist_ok=True)
+
+        with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
+            self._wheel_write_metadata(whl)
+            whl.writestr(
+                f'{self.distinfo_dir}/direct_url.json',
+                self._source_dir.as_uri().encode(),
+            )
+
+            # install hook module
+            hook_module_name = f'_mesonpy_hook_{self.normalized_name.replace(".", "_")}'
+            hook_install_code = textwrap.dedent(f'''
+                MesonpyFinder.install(
+                    project_name={_as_python_declaration(self._project.name)},
+                    hook_name={_as_python_declaration(hook_module_name)},
+                    project_path={_as_python_declaration(self._source_dir)},
+                    build_path={_as_python_declaration(self._build_dir)},
+                    import_paths={_as_python_declaration(import_paths)},
+                    top_level_modules={_as_python_declaration(self.top_level_modules)},
+                    rebuild_commands={_as_python_declaration(rebuild_commands)},
+                    verbose={verbose},
+                )
+            ''').strip().encode()
+            whl.writestr(
+                f'{hook_module_name}.py',
+                read_binary('mesonpy', '_editable.py') + hook_install_code,
+            )
+            # install .pth file
+            whl.writestr(
+                f'{self.normalized_name}-editable-hook.pth',
+                f'import {hook_module_name}'.encode(),
+            )
+
+            # install non-code schemes
+            for scheme in self._SCHEME_MAP:
+                if scheme in ('purelib', 'platlib', 'mesonpy-libs'):
+                    continue
+                for destination, origin in self._wheel_files[scheme]:
+                    destination = pathlib.Path(self.data_dir, scheme, destination)
+                    whl.write(origin, destination.as_posix())
+
+        return wheel_file
+
 
 MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install', 'install-tags']
-MesonArgs = Mapping[MesonArgsKeys, Collection[str]]
+MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
 class Project():
@@ -554,24 +643,54 @@ class Project():
     ]
     _metadata: Optional[pyproject_metadata.StandardMetadata]
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         source_dir: Path,
         working_dir: Path,
         build_dir: Optional[Path] = None,
         meson_args: Optional[MesonArgs] = None,
+        editable_verbose: bool = False,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._working_dir = pathlib.Path(working_dir).absolute()
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
+        self._editable_verbose = editable_verbose
         self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
+        self._meson_cross_file = self._source_dir / '.mesonpy-cross-file.ini'
+        self._meson_args: MesonArgs = collections.defaultdict(list)
         self._env = os.environ.copy()
 
         # prepare environment
         ninja_path = _env_ninja_command()
         if ninja_path is not None:
             self._env.setdefault('NINJA', str(ninja_path))
+
+        # setuptools-like ARCHFLAGS environment variable support
+        if sysconfig.get_platform().startswith('macosx-'):
+            archflags = self._env.get('ARCHFLAGS')
+            if archflags is not None:
+                arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
+                if other:
+                    raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
+                macver, _, nativearch = platform.mac_ver()
+                if arch != nativearch:
+                    x = self._env.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
+                    if not x.endswith(arch):
+                        raise ConfigError(f'$ARCHFLAGS={archflags!r} and $_PYTHON_HOST_PLATFORM={x!r} do not agree')
+                    family = 'aarch64' if arch == 'arm64' else arch
+                    cross_file_data = textwrap.dedent(f'''
+                        [binaries]
+                        c = ['cc', '-arch', {arch!r}]
+                        cpp = ['c++', '-arch', {arch!r}]
+                        [host_machine]
+                        system = 'Darwin'
+                        cpu = {arch!r}
+                        cpu_family = {family!r}
+                        endian = 'little'
+                    ''')
+                    self._meson_cross_file.write_text(cross_file_data)
+                    self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
         # load config -- PEP 621 support is optional
         self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
@@ -594,19 +713,23 @@ class Project():
             self._validate_metadata()
 
         # load meson args
-        self._meson_args = collections.defaultdict(tuple, meson_args or {})
         for key in self._get_config_key('args'):
-            args_from_config = tuple(self._get_config_key(f'args.{key}'))
-            self._meson_args[key] = args_from_config + tuple(self._meson_args[key])
+            self._meson_args[key].extend(self._get_config_key(f'args.{key}'))
         # XXX: We should validate the user args to make sure they don't conflict with ours.
 
         self._check_for_unknown_config_keys({
             'args': typing_get_args(MesonArgsKeys),
         })
 
+        # meson arguments from the command line take precedence over
+        # arguments from the configuration file thus are added later
+        if meson_args:
+            for key, value in meson_args.items():
+                self._meson_args[key].extend(value)
+
         # make sure the build dir exists
-        self._build_dir.mkdir(exist_ok=True)
-        self._install_dir.mkdir(exist_ok=True)
+        self._build_dir.mkdir(exist_ok=True, parents=True)
+        self._install_dir.mkdir(exist_ok=True, parents=True)
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
@@ -638,22 +761,20 @@ class Project():
         value: Any = self._config
         for part in f'tool.meson-python.{key}'.split('.'):
             if not isinstance(value, Mapping):
-                raise ConfigError(
-                    f'Found unexpected value in `{part}` when looking for '
-                    f'config key `tool.meson-python.{key}` (`{value}`)'
-                )
+                raise ConfigError(f'Configuration entry "tool.meson-python.{key}" should be a TOML table not {type(value)}')
             value = value.get(part, {})
         return value
 
     def _proc(self, *args: str) -> None:
         """Invoke a subprocess."""
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
-        subprocess.check_call(list(args), env=self._env)
+        r = subprocess.run(list(args), env=self._env, cwd=self._build_dir)
+        if r.returncode != 0:
+            raise SystemExit(r.returncode)
 
     def _meson(self, *args: str) -> None:
         """Invoke Meson."""
-        with mesonpy._util.cd(self._build_dir):
-            return self._proc('meson', *args)
+        return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
         """Configure Meson project.
@@ -661,6 +782,7 @@ class Project():
         We will try to reconfigure the build directory if possible to avoid
         expensive rebuilds.
         """
+        sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
         setup_args = [
             f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
@@ -669,6 +791,15 @@ class Project():
             # TODO: Allow configuring these arguments
             '-Ddebug=false',
             '-Doptimization=2',
+
+            # XXX: This should not be needed, but Meson is using the wrong paths
+            #      in some scenarios, like on macOS.
+            #      https://github.com/mesonbuild/meson-python/pull/87#discussion_r1047041306
+            '--python.purelibdir',
+            sys_paths['purelib'],
+            '--python.platlibdir',
+            sys_paths['platlib'],
+
             # user args
             *self._meson_args['setup'],
         ]
@@ -694,17 +825,16 @@ class Project():
             if key not in self._ALLOWED_DYNAMIC_FIELDS
         }
         if unsupported_dynamic:
-            raise MesonBuilderError('Unsupported dynamic fields: {}'.format(
-                ', '.join(unsupported_dynamic)),
-            )
+            s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
+            raise MesonBuilderError(f'Unsupported dynamic fields: {s}')
 
         # check if we are running on an unsupported interpreter
         if self._metadata.requires_python:
             self._metadata.requires_python.prereleases = True
             if platform.python_version().rstrip('+') not in self._metadata.requires_python:
                 raise MesonBuilderError(
-                    f'Unsupported Python version `{platform.python_version()}`, '
-                    f'expected `{self._metadata.requires_python}`'
+                    f'Unsupported Python version {platform.python_version()}, '
+                    f'expected {self._metadata.requires_python}'
                 )
 
     def _check_for_unknown_config_keys(self, valid_args: Mapping[str, Collection[str]]) -> None:
@@ -712,11 +842,11 @@ class Project():
 
         for key, valid_subkeys in config.items():
             if key not in valid_args:
-                raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}')
+                raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}"')
 
             for subkey in valid_args[key]:
                 if subkey not in valid_subkeys:
-                    raise ConfigError(f'Unknown configuration key: tool.meson-python.{key}.{subkey}')
+                    raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}.{subkey}"')
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
@@ -728,6 +858,19 @@ class Project():
             self._build_dir,
             self._install_plan,
             self._copy_files,
+        )
+
+    def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
+        return (
+            ('meson', 'compile', *self._meson_args['compile'],),
+            (
+                'meson',
+                'install',
+                '--only-changed',
+                '--destdir',
+                os.fspath(install_dir or self._install_dir),
+                *self._meson_args['install'],
+            ),
         )
 
     @functools.lru_cache(maxsize=None)
@@ -747,10 +890,11 @@ class Project():
         source_dir: Path = os.path.curdir,
         build_dir: Optional[Path] = None,
         meson_args: Optional[MesonArgs] = None,
+        editable_verbose: bool = False,
     ) -> Iterator[Project]:
         """Creates a project instance pointing to a temporary working directory."""
         with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir, meson_args)
+            yield cls(source_dir, tmpdir, build_dir, meson_args, editable_verbose)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -829,16 +973,23 @@ class Project():
         """Project metadata."""
         # the rest of the keys are only available when using PEP 621 metadata
         if not self.pep621:
-            return textwrap.dedent(f'''
+            data = textwrap.dedent(f'''
                 Metadata-Version: 2.1
                 Name: {self.name}
                 Version: {self.version}
-            ''').strip().encode()
+            ''').strip()
+            return data.encode()
+
         # re-import pyproject_metadata to raise ModuleNotFoundError if it is really missing
         import pyproject_metadata  # noqa: F401, F811
         assert self._metadata
-        # use self.version as the version may be dynamic -- fetched from Meson
+
         core_metadata = self._metadata.as_rfc822()
+        # use self.version as the version may be dynamic -- fetched from Meson
+        #
+        # we need to overwrite this field in the RFC822 field as
+        # pyproject_metadata removes 'version' from the dynamic fields when
+        # giving it a value via the dataclass
         core_metadata.headers['Version'] = [self.version]
         return bytes(core_metadata)
 
@@ -924,13 +1075,16 @@ class Project():
 
         return sdist
 
-    def wheel(self, directory: Path) -> pathlib.Path:  # noqa: F811
+    def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory."""
-        wheel = self._wheel_builder.build(self._build_dir)
+        file = self._wheel_builder.build(directory)
+        assert isinstance(file, pathlib.Path)
+        return file
 
-        final_wheel = pathlib.Path(directory, wheel.name)
-        shutil.move(os.fspath(wheel), final_wheel)
-        return final_wheel
+    def editable(self, directory: Path) -> pathlib.Path:
+        file = self._wheel_builder.build_editable(directory, self._editable_verbose)
+        assert isinstance(file, pathlib.Path)
+        return file
 
 
 @contextlib.contextmanager
@@ -948,10 +1102,10 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     builddir_value = config_settings.get('builddir', {})
     if len(builddir_value) > 0:
         if len(builddir_value) != 1:
-            raise ConfigError('Specified multiple values for `builddir`, only one is allowed')
+            raise ConfigError('Only one value for configuration entry "builddir" can be specified')
         builddir = builddir_value[0]
         if not isinstance(builddir, str):
-            raise ConfigError(f'Config option `builddir` should be a string (found `{type(builddir)}`)')
+            raise ConfigError(f'Configuration entry "builddir" should be a string not {type(builddir)}')
     else:
         builddir = None
 
@@ -962,28 +1116,22 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             for item in config_settings.get(key, ())
         )))
         if problematic_items:
-            raise ConfigError(
-                f'Config option `{key}` should only contain string items, but '
-                'contains the following parameters that do not meet this criteria:' +
-                ''.join((
-                    f'\t- {item} (type: {type(item)})'
-                    for item in problematic_items
-                ))
-            )
+            s = ', '.join(f'"{item}" ({type(item)})' for item in problematic_items)
+            raise ConfigError(f'Configuration entries for "{key}" must be strings but contain: {s}')
 
     meson_args_keys = typing_get_args(MesonArgsKeys)
     meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
 
     for key in config_settings:
-        known_keys = ('builddir', *meson_args_cli_keys)
+        known_keys = ('builddir', 'editable-verbose', *meson_args_cli_keys)
         if key not in known_keys:
             import difflib
             matches = difflib.get_close_matches(key, known_keys, n=3)
             if len(matches):
-                postfix = f'Did you mean one of: {matches}'
+                alternatives = ' or '.join(f'"{match}"' for match in matches)
+                raise ConfigError(f'Unknown configuration entry "{key}". Did you mean {alternatives}?')
             else:
-                postfix = 'There are no close valid keys.'
-            raise ConfigError(f'Unknown config setting: {key!r}.  {postfix}')
+                raise ConfigError(f'Unknown configuration entry "{key}"')
 
     for key in meson_args_cli_keys:
         _validate_string_collection(key)
@@ -994,6 +1142,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
             key: config_settings.get(f'{key}-args', ())
             for key in meson_args_keys
         }),
+        editable_verbose=bool(config_settings.get('editable-verbose'))
     ) as project:
         yield project
 
@@ -1023,12 +1172,29 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pa
     return None
 
 
+P = ParamSpec('P')
+T = TypeVar('T')
+
+
+def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        try:
+            return func(*args, **kwargs)
+        except Error as exc:
+            print('{red}meson-python: error:{reset} {msg}'.format(msg=str(exc), **_STYLES))
+            raise SystemExit(1)
+    return wrapper
+
+
+@_pyproject_hook
 def get_requires_for_build_sdist(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     return [_depstr.ninja] if _env_ninja_command() is None else []
 
 
+@_pyproject_hook
 def build_sdist(
     sdist_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -1040,6 +1206,7 @@ def build_sdist(
         return project.sdist(out).name
 
 
+@_pyproject_hook
 def get_requires_for_build_wheel(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
@@ -1065,6 +1232,7 @@ def get_requires_for_build_wheel(
     return dependencies
 
 
+@_pyproject_hook
 def build_wheel(
     wheel_directory: str,
     config_settings: Optional[Dict[Any, Any]] = None,
@@ -1075,3 +1243,29 @@ def build_wheel(
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:
         return project.wheel(out).name
+
+
+@_pyproject_hook
+def build_editable(
+    wheel_directory: str,
+    config_settings: Optional[Dict[Any, Any]] = None,
+    metadata_directory: Optional[str] = None,
+) -> str:
+    _setup_cli()
+
+    # force set a permanent builddir
+    if not config_settings:
+        config_settings = {}
+    if 'builddir' not in config_settings:
+        config_settings['builddir'] = os.path.join('.mesonpy', 'editable', 'build')
+
+    out = pathlib.Path(wheel_directory)
+    with _project(config_settings) as project:
+        return project.editable(out).name
+
+
+@_pyproject_hook
+def get_requires_for_build_editable(
+    config_settings: Optional[Dict[str, str]] = None,
+) -> List[str]:
+    return get_requires_for_build_wheel()

@@ -1,0 +1,76 @@
+test_template: &test
+  test_script:
+    - command -v python3
+    - python3 --version
+    - python3 -m pip install .[test]
+    - python3 -m pytest
+
+alpine-3_task:
+  container:
+    dockerfile: ci/alpine-3.docker
+    cpu: 1
+  << : *test
+
+archlinux_task:
+  container:
+    dockerfile: ci/archlinux.docker
+    cpu: 1
+  << : *test
+
+debian-11_task:
+  container:
+    dockerfile: ci/debian-11.docker
+    cpu: 1
+  fix-pip_script:
+    # see https://github.com/pypa/pip/pull/11623
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@a057c9bc99ad7eab2e3b1539e79eee7d9a923f4f"
+  << : *test
+
+debian-unstable_task:
+  container:
+    dockerfile: ci/debian-unstable.docker
+    cpu: 1
+  fix-pip_script:
+    # see https://github.com/pypa/pip/pull/11623
+    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@a057c9bc99ad7eab2e3b1539e79eee7d9a923f4f"
+  << : *test
+
+fedora-37_task:
+  container:
+    dockerfile: ci/fedora-37.docker
+    cpu: 1
+  << : *test
+
+manylinux-python3.11_task:
+  container:
+    dockerfile: ci/manylinux.docker
+    cpu: 1
+  env:
+    PATH: "/opt/python/cp311-cp311/bin/:${PATH}"
+  << : *test
+
+manylinux-python3.7_task:
+  container:
+    dockerfile: ci/manylinux.docker
+    cpu: 1
+  env:
+    PATH: "/opt/python/cp37-cp37m/bin/:${PATH}"
+  fix-meson_script:
+    # see https://github.com/mesonbuild/meson/issues/11097
+    - mkdir wheelhouse
+    - python -m pip wheel --wheel-dir wheelhouse git+https://github.com/mesonbuild/meson@refs/pull/11104/head
+    - echo "PIP_FIND_LINKS=$(pwd)/wheelhouse/" >> $CIRRUS_ENV
+    - PIP_FIND_LINKS="$(pwd)/wheelhouse/" python -m pip install meson
+  << : *test
+
+miniconda_task:
+  container:
+    dockerfile: ci/miniconda.docker
+    cpu: 1
+  << : *test
+
+opensuse-15_task:
+  container:
+    dockerfile: ci/opensuse-15.docker
+    cpu: 1
+  << : *test

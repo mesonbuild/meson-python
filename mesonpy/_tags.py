@@ -29,7 +29,7 @@ def get_interpreter_tag() -> str:
 
 
 def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[str, int, None]:
-    value = sysconfig.get_config_var(name)
+    value: Union[str, int, None] = sysconfig.get_config_var(name)
     if value is None:
         return default
     return value
@@ -84,7 +84,19 @@ def get_abi_tag() -> str:
 
 
 def _get_macosx_platform_tag() -> str:
-    ver, x, arch = platform.mac_ver()
+    ver, _, arch = platform.mac_ver()
+
+    # Override the architecture with the one provided in the
+    # _PYTHON_HOST_PLATFORM environment variable.  This environment
+    # variable affects the sysconfig.get_platform() return value and
+    # is used to cross-compile python extensions on macOS for a
+    # different architecture.  We base the platform tag computation on
+    # platform.mac_ver() but respect the content of the environment
+    # variable.
+    try:
+        arch = os.environ.get('_PYTHON_HOST_PLATFORM', '').split('-')[2]
+    except IndexError:
+        pass
 
     # Override the macOS version if one is provided via the
     # MACOS_DEPLOYMENT_TARGET environment variable.
@@ -101,12 +113,12 @@ def _get_macosx_platform_tag() -> str:
     #
     # This results in packaging versions up to 21.3 generating
     # platform tags like "macosx_10_16_x86_64" and later versions
-    # generating "macosx_11_0_x86_64".  Using latter would be more
+    # generating "macosx_11_0_x86_64".  Using the latter would be more
     # correct but prevents the resulting wheel from being installed on
     # systems using packaging 21.3 or earlier (pip 22.3 or earlier).
     #
     # Fortunately packaging versions carrying the workaround still
-    # accepts "macosx_11_0_x86_64" as a compatible platform tag.  We
+    # accepts "macosx_10_16_x86_64" as a compatible platform tag.  We
     # can therefore ignore the issue and generate the slightly
     # incorrect tag.
 

@@ -1,4 +1,4 @@
-project('meson-python', version: '0.11.0')
+project('meson-python', version: '0.13.0.dev0')
 
 py_mod = import('python')
 py = py_mod.find_installation()
@@ -10,7 +10,9 @@ endif
 py.install_sources(
   'mesonpy/__init__.py',
   'mesonpy/_compat.py',
+  'mesonpy/_editable.py',
   'mesonpy/_elf.py',
+  'mesonpy/_introspection.py',
   'mesonpy/_tags.py',
   'mesonpy/_util.py',
   'mesonpy/_wheelfile.py',

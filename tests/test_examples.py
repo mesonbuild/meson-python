@@ -6,7 +6,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir
+from mesonpy._util import chdir
 
 
 examples_dir = pathlib.Path(__file__).parent.parent / 'docs' / 'examples'
@@ -17,7 +17,7 @@ def test_spam(venv, tmp_path):
     with chdir(examples_dir / 'spam'):
         if sys.version_info < (3, 8):
             # The test project requires Python >= 3.8.
-            with pytest.raises(mesonpy.MesonBuilderError, match=r'Unsupported Python version `3.7.\d+`'):
+            with pytest.raises(SystemExit):
                 mesonpy.build_wheel(tmp_path)
         else:
             wheel = mesonpy.build_wheel(tmp_path)

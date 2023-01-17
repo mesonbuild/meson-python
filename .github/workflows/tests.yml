@@ -47,10 +47,13 @@ jobs:
             python: '3.9'
           - os: ubuntu
             python: '3.10'
-          # Test with the oldest supported Meson version.
+          # Test with older supported Meson version.
           - os: ubuntu
             python: '3.11'
             meson: '0.63.3'
+          - os: ubuntu
+            python: '3.11'
+            meson: '0.64.1'
 
     steps:
       - name: Checkout
@@ -60,6 +63,18 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
+
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+        if: ${{ matrix.os == 'ubuntu' }}
+
+      - name: Install Ninja
+        run: brew install ninja
+        if: ${{ matrix.os == 'macos' }}
+
+      - name: Install Ninja
+        run: python -m pip --disable-pip-version-check install ninja
+        if: ${{ matrix.os == 'windows' }}
 
       - name: Install Meson
         run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
@@ -90,6 +105,8 @@ jobs:
       matrix:
         python:
           - '3.9'
+        meson:
+          -
 
     steps:
       - name: Checkout
@@ -134,6 +151,11 @@ jobs:
           key: cygwin-pip-${{ github.sha }}
           restore-keys: cygwin-pip-
 
+      - name: Install Meson
+        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
+        shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
+
       - name: Install
         # Cygwin patches Python's ensurepip module to look for the
         # wheels needed to initialize a new virtual environment in
@@ -170,6 +192,8 @@ jobs:
       matrix:
         python:
           - '3.8'
+        meson:
+          -
 
     steps:
       - name: Checkout
@@ -179,6 +203,13 @@ jobs:
         run: |
           wget https://github.com/pyston/pyston/releases/download/pyston_2.3.5/pyston_2.3.5_20.04_amd64.deb
           sudo apt install $(pwd)/pyston_2.3.5_20.04_amd64.deb
+
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+
+      - name: Install Meson
+        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
 
       - name: Install
         run: pyston -m pip --disable-pip-version-check install .[test]
@@ -206,6 +237,8 @@ jobs:
         python:
           - '3.7'
           - '3.11'
+        meson:
+          -
 
     steps:
       - name: Checkout
@@ -215,6 +248,9 @@ jobs:
         run: |
           brew install --overwrite python@${{ matrix.python }}
           echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+
+      - name: Install Ninja
+        run: brew install ninja
 
       - name: Patch pip
         # Patch https://github.com/pypa/pip/issues/11539
@@ -227,6 +263,10 @@ jobs:
                   paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix})
               return (paths["purelib"], paths["platlib"])
           EOF
+
+      - name: Install Meson
+        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        if: ${{ matrix.meson }}
 
       - name: Install
         run: python -m pip --disable-pip-version-check install .[test]
