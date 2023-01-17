@@ -19,6 +19,14 @@ from .conftest import adjust_packaging_platform_tag
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
+if sys.version_info <= (3, 8, 7):
+    meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+    meson_version = tuple(map(int, meson_ver_str.split('.')[:2]))
+    if meson_version >= (0, 99):
+        # Fixed in Meson 1.0, see https://github.com/mesonbuild/meson/pull/10961.
+        from distutils.sysconfig import get_config_var
+        EXT_SUFFIX = get_config_var('EXT_SUFFIX')
+
 EXT_IMP_SUFFIX = re.sub(r'.pyd$', '.dll', EXT_SUFFIX) + '.a'
 INTERPRETER_VERSION = f'{sys.version_info[0]}{sys.version_info[1]}'
 
@@ -39,9 +47,6 @@ def wheel_contents(artifact):
 
 def wheel_filename(artifact):
     return artifact.filename.split(os.sep)[-1]
-
-
-win_py37 = os.name == 'nt' and sys.version_info < (3, 8)
 
 
 def test_scipy_like(wheel_scipy_like):
@@ -141,13 +146,8 @@ def test_configure_data(wheel_configure_data):
 
 @pytest.mark.skipif(platform.system() != 'Linux', reason='Unsupported on this platform for now')
 def test_local_lib(venv, wheel_link_against_local_lib):
-    subprocess.run(
-        [venv.executable, '-m', 'pip', 'install', wheel_link_against_local_lib],
-        check=True)
-    output = subprocess.run(
-        [venv.executable, '-c', 'import example; print(example.example_sum(1, 2))'],
-        stdout=subprocess.PIPE,
-        check=True).stdout
+    venv.pip('install', wheel_link_against_local_lib)
+    output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
     assert int(output) == 3
 
 
@@ -220,3 +220,32 @@ def test_entrypoints(wheel_full_metadata):
             [gui_scripts]
             example-gui = example:gui
         ''').strip()
+
+
+def test_top_level_modules(package_module_types):
+    with mesonpy.Project.with_temp_working_dir() as project:
+        assert set(project._wheel_builder.top_level_modules) == {
+            'file',
+            'package',
+            'namespace',
+            'native',
+        }
+
+
+def test_editable(
+    package_imports_itself_during_build,
+    editable_imports_itself_during_build,
+    venv,
+):
+    venv.pip('install', os.fspath(editable_imports_itself_during_build))
+
+    assert venv.python('-c', 'import plat; print(plat.foo())').strip() == 'bar'
+
+    plat = package_imports_itself_during_build / 'plat.c'
+    plat_text = plat.read_text()
+    try:
+        plat.write_text(plat_text.replace('bar', 'something else'))
+
+        assert venv.python('-c', 'import plat; print(plat.foo())').strip() == 'something else'
+    finally:
+        plat.write_text(plat_text)

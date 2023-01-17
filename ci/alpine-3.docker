@@ -1,0 +1,3 @@
+# 20221203
+FROM alpine:3
+RUN apk add --no-cache python3-dev py3-pip build-base ninja git patchelf

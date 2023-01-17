@@ -1,6 +1,6 @@
 ci:
   autofix_prs: false
-  autoupdate_commit_msg: 'pre-commit: bump repositories'
+  autoupdate_commit_msg: 'MAINT: bump repositories'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -17,7 +17,7 @@ repos:
   - id: end-of-file-fixer
   - id: trailing-whitespace
 - repo: https://github.com/PyCQA/isort
-  rev: 5.10.1
+  rev: 5.11.4
   hooks:
   - id: isort
 - repo: https://github.com/PyCQA/flake8

@@ -1,4 +1,5 @@
 .mesonpy-native-file.ini
+.mesonpy/
 docs/_build
 *.pyc
 .cache/

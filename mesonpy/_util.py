@@ -15,12 +15,12 @@ from mesonpy._compat import Iterable, Iterator, Path
 
 
 @contextlib.contextmanager
-def cd(path: Path) -> Iterator[None]:
+def chdir(path: Path) -> Iterator[Path]:
     """Context manager helper to change the current working directory -- cd."""
     old_cwd = os.getcwd()
     os.chdir(os.fspath(path))
     try:
-        yield
+        yield path
     finally:
         os.chdir(old_cwd)
 

@@ -43,6 +43,14 @@ def test_macos_platform_tag(monkeypatch):
             assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
 
 
+@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
+def test_python_host_platform(monkeypatch):
+    monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-12.0-arm64')
+    assert mesonpy._tags.get_platform_tag().endswith('arm64')
+    monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-11.1-x86_64')
+    assert mesonpy._tags.get_platform_tag().endswith('x86_64')
+
+
 def wheel_builder_test_factory(monkeypatch, content):
     files = defaultdict(list)
     files.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})

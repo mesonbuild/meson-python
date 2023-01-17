@@ -10,7 +10,9 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir, package_dir
+from mesonpy._util import chdir
+
+from .conftest import package_dir
 
 
 @pytest.mark.parametrize('package', ['pure', 'library'])
@@ -27,11 +29,12 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
         # smoke check for the future if we add another usage
         raise AssertionError(f'Called with {prog}, tests not expecting that usage')
 
+    subprocess_run = subprocess.run
+
     def run(cmd: List[str], *args: object, **kwargs: object) -> subprocess.CompletedProcess:
-        if cmd != ['ninja', '--version']:
-            # smoke check for the future if we add another usage
-            raise AssertionError(f'Called with {cmd}, tests not expecting that usage')
-        return subprocess.CompletedProcess(cmd, 0, f'{ninja}\n', '')
+        if cmd == ['ninja', '--version']:
+            return subprocess.CompletedProcess(cmd, 0, f'{ninja}\n', '')
+        return subprocess_run(cmd, *args, **kwargs)
 
     monkeypatch.setattr(shutil, 'which', which)
     monkeypatch.setattr(subprocess, 'run', run)
@@ -53,23 +56,19 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
         assert set(mesonpy.get_requires_for_build_wheel()) == expected
 
 
-def test_invalid_config_settings(package_pure, tmp_path_session):
-    raises_error = pytest.raises(mesonpy.ConfigError, match="Unknown config setting: 'invalid'")
+def test_invalid_config_settings(capsys, package_pure, tmp_path_session):
+    for method in mesonpy.build_sdist, mesonpy.build_wheel:
+        with pytest.raises(SystemExit):
+            method(tmp_path_session, {'invalid': ()})
+        out, err = capsys.readouterr()
+        assert out.splitlines()[-1].endswith(
+            'Unknown configuration entry "invalid"')
 
-    with raises_error:
-        mesonpy.build_sdist(tmp_path_session, {'invalid': ()})
-    with raises_error:
-        mesonpy.build_wheel(tmp_path_session, {'invalid': ()})
 
-
-def test_invalid_config_settings_suggest(package_pure, tmp_path_session):
-    raises_error = pytest.raises(
-        mesonpy.ConfigError,
-        match='Did you mean one of: .*setup-args'
-    )
-
-    with raises_error:
-        mesonpy.build_sdist(tmp_path_session, {'setup_args': ()})
-
-    with raises_error:
-        mesonpy.build_wheel(tmp_path_session, {'setup_args': ()})
+def test_invalid_config_settings_suggest(capsys, package_pure, tmp_path_session):
+    for method in mesonpy.build_sdist, mesonpy.build_wheel:
+        with pytest.raises(SystemExit):
+            method(tmp_path_session, {'setup_args': ()})
+        out, err = capsys.readouterr()
+        assert out.splitlines()[-1].endswith(
+            'Unknown configuration entry "setup_args". Did you mean "setup-args" or "dist-args"?')

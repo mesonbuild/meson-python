@@ -3,7 +3,9 @@ import sys
 
 import pytest
 
-from .conftest import chdir, in_git_repo_context, package_dir
+from mesonpy._util import chdir
+
+from .conftest import in_git_repo_context, package_dir
 
 
 @pytest.mark.usefixtures('pep518')

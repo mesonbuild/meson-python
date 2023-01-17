@@ -1,0 +1,3 @@
+# 20221203
+FROM archlinux:latest
+RUN pacman -Sy && pacman -S --noconfirm python python-pip gcc ninja git patchelf

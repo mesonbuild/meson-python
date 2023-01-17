@@ -5,7 +5,7 @@ requires = [
   'meson>=0.63.3',
   'pyproject-metadata>=0.6.1',
   'tomli>=1.0.0; python_version<"3.11"',
-  'typing-extensions>=3.7.4; python_version<"3.8"',
+  'typing-extensions>=3.7.4; python_version<"3.10"',
 ]
 
 [project]
@@ -28,7 +28,7 @@ dependencies = [
   'meson>=0.63.3',
   'pyproject-metadata>=0.6.1', # not a hard dependency, only needed for projects that use PEP 621 metadata
   'tomli>=1.0.0; python_version<"3.11"',
-  'typing-extensions>=3.7.4; python_version<"3.8"',
+  'typing-extensions>=3.7.4; python_version<"3.10"',
 ]
 
 dynamic = [
@@ -44,7 +44,6 @@ test = [
   'auditwheel',
   'Cython',
   'wheel',
-  'ninja',
 ]
 docs = [
   'furo>=2021.08.31',
@@ -71,6 +70,11 @@ lines_after_imports = 2
 multi_line_output = 5
 known_first_party = 'mesonpy'
 
+
+[tool.coverage.run]
+disable_warnings = [
+  'couldnt-parse',
+]
 
 [tool.coverage.html]
 show_contexts = true
