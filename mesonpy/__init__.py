@@ -631,7 +631,7 @@ class _WheelBuilder():
         return wheel_file
 
 
-MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
+MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install', 'install-tags']
 MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
@@ -876,8 +876,12 @@ class Project():
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
         """Trigger the Meson build."""
-        for cmd in self.build_commands():
-            self._meson(*cmd[1:])
+        self._meson('compile', *self._meson_args['compile'],)
+        if self._meson_args['install-tags']:
+            install_tags = '--tags=' + ','.join(self._meson_args['install-tags'])
+            self._meson('install', '--destdir', os.fspath(self._install_dir), install_tags, *self._meson_args['install'],)
+        else:
+            self._meson('install', '--destdir', os.fspath(self._install_dir), *self._meson_args['install'],)
 
     @classmethod
     @contextlib.contextmanager
@@ -903,6 +907,12 @@ class Project():
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+        install_plan = self._info('intro-install_plan').copy()
+
+        for files in install_plan.values():
+            for file, details in list(files.items()):
+                if details['tag'] not in self._meson_args['install-tags']:
+                    del files[file]
         """Meson install_plan metadata."""
         return self._info('intro-install_plan').copy()
 
