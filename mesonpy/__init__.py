@@ -10,6 +10,7 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
+import argparse
 import collections
 import contextlib
 import functools
@@ -909,19 +910,18 @@ class Project():
         install_plan = self._info('intro-install_plan').copy()
 
         # parse install args for install tags (--tags)
-        install_tags = []
-        for arg in self._meson_args['install']:
-            if arg.strip().startswith('--tags='):
-                install_tags = arg.split('=', 1)[1].split(',')
-                break
-        else:
-            return install_plan
-            
-        # filter out files that do not fit the install tags
-        for files in install_plan.values():
-            for file, details in list(files.items()):
-                if details['tag'].strip() not in install_tags:
-                    del files[file]
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--tags')
+        args, _ = parser.parse_known_args(self._meson_args['install'])
+        
+        # filter the install_plan for files that do not fit the install tags
+        if args.tags:
+            install_tags = args.tags.split(',')
+                
+            for files in install_plan.values():
+                for file, details in list(files.items()):
+                    if details['tag'].strip() not in install_tags:
+                        del files[file]
 
         return install_plan
 
