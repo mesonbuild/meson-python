@@ -3,7 +3,7 @@ build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
   'meson>=0.63.3',
-  'pyproject-metadata>=0.6.1',
+  'pyproject-metadata>=0.7.0',
   'tomli>=1.0.0; python_version<"3.11"',
   'typing-extensions>=3.7.4; python_version<"3.10"',
 ]
