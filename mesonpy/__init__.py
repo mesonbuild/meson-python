@@ -753,12 +753,8 @@ class Project():
         # Don't reconfigure if build directory doesn't have meson-private/coredata.data
         # (means something went wrong)
         # See https://github.com/mesonbuild/meson-python/pull/257#discussion_r1067385517
-        reconfigure = bool(build_dir)
-        if reconfigure:
-            if not os.path.exists(os.path.join(self._build_dir, 'meson-private/coredata.dat')):
-                reconfigure = False
-        reconfigure = reconfigure and not native_file_mismatch
-        self._configure(reconfigure=reconfigure)
+        has_valid_build_dir = self._build_dir.joinpath('meson-private', 'coredata.dat').is_file()
+        self._configure(reconfigure=has_valid_build_dir and not native_file_mismatch)
 
         # set version if dynamic (this fetches it from Meson)
         if self._metadata and 'version' in self._metadata.dynamic:
