@@ -631,7 +631,7 @@ class _WheelBuilder():
         return wheel_file
 
 
-MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install', 'install-tags']
+MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
 MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
@@ -876,12 +876,8 @@ class Project():
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
         """Trigger the Meson build."""
-        self._meson('compile', *self._meson_args['compile'],)
-        if self._meson_args['install-tags']:
-            install_tags = '--tags=' + ','.join(self._meson_args['install-tags'])
-            self._meson('install', '--destdir', os.fspath(self._install_dir), install_tags, *self._meson_args['install'],)
-        else:
-            self._meson('install', '--destdir', os.fspath(self._install_dir), *self._meson_args['install'],)
+        for cmd in self.build_commands():
+            self._meson(*cmd[1:])
 
     @classmethod
     @contextlib.contextmanager
@@ -907,14 +903,27 @@ class Project():
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
+        """Meson install_plan metadata."""
+    
+        # copy the install plan so we can modify it
         install_plan = self._info('intro-install_plan').copy()
 
+        # parse install args for install tags (--tags)
+        install_tags = []
+        for arg in self._meson_args['install']:
+            if arg.strip().startswith('--tags='):
+                install_tags = arg.split('=', 1)[1].split(',')
+                break
+        else:
+            return install_plan
+            
+        # filter out files that do not fit the install tags
         for files in install_plan.values():
             for file, details in list(files.items()):
-                if details['tag'] not in self._meson_args['install-tags']:
+                if details['tag'].strip() not in install_tags:
                     del files[file]
-        """Meson install_plan metadata."""
-        return self._info('intro-install_plan').copy()
+
+        return install_plan
 
     @property
     def _copy_files(self) -> Dict[str, str]:
