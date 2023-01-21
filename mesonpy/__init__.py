@@ -621,6 +621,8 @@ class _WheelBuilder():
                     hook_name={_as_python_declaration(hook_module_name)},
                     project_path={_as_python_declaration(self._source_dir)},
                     build_path={_as_python_declaration(self._build_dir)},
+                    install_dir={_as_python_declaration(install_path)},
+                    uninstall_old = True,
                     import_paths={_as_python_declaration(import_paths)},
                     top_level_modules={_as_python_declaration(self.top_level_modules)},
                     rebuild_commands={_as_python_declaration(rebuild_commands)},
@@ -882,7 +884,6 @@ class Project():
             (
                 'meson',
                 'install',
-                '--only-changed',
                 '--destdir',
                 os.fspath(install_dir or self._install_dir),
                 *self._meson_args['install'],

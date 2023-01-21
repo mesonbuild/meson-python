@@ -69,6 +69,7 @@ def test_scipy_like(wheel_scipy_like):
         f'mypkg/cy_extmod{EXT_SUFFIX}',
         'mypkg/submod/__init__.py',
         'mypkg/submod/unknown_filetype.npq',
+        'mypkg/submod/deleted.py'
     }
     if sys.platform in {'win32', 'cygwin'}:
         # Currently Meson is installing .dll.a (import libraries) next
@@ -278,3 +279,35 @@ def test_editable_broken_non_existent_build_dir(
     venv.pip('install', os.path.join(tmp_path, mesonpy.build_editable(tmp_path)))
 
     assert venv.python('-c', 'import plat; print(plat.foo())').strip() == 'bar'
+
+
+def test_editable_syncs_removed_file(
+    package_scipy_like,
+    editable_scipy_like,
+    venv,
+    tmp_path,
+):
+    # Test that a deleted file is removed from the install dir
+    shutil.rmtree(tmp_path)  # copytree requires dest not to exist
+    shutil.copytree(package_scipy_like, tmp_path)
+    mesonpy_dir = os.path.join(package_scipy_like, '.mesonpy')
+    if os.path.isdir(mesonpy_dir):
+        venv.pip('uninstall', '-y', 'mypkg')
+        shutil.rmtree(mesonpy_dir)
+
+    os.chdir(tmp_path)
+    venv.pip('install', os.path.join(tmp_path, mesonpy.build_editable(tmp_path)))
+
+    assert venv.python('-c', 'import mypkg.submod.deleted').strip() == 'Deleted file exists'
+
+    # Delete a file and check if it is removed
+    # (in this case, cannot be imported)
+    os.remove(os.path.join(tmp_path, 'mypkg/submod/deleted.py'))
+    assert not os.path.exists(os.path.join(tmp_path, 'mypkg/submod/deleted.py'))
+
+    try:
+        # Use assert to fail the test if the call succeeds
+        assert not venv.python('-c', 'import mypkg.submod.deleted')
+    except subprocess.CalledProcessError:
+        # We're expecting this to fail since the file got deleted
+        pass

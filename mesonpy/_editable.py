@@ -1,6 +1,7 @@
 import functools
 import importlib.abc
 import os
+import shutil
 import subprocess
 import sys
 import warnings
@@ -63,6 +64,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         hook_name: str,
         project_path: str,
         build_path: str,
+        install_dir: str,
+        uninstall_old: bool,
         import_paths: List[str],
         top_level_modules: List[str],
         rebuild_commands: List[List[str]],
@@ -72,6 +75,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         self._hook_name = hook_name
         self._project_path = project_path
         self._build_path = build_path
+        self.install_dir = install_dir
+        self.uninstall_old = uninstall_old
         self._import_paths = import_paths
         self._top_level_modules = top_level_modules
         self._rebuild_commands = rebuild_commands
@@ -115,6 +120,9 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
     @functools.lru_cache(maxsize=1)
     def rebuild(self) -> None:
         self._debug(f'{{cyan}}{{bold}}+ rebuilding {self._project_path}{{reset}}')
+        if self.uninstall_old:
+            if os.path.exists(self.install_dir):
+                shutil.rmtree(self.install_dir)
         for command in self._rebuild_commands:
             self._proc(command)
         self._debug('{cyan}{bold}+ successfully rebuilt{reset}')
@@ -148,6 +156,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
         hook_name: str,
         project_path: str,
         build_path: str,
+        install_dir: str,
+        uninstall_old: bool,
         import_paths: List[str],
         top_level_modules: List[str],
         rebuild_commands: List[List[str]],
@@ -163,6 +173,8 @@ class MesonpyFinder(importlib.abc.MetaPathFinder):
             hook_name,
             project_path,
             build_path,
+            install_dir,
+            uninstall_old,
             import_paths,
             top_level_modules,
             rebuild_commands,
