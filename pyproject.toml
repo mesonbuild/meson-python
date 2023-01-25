@@ -49,6 +49,7 @@ docs = [
   'furo>=2021.08.31',
   'sphinx~=4.0',
   'sphinx-autodoc-typehints>=1.10',
+  'sphinx-autobuild',
 ]
 
 [project.urls]

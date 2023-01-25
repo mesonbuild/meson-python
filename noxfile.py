@@ -18,12 +18,14 @@ def docs(session):
 
     session.install('.[docs]')
     session.chdir('docs')
-    session.run('sphinx-build', '-M', 'html', '.', '_build')
 
-    if session.posargs:
+    sphinx_build_args = ('.', '_build')
+
+    if not session.posargs:
+        session.run('sphinx-build', '-M', 'html', *sphinx_build_args)
+    else:
         if 'serve' in session.posargs:
-            print('Launching docs at http://localhost:8000/ - use Ctrl-C to quit')
-            session.run('python', '-m', 'http.server', '8000', '-d', '_build/html')
+            session.run('sphinx-autobuild', *sphinx_build_args)
         else:
             print('Unsupported argument to docs')
 
