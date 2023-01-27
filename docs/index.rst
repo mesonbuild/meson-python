@@ -75,6 +75,14 @@ In addition, the `#meson-python`_ channel on the `PyPA Discord`_ may be useful
 for quick questions - one ``meson-python`` maintainer is active there.
 
 
+Contributors
+============
+
+..  contributors:: mesonbuild/meson-python
+   :avatars:
+   :exclude: pre-commit-ci[bot]
+
+
 .. toctree::
    :caption: Release
    :hidden:

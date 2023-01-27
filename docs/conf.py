@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx_autodoc_typehints',
+    'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
 ]
@@ -67,6 +68,11 @@ todo_include_todos = True
 #
 html_theme = 'furo'
 html_title = f'meson-python {version}'
+
+html_static_path = ['static']
+html_css_files = [
+    'css/contributors.css',
+]
 
 html_theme_options = {
     'light_css_variables': {

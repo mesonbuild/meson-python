@@ -1,0 +1,25 @@
+/*
+ * SPDX-FileCopyrightText: 2023 The meson-python developers
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+.sphinx-contributors--avatars .sphinx-contributors_contributor__image {
+    border-radius: 50%;
+    max-width: 80px;
+    margin: auto;
+}
+
+.sphinx-contributors--avatars .sphinx-contributors_contributor__username {
+    font-size: 80%;
+    text-align: center;
+}
+
+.sphinx-contributors--avatars .sphinx-contributors_contributor {
+    flex-grow: 1;
+}
+
+.sphinx-contributors--avatars .sphinx-contributors_list {
+    justify-content: flex-start;
+    gap: 10px;
+}
