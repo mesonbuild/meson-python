@@ -2,9 +2,10 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-+++++++++
-Changelog
-+++++++++
+
+++++++++++
+Change-log
+++++++++++
 
 
 0.13.0.pre0 (30-01-2023)
@@ -87,7 +88,7 @@ Changelog
 0.6.0 (21-06-2022)
 ==================
 
-- Project relicensed to MIT
+- Project re-licensed to MIT
 - Error out when running in an unsupported interpreter
 - Fix slightly broken Debian heuristics
 - Update ``pep621`` dependency to ``pyproject-metadata``
@@ -110,7 +111,7 @@ Changelog
 ==================
 
 - Initial cross-platform support
-  - Bundling libraries stioll is only supported on Linux
+  - Bundling libraries is still only supported on Linux
 - Add initial documentation
 - The build directory is now located in the project source
 
@@ -138,7 +139,7 @@ Changelog
 0.1.1 (28-10-2021)
 ==================
 
-- Fix minor compability issue with Python < 3.9
+- Fix minor compatibility issue with Python < 3.9
 
 
 0.1.0 (28-10-2021)

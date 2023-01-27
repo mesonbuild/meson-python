@@ -12,7 +12,7 @@ Passing arguments to Meson_
 .. todo::
 
    - Explain how you can add extra Meson arguments via ``pyproject.toml``
-   - Explain how you can add extra Meson arguments via the build conifig
+   - Explain how you can add extra Meson arguments via the build config
      settings
    - Mention the order in which Meson arguments are added, and how it affect
      Meson

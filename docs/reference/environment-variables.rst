@@ -66,7 +66,7 @@ Environment variables
        .. admonition:: macOS versioning
           :class: note
 
-          macOS versioning changed from macOS 11 onwards. For macOS 10.x, the
+          macOS versioning changed from macOS 11 onward. For macOS 10.x, the
           versioning scheme is ``10.major.minor``. From macOS 11, it is
           ``major.minor.bugfix``. Wheel tags and deployment targets are currently
           designed to be for major versions only. Examples of the platform part
