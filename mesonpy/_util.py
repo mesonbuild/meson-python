@@ -46,6 +46,7 @@ def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
     source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
     mtime = int(source_date_epoch) if source_date_epoch else None
 
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     file = typing.cast(IO[bytes], gzip.GzipFile(
         path,
         mode='wb',
