@@ -43,6 +43,7 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_design',
     'sphinxcontrib.spelling',
+    'sphinxext.opengraph',
 ]
 
 intersphinx_mapping = {
@@ -89,6 +90,12 @@ html_theme_options = {
 
 spelling_show_suggestions = True
 spelling_warning = True
+
+
+# Open Graph
+
+ogp_site_url = 'https://meson-python.readthedocs.io'
+ogp_site_name = 'meson-python documentation'
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
