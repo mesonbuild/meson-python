@@ -37,7 +37,10 @@ release = mesonpy.__version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
     'sphinx_autodoc_typehints',
+    'sphinx_copybutton',
+    'sphinx_design',
 ]
 
 intersphinx_mapping = {
@@ -55,6 +58,8 @@ exclude_patterns = []
 
 default_role = 'any'
 
+todo_include_todos = True
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -62,6 +67,15 @@ default_role = 'any'
 #
 html_theme = 'furo'
 html_title = f'meson-python {version}'
+
+html_theme_options = {
+    'light_css_variables': {
+        'font-stack': (
+            'system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,'
+            'Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji'
+        ),
+    },
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
