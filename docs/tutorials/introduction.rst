@@ -220,7 +220,7 @@ What are the roles of *sdists* and *wheels*
 
 As you might have figured out by the name, *sdists* contain the source code of
 the project, and *wheels* contain a compiled [#pure-wheels]_ version of the
-project, ready to be copied to the filesystem.
+project, ready to be copied to the file-system.
 
 If your project uses Python extension modules, your *wheels* will be specific to
 both the platform and the Python version [#stable-abi]_.
@@ -287,7 +287,7 @@ Distributing the project
 ------------------------
 
 Now that we have the distribution artifacts, we can upload them to a repository.
-We will upload them to the `Python Package Index`_ (abv. *PyPI*,
+We will upload them to the `Python Package Index`_ (:spelling:word:`abv`. *PyPI*,
 `pronounced "pie pea eye"`_), which is repository that comes enabled by default
 in most tools.
 

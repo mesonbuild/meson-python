@@ -42,6 +42,7 @@ extensions = [
     'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
+    'sphinxcontrib.spelling',
 ]
 
 intersphinx_mapping = {
@@ -82,6 +83,13 @@ html_theme_options = {
         ),
     },
 }
+
+
+# Spellchecking
+
+spelling_show_suggestions = True
+spelling_warning = True
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
