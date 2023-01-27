@@ -11,29 +11,26 @@ SPDX-License-Identifier: MIT
 [![codecov](https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk)](https://codecov.io/gh/mesonbuild/meson-python)
 [![Documentation Status](https://readthedocs.org/projects/meson-python/badge/?version=stable)](https://meson-python.readthedocs.io/en/stable/?badge=stable)
 
-Python build backend ([PEP 517](https://www.python.org/dev/peps/pep-0517/)) for Meson projects.
+`meson-python` is a Python build backend built on top of the [Meson][meson]
+build-system. It enables you to use [Meson][meson] for your Python packages.
 
-See the [documentation](https://meson-python.readthedocs.io/en/stable/) for more details.
+See our [documentation][docs] for more details.
 
-### Status
 
-- Pure Python modules :+1:
-- Native modules
-  - Don't link against anything :+1:
-  - Link against external libraries :+1:
-  - Link against libraries from the Meson project :+1:
-  - Detect the ABI :+1:
-- Scripts (executables in Meson)
-  - Don't link against anything :+1:
-  - Link against external libraries :+1:
-  - Link against libraries from the Meson project :hammer:
+## Support
 
-#### Platform Support
+If you have a general question feel free to [start a discussion][new discussion]
+on Github. If you want to report a bug, request a feature, or propose an improvement, feel
+free to open an issue on our [bugtracker][bugtracker].
 
-- Linux :+1:
-- Windows :hammer:
-  - Does not support linking against libraries from the Meson project
-- MacOS :hammer:
-  - Does not support linking against libraries from the Meson project
-- Other UNIX-like :warning:
-  - Most platforms should work, but currently that is not tested or guaranteed
+## Contributing
+
+If you are interested in contributing, please check out
+[our documentation][contributing docs].
+
+
+[meson]: https://github.com/mesonbuild/meson
+[docs]: https://meson-python.readthedocs.io/en/stable/
+[new discussion]: https://github.com/mesonbuild/meson-python/discussions/new/choose
+[bugtracker]: https://github.com/mesonbuild/meson-python/issues
+[contributing docs]: https://meson-python.readthedocs.io/en/lastest/contributing/getting-started.html

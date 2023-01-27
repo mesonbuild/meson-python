@@ -2,7 +2,6 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-:hide-toc:
 
 *************************
 meson-python |PyPI badge|
@@ -11,11 +10,6 @@ meson-python |PyPI badge|
 .. image:: https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg
    :target: https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main
    :alt: pre-commit.ci status
-
-
-.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml/badge.svg
-   :target: https://github.com/mesonbuild/meson-python/actions/workflows/checks.yml
-   :alt: Github Action 'checks' workflow status
 
 
 .. image:: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg
@@ -28,181 +22,57 @@ meson-python |PyPI badge|
    :alt: Codecov coverage status
 
 
-Python build backend (PEP 517) for Meson_ projects.
-
-It enables Python package authors to use Meson_ as the build backend for their
-packages.
-
-
-How to use?
-===========
-
-Please see `getting started`_ for intructions on how to setup your project.
-
-After setting it up, you can use `pypa/build`_ to build the distribution
-artifacts.
+.. image:: https://readthedocs.org/projects/meson-python/badge/?version=stable
+   :target: https://meson-python.readthedocs.io/en/stable/?badge=stable
+   :alt: Documentation Status
 
 
-.. code-block::
+.. highlights::
 
-   python -m build
-
-
-We provide a couple configuration options that should be exposed via the build
-frontend, like ``builddir``, to specify the build directory to use/re-use. You
-can find more information about them in the `build options page`_.
+   ``meson-python`` is a Python build backend built on top of the Meson_
+   build-system. It enables you to use Meson_ for your Python packages.
 
 
-Editable installs
+Where to start?
+===============
+
+
+New to Python packaging
+-----------------------
+
+If you are new to Python packaging, we recommend you check our
+:ref:`tutorial-introduction` tutorial, which walks you through creating and
+releasing your first Python package.
+
+
+Experienced users
 -----------------
 
-Editable installs allow you to install the project in such a way where you can
-edit the project source and have those changes be reflected in the installed
-module, without having to explicitly rebuild and reinstall.
-
-The way it works on ``meson-python`` specifically, is that when you import a
-module of the project, it will be rebuilt on the fly. This means that project
-imports will take more time than usual.
-
-You can use pip to install the project in editable mode.
+If you are already familiarized with Python packaging, we recommend you check
+our :ref:`how-to-guides-first-project` guide, which shows you how to quickly
+setup a ``meson-python`` project.
 
 
-.. code-block::
+How to reach us?
+================
 
-   python -m pip install -e .
+``meson-python`` is an open source project, so all support is at a best-effort
+capacity, but we are happy to help where we can.
 
-
-It might be helpful to see the output of the Meson_ commands. This is offered
-as a **provisional** feature, meaning it is subject to change.
-
-If you want to temporarily enable the output, you can set the
-``MESONPY_EDITABLE_VERBOSE`` environment variable to a non-empty value. If this
-environment variable is present during import, the Meson_ commands and their
-output will be printed.
+If you have a general question feel free to `start a discussion`_ on Github. If
+you want to report a bug, request a feature, or propose an improvement, feel
+free to open an issue on our bugtracker_.
 
 
-.. code-block::
+.. admonition:: Search first!
+   :class: tip
 
-   MESONPY_EDITABLE_VERBOSE=1 python my_script.py
-
-
-
-This behavior can also be enabled by default by passing the ``editable-verbose``
-config setting when installing the project.
+   Before starting a discussion, please try searching our bugtracker_ and
+   `discussion page`_ first.
 
 
-.. code-block::
-
-   python -m pip install -e . --config-settings editable-verbose=true
-
-
-This way, you won't need to always set ``MESONPY_EDITABLE_VERBOSE`` environment
-variable, the Meson_ commands and their output will always be printed.
-
-The ``MESONPY_EDITABLE_VERBOSE`` won't have any effect during the project
-install step.
-
-
-How does it work?
-=================
-
-We implement the Python build system hooks, enabling any standards compliant
-Python tool (pip_, `pypa/build`_, etc.) to build and install the project.
-
-``meson-python`` will build a Python sdist (source distribution) or
-wheel (binary distribution) from Meson_ project.
-
-Source distribution (sdist)
----------------------------
-
-The source distribution is based on ``meson dist``, so make sure all your files
-are included there. In git projects, Meson_ will not include files that are not
-checked into git, keep that in mind when developing. By default, all files
-under version control will be included in the sdist. In order to exclude files,
-use ``export-ignore`` or ``export-subst`` attributes in ``.gitattributes`` (see
-the ``git-archive`` documentation for details; ``meson dist`` uses
-``git-archive`` under the hood).
-
-Local (uncommitted) changes to files that are under version control will be
-included. This is often needed when applying patches, e.g. for build issues
-found during packaging, to work around test failures, to amend the license for
-vendored components in wheels, etc.
-
-Binary distribution (wheels)
-----------------------------
-
-The binary distribution is built by running Meson_ and introspecting the build
-and trying to map the files to their correct location. Due to some limitations
-and/or bugs in Meson_, we might not be able to map some of the files with
-certainty. In these cases, we will take the safest approach and warn the user.
-In some cases, we might need to resort to heuristics to perform the mapping,
-similarly, the user will be warned. These warnings are not necessarily a reason
-for concern, they are there to help identifying issues. In these cases, we
-recommend that you check if the files in question were indeed mapped to the
-expected place, and open a bug report if they weren't.
-
-If the project itself includes shared libraries that are needed by other files,
-those libraries will be included in the wheel, and native files will have their
-library search path extended to include the directory where the libraries are
-placed.
-
-If the project depends on external shared libraries, those libraries will not
-be included in the wheel. This can be handled in several ways by the package
-developer using ``meson-python``:
-
-1. Finding or creating a suitable Python package that provides those shared
-   libraries and can be added to ``dependencies`` in ``pyproject.toml``.
-2. Vendoring those libraries into the wheel. Currently ``meson-python`` does
-   not provide an OS-agnostic way of doing that; on Linux ``auditwheel`` can be
-   used, and on macOS ``delocate``. Or, the package developer can copy the
-   shared libraries into the source tree and patch ``meson.build`` files to
-   include them.
-3. Documenting that the dependency is assumed to already be installed on the
-   end user's system, and letting the end user install it themselves (e.g.,
-   through their Linux distro package manager).
-
-
-What are the limitations?
-=========================
-
-
-Not yet supported
------------------
-
-
-Platform
-~~~~~~~~
-
-Windows and MacOS are not yet fully supported, but that is actively being worked on.
-
-
-Executables that link against project libraries
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you have an executable in your project that links against a shared library
-that is shipped by your project, ``meson-python`` will not be able to correctly
-bundle it to the wheel. The executable will be included in the wheel, but it
-will not be able to find the project librar(y/ies) it links against.
-
-
-No data
--------
-
-Data (see |install_data|_) is not supported by the wheel standard. Project
-should install data as Python source instead (Python source does not have to be
-only Python files!) and use :py:mod:`importlib.resources` (or the
-:py:mod:`importlib_resources` backport) to access the data.
-If you really need the data to be installed where it was previously (eg.
-``/usr/data``), you can do so at runtime.
-
-
-.. toctree::
-   :caption: Usage
-   :hidden:
-
-   usage/start
-   usage/build-options
-   usage/specific-behaviors
+In addition, the `#meson-python`_ channel on the `PyPA Discord`_ may be useful
+for quick questions - one ``meson-python`` maintainer is active there.
 
 
 .. toctree::
@@ -210,6 +80,59 @@ If you really need the data to be installed where it was previously (eg.
    :hidden:
 
    changelog
+
+
+.. toctree::
+   :caption: Tutorials
+   :hidden:
+
+   tutorials/introduction
+   tutorials/data
+   tutorials/entrypoints
+   tutorials/executable
+
+
+.. toctree::
+   :caption: How to guides
+   :hidden:
+
+   how-to-guides/first-project
+   how-to-guides/add-dependencies
+   how-to-guides/editable-installs
+   how-to-guides/config-settings
+   how-to-guides/meson-args
+   how-to-guides/build-directory
+   how-to-guides/executable-with-internal-dependencies
+
+
+.. toctree::
+   :caption: Reference
+   :hidden:
+
+   reference/config-settings
+   reference/pyproject-settings
+   reference/environment-variables
+   reference/quirks
+   reference/limitations
+
+
+.. toctree::
+   :caption: Explanations
+   :hidden:
+
+   explanations/design
+   explanations/internal-dependencies
+   explanations/editable-installs
+
+
+.. toctree::
+   :caption: Contributing
+   :hidden:
+
+   contributing/getting-started
+   contributing/commit-format
+   contributing/test-suite
+   contributing/documentation
 
 
 .. toctree::
@@ -231,5 +154,10 @@ If you really need the data to be installed where it was previously (eg.
 .. _pypa/build: https://github.com/pypa/build
 .. _build options page: usage/build-options.html
 .. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
+.. _start a discussion: https://github.com/mesonbuild/meson-python/discussions/new/choose
+.. _bugtracker: https://github.com/mesonbuild/meson-python/issues
+.. _discussion page: https://github.com/mesonbuild/meson-python/discussions
+.. _#meson-python: https://discord.com/channels/803025117553754132/1040322863930024057
+.. _PyPA Discord: https://discord.gg/pypa
 
 .. |install_data| replace:: ``install_data``
