@@ -28,8 +28,8 @@ ABI3SUFFIX = next((x for x in mesonpy._EXTENSION_SUFFIXES if '.abi3.' in x), Non
 
 
 def test_wheel_tag():
-    str(mesonpy._tags.Tag()) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
-    str(mesonpy._tags.Tag(abi='abi3')) == f'{INTERPRETER}-abi3-{PLATFORM}'
+    assert str(mesonpy._tags.Tag()) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
+    assert str(mesonpy._tags.Tag(abi='abi3')) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
 
 @pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')

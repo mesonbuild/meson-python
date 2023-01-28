@@ -20,8 +20,8 @@ def debian_python() -> bool:
         import distutils
         try:
             import distutils.command.install
-        except ModuleNotFoundError:
-            raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils')
+        except ModuleNotFoundError as exc:
+            raise ModuleNotFoundError('Unable to import distutils, please install python3-distutils') from exc
         return 'deb_system' in distutils.command.install.INSTALL_SCHEMES
     except ModuleNotFoundError:
         return False

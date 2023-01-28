@@ -98,7 +98,7 @@ def test_contents(package_library, wheel_library):
         re.escape('library-1.0.0.dist-info/RECORD'),
         re.escape('library-1.0.0.dist-info/WHEEL'),
         re.escape('library.libs/libexample.so'),
-    ]):
+    ], strict=True):
         assert re.match(regex, name), f'{name!r} does not match {regex!r}'
 
 
