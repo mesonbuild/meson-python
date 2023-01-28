@@ -90,7 +90,7 @@ def test_scipy_like(wheel_scipy_like):
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
-    for name, regex in zip(sorted(wheel_contents(artifact)), [
+    for name, regex in zip(sorted(wheel_contents(artifact)), [  # noqa: B905
         re.escape('.library.mesonpy.libs/libexample.so'),
         re.escape('library-1.0.0.data/headers/examplelib.h'),
         re.escape('library-1.0.0.data/scripts/example'),
@@ -98,7 +98,7 @@ def test_contents(package_library, wheel_library):
         re.escape('library-1.0.0.dist-info/RECORD'),
         re.escape('library-1.0.0.dist-info/WHEEL'),
         re.escape('library.libs/libexample.so'),
-    ]):  # noqa: B905
+    ]):
         assert re.match(regex, name), f'{name!r} does not match {regex!r}'
 
 
