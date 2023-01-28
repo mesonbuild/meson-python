@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 ci:
   autofix_prs: false
   autoupdate_commit_msg: 'MAINT: bump repositories'
@@ -25,3 +29,16 @@ repos:
   hooks:
   - id: ruff
     args: [--fix, --format, grouped]
+- repo: https://github.com/fsfe/reuse-tool
+  rev: v1.1.0
+  hooks:
+  - id: reuse
+    name: add SPDX license headers
+    args: [annotate, --license=MIT, --skip-unrecognised]
+    pass_filenames: true
+  - id: reuse
+    name: add SPDX copyright headers
+    args: [annotate, --copyright=meson-python developers, --skip-unrecognised]
+    pass_filenames: true
+  - id: reuse
+    name: reuse lint

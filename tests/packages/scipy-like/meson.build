@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 project('scipy-like',
   'c', 'cython',
   version: '2.3.4',

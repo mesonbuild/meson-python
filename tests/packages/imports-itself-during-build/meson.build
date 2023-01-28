@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 project(
     'imports-itself-during-build', 'c',
     version: '1.0.0',

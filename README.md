@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 meson-python developers
+
+SPDX-License-Identifier: MIT
+-->
+
 # meson-python [![PyPI version](https://badge.fury.io/py/meson-python.svg)](https://pypi.org/project/meson-python/)
 
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg)](https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main)

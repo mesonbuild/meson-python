@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 generate_version = custom_target('generate-config-file',
   install: true,
   build_always_stale: true,

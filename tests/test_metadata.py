@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2023 meson-python developers
+#
 # SPDX-License-Identifier: MIT
 
 import tarfile
@@ -44,6 +46,12 @@ def test_pep621(sdist_full_metadata):
         Requires-Dist: e[all]; extra == "test"
         Provides-Extra: test
         Description-Content-Type: text/markdown
+
+        <!--
+        SPDX-FileCopyrightText: 2023 meson-python developers
+
+        SPDX-License-Identifier: MIT
+        -->
 
         # full-metadata
 
