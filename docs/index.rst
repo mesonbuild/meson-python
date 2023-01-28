@@ -33,6 +33,10 @@ meson-python |PyPI badge|
    build-system. It enables you to use Meson_ for your Python packages.
 
 
+Want to look at examples in real projects? Check out our curated list of
+``meson-python`` projects :ref:`here <projects-using-meson-python>`.
+
+
 Where to start?
 ===============
 
@@ -84,10 +88,11 @@ Contributors
 
 
 .. toctree::
-   :caption: Release
+   :caption: Information
    :hidden:
 
    changelog
+   projects-using-meson-python
 
 
 .. toctree::
