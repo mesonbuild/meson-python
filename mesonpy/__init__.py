@@ -397,20 +397,12 @@ class _WheelBuilder():
         return False
 
     def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
-        """Extracts scheme and relative destination from Meson paths.
-
-            Meson destination path -> (wheel scheme, subpath inside the scheme)
-        Eg. {bindir}/foo/bar       -> (scripts, foo/bar)
-        """
-        for scheme, placeholder in [
-            (scheme, placeholder)
-            for scheme, placeholders in self._SCHEME_MAP.items()
-            for placeholder in placeholders
-        ]:  # scheme name, scheme path (see self._SCHEME_MAP)
-            if destination.startswith(placeholder):
-                relative_destination = pathlib.Path(destination).relative_to(placeholder)
-                return scheme, relative_destination
-        return None  # no match was found
+        """Extracts scheme and relative destination from installation paths."""
+        parts = pathlib.Path(destination).parts
+        for scheme, placeholders in self._SCHEME_MAP.items():
+            if parts[0] in placeholders:
+                return scheme, pathlib.Path(*parts[1:])
+        return None
 
     def _map_to_wheel(
         self,
