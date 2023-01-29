@@ -396,58 +396,6 @@ class _WheelBuilder():
             return True
         return False
 
-    def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
-        """Warn if we are unsure if the file should be mapped to purelib or platlib.
-
-        This happens when we use heuristics to try to map a file purelib or
-        platlib but can't differentiate between the two. In which case, we place
-        the file in platlib to be safe and warn the user.
-
-        If we can detect the file is architecture dependent and indeed does not
-        belong in purelib, we will skip the warning.
-        """
-        # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
-        # but we know that files that go there are supposed to go to platlib.
-        if self._is_native(origin):
-            # The file is architecture dependent and does not belong in puredir,
-            # so the warning is skipped.
-            return
-        warnings.warn(
-            'Could not tell if file was meant for purelib or platlib, '
-            f'so it was mapped to platlib: {origin} ({destination})',
-            stacklevel=2,
-        )
-
-    def _map_from_heuristics(self, origin: pathlib.Path, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
-        """Extracts scheme and relative destination with heuristics based on the
-        origin file and the Meson destination path.
-        """
-        warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
-        sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
-        # Try to map to Debian dist-packages
-        if mesonpy._introspection.DEBIAN_PYTHON:
-            search_path = origin
-            while search_path != search_path.parent:
-                search_path = search_path.parent
-                if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
-                    calculated_path = origin.relative_to(search_path)
-                    warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
-                    self._warn_unsure_platlib(origin, destination)
-                    return 'platlib', calculated_path
-        # Try to map to the interpreter purelib or platlib
-        for scheme in ('purelib', 'platlib'):
-            # try to match the install path on the system to one of the known schemes
-            scheme_path = pathlib.Path(sys_paths[scheme]).absolute()
-            destdir_scheme_path = self._install_dir / scheme_path.relative_to(scheme_path.anchor)
-            try:
-                wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
-            except ValueError:
-                continue
-            if sys_paths['purelib'] == sys_paths['platlib']:
-                self._warn_unsure_platlib(origin, destination)
-            return 'platlib', wheel_path
-        return None  # no match was found
-
     def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
         """Extracts scheme and relative destination from Meson paths.
 
@@ -475,15 +423,7 @@ class _WheelBuilder():
             for file, details in files.items():  # install path -> {destination, tag}
                 # try mapping to wheel location
                 meson_destination = details['destination']
-                install_details = (
-                    # using scheme map
-                    self._map_from_scheme_map(meson_destination)
-                    # using heuristics
-                    or self._map_from_heuristics(
-                        pathlib.Path(copy_files[file]),
-                        pathlib.Path(meson_destination),
-                    )
-                )
+                install_details = self._map_from_scheme_map(meson_destination)
                 if install_details:
                     scheme, destination = install_details
                     wheel_files[scheme].append((destination, file))
