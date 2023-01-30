@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 meson-python developers
+# SPDX-FileCopyrightText: 2021 The meson-python developers
 #
 # SPDX-License-Identifier: MIT
 
@@ -48,7 +48,7 @@ def test_pep621(sdist_full_metadata):
         Description-Content-Type: text/markdown
 
         <!--
-        SPDX-FileCopyrightText: 2021 meson-python developers
+        SPDX-FileCopyrightText: 2021 The meson-python developers
 
         SPDX-License-Identifier: MIT
         -->

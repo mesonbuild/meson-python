@@ -1,3 +1,3 @@
-# SPDX-FileCopyrightText: 2021 meson-python developers
+# SPDX-FileCopyrightText: 2021 The meson-python developers
 #
 # SPDX-License-Identifier: MIT

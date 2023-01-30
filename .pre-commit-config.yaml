@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 meson-python developers
+# SPDX-FileCopyrightText: 2021 The meson-python developers
 #
 # SPDX-License-Identifier: MIT
 
@@ -38,7 +38,7 @@ repos:
     pass_filenames: true
   - id: reuse
     name: add SPDX copyright headers
-    args: [annotate, --copyright=meson-python developers, --skip-unrecognised]
+    args: [annotate, --copyright=The meson-python developers, --skip-unrecognised]
     pass_filenames: true
   - id: reuse
     name: reuse lint
