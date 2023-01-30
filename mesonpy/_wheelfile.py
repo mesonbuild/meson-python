@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import base64
 import csv
 import hashlib
@@ -8,13 +10,15 @@ import os
 import re
 import stat
 import time
+import typing
 import zipfile
 
-from types import TracebackType
-from typing import List, Optional, Tuple, Type, Union
 
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from types import TracebackType
+    from typing import List, Optional, Tuple, Type, Union
 
-Path = Union[str, os.PathLike]
+    from mesonpy._compat import Path
 
 
 MIN_TIMESTAMP = 315532800  # 1980-01-01 00:00:00 UTC
@@ -55,7 +59,7 @@ class WheelFile:
     def close(self) -> None:
         raise NotImplementedError
 
-    def __enter__(self) -> 'WheelFile':
+    def __enter__(self) -> WheelFile:
         return self
 
     def __exit__(self, exc_type: Type[BaseException], exc_val: BaseException, exc_tb: TracebackType) -> None:

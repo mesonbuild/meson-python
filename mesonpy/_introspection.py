@@ -1,10 +1,15 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import sys
 import sysconfig
+import typing
 import warnings
 
-from mesonpy._compat import Mapping
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from mesonpy._compat import Mapping
 
 
 def debian_python() -> bool:

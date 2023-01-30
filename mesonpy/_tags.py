@@ -1,11 +1,16 @@
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import os
 import platform
 import sys
 import sysconfig
+import typing
 
-from typing import Optional, Union
+
+if typing.TYPE_CHECKING:  # pragma: no cover
+    from typing import Optional, Union
 
 
 # https://peps.python.org/pep-0425/#python-tag

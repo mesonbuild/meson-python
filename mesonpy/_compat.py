@@ -2,19 +2,15 @@
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 
+from __future__ import annotations
+
 import functools
 import importlib.resources
 import os
 import pathlib
 import sys
+import typing
 
-from typing import Union
-
-
-if sys.version_info >= (3, 10):
-    from typing import ParamSpec
-else:
-    from typing_extensions import ParamSpec
 
 if sys.version_info >= (3, 9):
     from collections.abc import (
@@ -22,14 +18,6 @@ if sys.version_info >= (3, 9):
     )
 else:
     from typing import Collection, Iterable, Iterator, Mapping, Sequence
-
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-    from typing import get_args as typing_get_args
-else:
-    from typing_extensions import Literal
-    from typing_extensions import get_args as typing_get_args
 
 
 if sys.version_info >= (3, 8):
@@ -45,7 +33,20 @@ else:
     read_binary = importlib.resources.read_binary
 
 
-Path = Union[str, os.PathLike]
+if typing.TYPE_CHECKING:
+    from typing import Union
+
+    if sys.version_info >= (3, 10):
+        from typing import ParamSpec
+    else:
+        from typing_extensions import ParamSpec
+
+    if sys.version_info >= (3, 8):
+        from typing import Literal
+    else:
+        from typing_extensions import Literal
+
+    Path = Union[str, os.PathLike]
 
 
 # backport og pathlib.Path.is_relative_to
@@ -61,7 +62,6 @@ __all__ = [
     'cached_property',
     'is_relative_to',
     'read_binary',
-    'typing_get_args',
     'Collection',
     'Iterable',
     'Iterator',
