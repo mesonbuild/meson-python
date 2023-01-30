@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2021 Filipe Laíns <lains@riseup.net>
 # SPDX-FileCopyrightText: 2021 Quansight, LLC
-# SPDX-FileCopyrightText: 2023 meson-python developers
+# SPDX-FileCopyrightText: 2022 meson-python developers
 #
 # SPDX-License-Identifier: MIT
 
