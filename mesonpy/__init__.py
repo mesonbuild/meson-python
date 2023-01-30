@@ -65,7 +65,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     T = TypeVar('T')
 
 
-__version__ = '0.13.0.dev0'
+__version__ = '0.13.0.pre0'
 
 
 # XXX: Once Python 3.8 is our minimum supported version, get rid of

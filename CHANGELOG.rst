@@ -3,6 +3,17 @@ Changelog
 +++++++++
 
 
+0.13.0.pre0 (30-01-2023)
+========================
+
+- Add support for editable installs
+- Fix the creation of artifacts when the output directory does not exist (fixes builds on PDM, etc)
+- Fix C++ cross-compilation on macOS
+- Fix the ``deb_system`` sysconfig install scheme addition in the Debian heuristics
+- Don't try to reconfigure the build directory if it doesn't exist
+- Remove ``importlib_resources`` dependency
+
+
 0.12.0 (22-12-2022)
 ===================
 
