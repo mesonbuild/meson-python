@@ -103,4 +103,4 @@ def test_generated_files(sdist_generated_files):
         'executable_bit-1.0.0/generate_version.py',
     }
     with tarfile.open(sdist_generated_files, 'r:gz') as sdist:
-        assert set(tar.name for tar in sdist.getmembers()) == expected
+        assert {tar.name for tar in sdist.getmembers()} == expected
