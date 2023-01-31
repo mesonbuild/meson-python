@@ -922,7 +922,7 @@ class Project():
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
         """Meson install_plan metadata."""
-    
+
         # copy the install plan so we can modify it
         install_plan = self._info('intro-install_plan').copy()
 
@@ -930,11 +930,11 @@ class Project():
         parser = argparse.ArgumentParser()
         parser.add_argument('--tags')
         args, _ = parser.parse_known_args(self._meson_args['install'])
-        
+
         # filter the install_plan for files that do not fit the install tags
         if args.tags:
             install_tags = args.tags.split(',')
-                
+
             for files in install_plan.values():
                 for file, details in list(files.items()):
                     if details['tag'].strip() not in install_tags:
