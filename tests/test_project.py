@@ -95,3 +95,14 @@ def test_user_args(package_user_args, mocker, tmp_path_session):
 def test_unknown_user_args(package, tmp_path_session):
     with pytest.raises(mesonpy.ConfigError):
         mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_path_session)
+
+
+def test_install_tags(package_purelib_and_platlib, tmp_path_session):
+    project = mesonpy.Project(
+        package_purelib_and_platlib,
+        tmp_path_session,
+        meson_args={
+            'install': ['--tags', 'purelib'],
+        }
+    )
+    assert project.is_pure
