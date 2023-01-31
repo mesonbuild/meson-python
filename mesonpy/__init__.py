@@ -58,7 +58,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
         TextIO, Tuple, Type, TypeVar, Union
     )
 
-    import pyproject_metadata  # noqa: F401
+    import pyproject_metadata
 
     from mesonpy._compat import Iterator, Literal, ParamSpec, Path
 
@@ -66,7 +66,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     T = TypeVar('T')
 
 
-__version__ = '0.13.0.dev0'
+__version__ = '0.13.0.dev1'
 
 
 # XXX: Once Python 3.8 is our minimum supported version, get rid of
@@ -279,7 +279,7 @@ class _WheelBuilder():
         return True
 
     @property
-    def wheel(self) -> bytes:  # noqa: F811
+    def wheel(self) -> bytes:
         """Return WHEEL file for dist-info."""
         return textwrap.dedent('''
             Wheel-Version: 1.0
@@ -332,7 +332,7 @@ class _WheelBuilder():
         soext = sorted(_EXTENSION_SUFFIXES, key=len)[0]
         abis = []
 
-        for path, src in self._wheel_files['platlib']:
+        for path, _ in self._wheel_files['platlib']:
             if path.suffix == soext:
                 match = re.match(r'^[^.]+(.*)$', path.name)
                 assert match is not None
@@ -711,7 +711,7 @@ class Project():
         self._pep621 = 'project' in self._config
         if self.pep621:
             try:
-                import pyproject_metadata  # noqa: F811
+                import pyproject_metadata
             except ModuleNotFoundError:  # pragma: no cover
                 self._metadata = None
             else:
@@ -1006,7 +1006,7 @@ class Project():
             return data.encode()
 
         # re-import pyproject_metadata to raise ModuleNotFoundError if it is really missing
-        import pyproject_metadata  # noqa: F401, F811
+        import pyproject_metadata  # noqa: F401
         assert self._metadata
 
         core_metadata = self._metadata.as_rfc822()
@@ -1204,7 +1204,7 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
             return func(*args, **kwargs)
         except Error as exc:
             print('{red}meson-python: error:{reset} {msg}'.format(msg=str(exc), **_STYLES))
-            raise SystemExit(1)
+            raise SystemExit(1) from exc
     return wrapper
 
 

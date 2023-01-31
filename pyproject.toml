@@ -3,7 +3,7 @@ build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
   'meson>=0.63.3',
-  'pyproject-metadata>=0.6.1',
+  'pyproject-metadata>=0.7.1',
   'tomli>=1.0.0; python_version<"3.11"',
 ]
 
@@ -62,6 +62,26 @@ changelog = 'https://meson-python.readthedocs.io/en/latest/changelog.html'
 show_error_codes = true
 ignore_missing_imports = true
 strict = true
+
+
+[tool.ruff]
+line-length = 127
+extend-ignore = [
+  'B019',
+]
+select = [
+  'B',       # flake8-bugbear
+  'C4',      # flake8-comprehensions
+  'C9',      # mccabe
+  'E',       # pycodestyle
+  'F',       # pyflakes
+  'W',       # pycodestyle
+  'RUF100',  # ruff
+]
+
+
+[tool.ruff.mccabe]
+max-complexity = 12
 
 
 [tool.isort]

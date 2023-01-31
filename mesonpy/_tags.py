@@ -60,13 +60,13 @@ def get_abi_tag() -> str:
     # https://github.com/pypa/packaging/pull/607.
     try:
         empty, abi, ext = str(sysconfig.get_config_var('EXT_SUFFIX')).split('.')
-    except ValueError:
+    except ValueError as exc:
         # CPython <= 3.8.7 on Windows does not implement PEP3149 and
         # uses '.pyd' as $EXT_SUFFIX, which does not allow to extract
         # the interpreter ABI.  Check that the fallback is not hit for
         # any other Python implementation.
         if sys.implementation.name != 'cpython':
-            raise NotImplementedError
+            raise NotImplementedError from exc
         return _get_cpython_abi()
 
     # The packaging module initially based his understanding of the
