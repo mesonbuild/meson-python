@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 project(
     'library', 'c',
     version: '1.0.0',

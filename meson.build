@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 project('meson-python', version: '0.13.0.dev1')
 
 py_mod = import('python')

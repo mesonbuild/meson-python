@@ -1,2 +1,6 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 # Unknown file types (e.g. `.npy` or `.npz` data files) can be present in
 # a Python package.

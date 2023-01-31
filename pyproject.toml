@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 [build-system]
 build-backend = 'mesonpy'
 backend-path = ['.']
@@ -12,7 +16,7 @@ name = 'meson-python'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.md'
 requires-python = '>=3.7'
-license = { file = 'LICENSE' }
+license = { file = 'LICENSES/MIT.txt' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
 authors = [
   { name = 'Filipe Laíns', email = 'lains@riseup.net' },
