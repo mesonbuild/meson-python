@@ -33,12 +33,8 @@ repos:
   rev: v1.1.0
   hooks:
   - id: reuse
-    name: add SPDX license headers
-    args: [annotate, --license=MIT, --skip-unrecognised]
-    pass_filenames: true
-  - id: reuse
-    name: add SPDX copyright headers
-    args: [annotate, --copyright=The meson-python developers, --skip-unrecognised]
+    name: add SPDX headers
+    args: [annotate, --skip-existing, --copyright=The meson-python developers, --license=MIT, --skip-unrecognised]
     pass_filenames: true
   - id: reuse
     name: reuse lint
