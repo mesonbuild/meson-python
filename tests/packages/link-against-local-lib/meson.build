@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
 project(
     'link-against-local-lib', 'c',
     version: '1.0.0',
