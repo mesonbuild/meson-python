@@ -1,12 +1,16 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2023 Lars Pastewka <lars.pastewka@imtek.uni-freiburg.de>
 
+from __future__ import annotations
+
 import os
 import subprocess
+import typing
 
-from typing import Optional
+if typing.TYPE_CHECKING:
+    from typing import Optional
 
-from mesonpy._compat import Collection, Path
+    from mesonpy._compat import Collection, Path
 
 
 # This class is modeled after the ELF class in _elf.py
