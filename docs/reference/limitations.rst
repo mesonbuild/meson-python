@@ -52,13 +52,13 @@ Platform-specific limitations
 =============================
 
 
-Executables with internal dependencies :bdg-warning:`Windows` :bdg-warning:`macOS`
-----------------------------------------------------------------------------------
+Executables with internal dependencies :bdg-warning:`Windows`
+-------------------------------------------------------------
 
 
 If you have an executable that links against a shared library provided by your
-project, on Windows and macOS ``meson-python`` will not be able to correctly
-bundle it into the *wheel*.
+project, on Windows ``meson-python`` will not be able to correctly bundle it
+into the *wheel*.
 
 The executable will be included in the *wheel*, but it
 will not be able to find the project libraries it links against.
