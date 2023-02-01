@@ -11,6 +11,7 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
+import argparse
 import collections
 import contextlib
 import functools
@@ -921,7 +922,25 @@ class Project():
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
         """Meson install_plan metadata."""
-        return self._info('intro-install_plan').copy()
+
+        # copy the install plan so we can modify it
+        install_plan = self._info('intro-install_plan').copy()
+
+        # parse install args for install tags (--tags)
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--tags')
+        args, _ = parser.parse_known_args(self._meson_args['install'])
+
+        # filter the install_plan for files that do not fit the install tags
+        if args.tags:
+            install_tags = args.tags.split(',')
+
+            for files in install_plan.values():
+                for file, details in list(files.items()):
+                    if details['tag'].strip() not in install_tags:
+                        del files[file]
+
+        return install_plan
 
     @property
     def _copy_files(self) -> Dict[str, str]:
