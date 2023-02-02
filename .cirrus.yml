@@ -37,9 +37,6 @@ debian-unstable_task:
   container:
     dockerfile: ci/debian-unstable.docker
     cpu: 1
-  fix-pip_script:
-    # see https://github.com/pypa/pip/pull/11623
-    - python3 -m pip install --upgrade "pip @ git+https://github.com/pypa/pip.git@a057c9bc99ad7eab2e3b1539e79eee7d9a923f4f"
   << : *test
 
 fedora-37_task:
