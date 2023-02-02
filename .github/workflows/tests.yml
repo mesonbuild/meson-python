@@ -256,17 +256,9 @@ jobs:
       - name: Install Ninja
         run: brew install ninja
 
-      - name: Patch pip
-        # Patch https://github.com/pypa/pip/issues/11539
-        run: |
-          cat >>/usr/local/lib/python${{ matrix.python }}/site-packages/pip/_internal/locations/_sysconfig.py <<EOF
-          def get_prefixed_libs(prefix: str) -> typing.Tuple[str, str]:
-              if "venv" in sysconfig.get_scheme_names():
-                  paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix}, scheme="venv")
-              else:
-                  paths = sysconfig.get_paths(vars={"base": prefix, "platbase": prefix})
-              return (paths["purelib"], paths["platlib"])
-          EOF
+      - name: Update pip
+        # pip >= 23.0 fixes https://github.com/pypa/pip/issues/11539
+        run: python -m pip --disable-pip-version-check install --upgrade "pip >= 23.0"
 
       - name: Install Meson
         run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
