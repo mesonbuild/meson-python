@@ -62,12 +62,6 @@ manylinux-python3.7_task:
     cpu: 1
   env:
     PATH: "/opt/python/cp37-cp37m/bin/:${PATH}"
-  fix-meson_script:
-    # see https://github.com/mesonbuild/meson/issues/11097
-    - mkdir wheelhouse
-    - python -m pip wheel --wheel-dir wheelhouse git+https://github.com/mesonbuild/meson@refs/pull/11104/head
-    - echo "PIP_FIND_LINKS=$(pwd)/wheelhouse/" >> $CIRRUS_ENV
-    - PIP_FIND_LINKS="$(pwd)/wheelhouse/" python -m pip install meson
   << : *test
 
 miniconda_task:
