@@ -13,9 +13,6 @@ alpine-3_task:
   container:
     dockerfile: ci/alpine-3.docker
     cpu: 1
-  fix-pyproject-metadata_script:
-    # see https://github.com/FFY00/python-pyproject-metadata/pull/44
-    - python3 -m pip install "pyproject-metadata < 0.7.0"
   << : *test
 
 archlinux_task:
