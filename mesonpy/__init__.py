@@ -55,7 +55,7 @@ from mesonpy._compat import Collection, Iterable, Mapping, cached_property, read
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set, TextIO, Tuple, Type, TypeVar, Union
+    from typing import Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
     from mesonpy._compat import Iterator, Literal, ParamSpec, Path
 
@@ -955,16 +955,6 @@ class Project():
                 self._install_dir / destination_path.relative_to(destination_path.anchor)
             )
         return copy_files
-
-    @property
-    def _lib_paths(self) -> Set[str]:
-        copy_files = self._copy_files
-        return {
-            os.path.dirname(copy_files[file])
-            for files in self._install_plan.values()
-            for file, details in files.items()
-            if details['destination'].startswith('{libdir_')
-        }
 
     @property
     def _meson_name(self) -> str:
