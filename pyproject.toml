@@ -104,6 +104,7 @@ known_first_party = 'mesonpy'
 disable_warnings = [
   'couldnt-parse',
 ]
+source = ['.']
 omit = [
   'tests/packages/*',
 ]
