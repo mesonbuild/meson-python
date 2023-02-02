@@ -111,6 +111,11 @@ omit = [
 
 [tool.coverage.report]
 ignore_errors = true
+exclude_lines = [
+  '\#\s*pragma: no cover',  # we need this because this field overrides the default
+  '^\s*raise NotImplementedError\b',
+  '^\sif typing.TYPE_CHECKING',
+]
 
 [tool.coverage.html]
 show_contexts = true
