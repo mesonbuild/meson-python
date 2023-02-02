@@ -104,6 +104,9 @@ known_first_party = 'mesonpy'
 disable_warnings = [
   'couldnt-parse',
 ]
+omit = [
+  'tests/packages/*'
+]
 
 [tool.coverage.html]
 show_contexts = true
