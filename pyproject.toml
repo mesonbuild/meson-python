@@ -108,6 +108,7 @@ source = ['.']
 omit = [
   'tests/packages/*',
 ]
+ignore_errors = true
 
 [tool.coverage.html]
 show_contexts = true
