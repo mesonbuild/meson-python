@@ -34,4 +34,4 @@ If you are interested in contributing, please check out
 [docs]: https://meson-python.readthedocs.io/en/stable/
 [new discussion]: https://github.com/mesonbuild/meson-python/discussions/new/choose
 [bugtracker]: https://github.com/mesonbuild/meson-python/issues
-[contributing docs]: https://meson-python.readthedocs.io/en/lastest/contributing/getting-started.html
+[contributing docs]: https://meson-python.readthedocs.io/en/latest/contributing/getting-started.html
