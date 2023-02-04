@@ -128,6 +128,44 @@ _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
 
+# Maps wheel installation paths to Meson installation path placeholders.
+# See https://docs.python.org/3/library/sysconfig.html#installation-paths
+_SCHEME_MAP = {
+    'scripts': ('{bindir}',),
+    'purelib': ('{py_purelib}',),
+    'platlib': ('{py_platlib}', '{moduledir_shared}'),
+    'headers': ('{includedir}',),
+    'data': ('{datadir}',),
+    # our custom location
+    'mesonpy-libs': ('{libdir}', '{libdir_shared}')
+}
+
+
+def _map_meson_destination(destination: str) -> Tuple[Optional[str], pathlib.Path]:
+    """Map a Meson installation path to a wheel installation location.
+
+    Return a (wheel path identifier, subpath inside the wheel path) tuple.
+
+    """
+    parts = pathlib.Path(destination).parts
+    for folder, placeholders in _SCHEME_MAP.items():
+        if parts[0] in placeholders:
+            return folder, pathlib.Path(*parts[1:])
+    warnings.warn(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
+    return None, pathlib.Path(destination)
+
+
+def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+    """Map files to the wheel, organized by wheel installation directrory."""
+    wheel_files = collections.defaultdict(list)
+    for group in sources.values():
+        for src, target in group.items():
+            directory, path = _map_meson_destination(target['destination'])
+            if directory is not None:
+                wheel_files[directory].append((path, src))
+    return wheel_files
+
+
 def _showwarning(
     message: Union[Warning, str],
     category: Type[Warning],
@@ -180,40 +218,25 @@ class MesonBuilderError(Error):
 class _WheelBuilder():
     """Helper class to build wheels from projects."""
 
-    # Maps wheel scheme names to Meson placeholder directories
-    _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
-        'scripts': ('{bindir}',),
-        'purelib': ('{py_purelib}',),
-        'platlib': ('{py_platlib}', '{moduledir_shared}'),
-        'headers': ('{includedir}',),
-        'data': ('{datadir}',),
-        # our custom location
-        'mesonpy-libs': ('{libdir}', '{libdir_shared}')
-    }
-
     def __init__(
         self,
         project: Project,
         metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
-        install_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
-        copy_files: Dict[str, str],
     ) -> None:
         self._project = project
         self._metadata = metadata
         self._source_dir = source_dir
-        self._install_dir = install_dir
         self._build_dir = build_dir
         self._sources = sources
-        self._copy_files = copy_files
 
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
     @cached_property
     def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-        return self._map_to_wheel(self._sources, self._copy_files)
+        return _map_to_wheel(self._sources)
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -396,38 +419,6 @@ class _WheelBuilder():
             return True
         return False
 
-    def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
-        """Extracts scheme and relative destination from installation paths."""
-        parts = pathlib.Path(destination).parts
-        for scheme, placeholders in self._SCHEME_MAP.items():
-            if parts[0] in placeholders:
-                return scheme, pathlib.Path(*parts[1:])
-        return None
-
-    def _map_to_wheel(
-        self,
-        sources: Dict[str, Dict[str, Any]],
-        copy_files: Dict[str, str],
-    ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-        """Map files to the wheel, organized by scheme."""
-        wheel_files = collections.defaultdict(list)
-        for files in sources.values():  # entries in intro-install_plan.json
-            for file, details in files.items():  # install path -> {destination, tag}
-                # try mapping to wheel location
-                meson_destination = details['destination']
-                install_details = self._map_from_scheme_map(meson_destination)
-                if install_details:
-                    scheme, destination = install_details
-                    wheel_files[scheme].append((destination, file))
-                    continue
-                # not found
-                warnings.warn(
-                    'File could not be mapped to an equivalent wheel directory: '
-                    '{} ({})'.format(copy_files[file], meson_destination)
-                )
-
-        return wheel_files
-
     def _install_path(
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
@@ -522,7 +513,7 @@ class _WheelBuilder():
                     self._install_path(whl, counter, origin, destination)
 
                 # install the other schemes
-                for scheme in self._SCHEME_MAP:
+                for scheme in _SCHEME_MAP:
                     if scheme in (root_scheme, 'mesonpy-libs'):
                         continue
                     for destination, origin in self._wheel_files[scheme]:
@@ -580,7 +571,7 @@ class _WheelBuilder():
             )
 
             # install non-code schemes
-            for scheme in self._SCHEME_MAP:
+            for scheme in _SCHEME_MAP:
                 if scheme in ('purelib', 'platlib', 'mesonpy-libs'):
                     continue
                 for destination, origin in self._wheel_files[scheme]:
@@ -831,10 +822,8 @@ class Project():
             self,
             self._metadata,
             self._source_dir,
-            self._install_dir,
             self._build_dir,
             self._install_plan,
-            self._copy_files,
         )
 
     def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
@@ -901,17 +890,6 @@ class Project():
                         del files[file]
 
         return install_plan
-
-    @property
-    def _copy_files(self) -> Dict[str, str]:
-        """Files that Meson will copy on install and the target location."""
-        copy_files = {}
-        for origin, destination in self._info('intro-installed').items():
-            destination_path = pathlib.Path(destination).absolute()
-            copy_files[origin] = os.fspath(
-                self._install_dir / destination_path.relative_to(destination_path.anchor)
-            )
-        return copy_files
 
     @property
     def _meson_name(self) -> str:
