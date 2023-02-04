@@ -1107,28 +1107,25 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
         yield project
 
 
+def _parse_version_string(string: str) -> Tuple[int, ...]:
+    """Parse version string."""
+    try:
+        return tuple(map(int, string.split('.')[:3]))
+    except ValueError:
+        return (0, )
+
+
 def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[str]:
-    """
-    Returns the path to ninja, or None if no ninja found.
-    """
-    required_version = tuple(int(v) for v in version.split('.'))
+    """Returns the path to ninja, or None if no ninja found."""
+    required_version = _parse_version_string(version)
     env_ninja = os.environ.get('NINJA')
     ninja_candidates = [env_ninja] if env_ninja else ['ninja', 'ninja-build', 'samu']
     for ninja in ninja_candidates:
         ninja_path = shutil.which(ninja)
-        if ninja_path is None:
-            continue
-
-        result = subprocess.run([ninja_path, '--version'], check=False, text=True, capture_output=True)
-
-        try:
-            candidate_version = tuple(int(x) for x in result.stdout.split('.')[:3])
-        except ValueError:
-            continue
-        if candidate_version < required_version:
-            continue
-        return ninja_path
-
+        if ninja_path is not None:
+            version = subprocess.run([ninja_path, '--version'], check=False, text=True, capture_output=True).stdout
+            if _parse_version_string(version) >= required_version:
+                return ninja_path
     return None
 
 
