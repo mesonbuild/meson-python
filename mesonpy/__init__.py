@@ -91,7 +91,9 @@ _COLORS = {
     'reset': '\33[0m',
 }
 _NO_COLORS = {color: '' for color in _COLORS}
+
 _NINJA_REQUIRED_VERSION = '1.8.2'
+_MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
 
 
 class _depstr:
@@ -750,7 +752,8 @@ class Project():
         self._meson_args: MesonArgs = collections.defaultdict(list)
         self._env = os.environ.copy()
 
-        # prepare environment
+        _check_meson_version()
+
         self._ninja = _env_ninja_command()
         if self._ninja is None:
             raise ConfigError(f'Could not find ninja version {_NINJA_REQUIRED_VERSION} or newer.')
@@ -1128,6 +1131,22 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[st
             if _parse_version_string(version) >= required_version:
                 return ninja_path
     return None
+
+
+def _check_meson_version(*, version: str = _MESON_REQUIRED_VERSION) -> None:
+    """Check that the meson executable in the path has an appropriate version.
+
+    The meson Python package is a dependency of the meson-python
+    Python package, however, it may occur that the meson Python
+    package is installed but the corresponding meson command is not
+    available in $PATH. Implement a runtime check to verify that the
+    build environment is setup correcly.
+
+    """
+    required_version = _parse_version_string(version)
+    meson_version = subprocess.run(['meson', '--version'], check=False, text=True, capture_output=True).stdout
+    if _parse_version_string(meson_version) < required_version:
+        raise ConfigError(f'Could not find meson version {version} or newer, found {meson_version}.')
 
 
 def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
