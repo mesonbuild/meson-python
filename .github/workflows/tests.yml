@@ -293,10 +293,10 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Install mypy
-        run: python -m pip --disable-pip-version-check install mypy==0.981
+        run: python -m pip --disable-pip-version-check install mypy==0.991
 
       - name: Run mypy
         run: mypy -p mesonpy
