@@ -49,16 +49,11 @@ import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import (
-    Collection, Iterable, Mapping, cached_property, read_binary
-)
+from mesonpy._compat import Collection, Iterable, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import (
-        Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set,
-        TextIO, Tuple, Type, TypeVar, Union
-    )
+    from typing import Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set, TextIO, Tuple, Type, TypeVar, Union
 
     import pyproject_metadata
 
