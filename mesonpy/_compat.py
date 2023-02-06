@@ -15,9 +15,7 @@ import typing
 
 
 if sys.version_info >= (3, 9):
-    from collections.abc import (
-        Collection, Iterable, Iterator, Mapping, Sequence
-    )
+    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 else:
     from typing import Collection, Iterable, Iterator, Mapping, Sequence
 
