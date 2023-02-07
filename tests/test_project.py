@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import platform
+import shutil
 import sys
 import textwrap
 
@@ -147,3 +148,44 @@ def test_validate_pyproject_config_empty():
     pyproject_config = tomllib.loads(textwrap.dedent(''))
     config = mesonpy._validate_pyproject_config(pyproject_config)
     assert config == {}
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 8),
+    reason="unittest.mock doesn't support the required APIs for this test",
+)
+def test_invalid_build_dir(package_pure, tmp_path, mocker):
+    meson = mocker.spy(mesonpy.Project, '_run')
+
+    # configure the project
+    project = mesonpy.Project(package_pure, tmp_path)
+    assert len(meson.call_args_list) == 1
+    assert meson.call_args_list[0].args[1][1] == 'setup'
+    assert '--reconfigure' not in meson.call_args_list[0].args[1]
+    project.build()
+    meson.reset_mock()
+
+    # subsequent builds with the same build directory result in a setup --reconfigure
+    project = mesonpy.Project(package_pure, tmp_path)
+    assert len(meson.call_args_list) == 1
+    assert meson.call_args_list[0].args[1][1] == 'setup'
+    assert '--reconfigure' in meson.call_args_list[0].args[1]
+    project.build()
+    meson.reset_mock()
+
+    # corrupting the build direcory setup is run again
+    tmp_path.joinpath('build/meson-private/coredata.dat').unlink()
+    project = mesonpy.Project(package_pure, tmp_path)
+    assert len(meson.call_args_list) == 1
+    assert meson.call_args_list[0].args[1][1] == 'setup'
+    assert '--reconfigure' not in meson.call_args_list[0].args[1]
+    project.build()
+    meson.reset_mock()
+
+    # removing the build directory things should still work
+    shutil.rmtree(tmp_path.joinpath('build'))
+    project = mesonpy.Project(package_pure, tmp_path)
+    assert len(meson.call_args_list) == 1
+    assert meson.call_args_list[0].args[1][1] == 'setup'
+    assert '--reconfigure' not in meson.call_args_list[0].args[1]
+    project.build()
