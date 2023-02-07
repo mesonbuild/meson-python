@@ -33,8 +33,6 @@ import textwrap
 import typing
 import warnings
 
-from typing import Dict
-
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
@@ -49,20 +47,20 @@ import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import (
-    Collection, Iterable, Mapping, cached_property, read_binary
-)
+from mesonpy._compat import cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import (
-        Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set,
-        TextIO, Tuple, Type, TypeVar, Union
+        Any, Callable, ClassVar, DefaultDict, Dict, List, Optional, Sequence,
+        Set, TextIO, Tuple, Type, TypeVar, Union
     )
 
     import pyproject_metadata
 
-    from mesonpy._compat import Iterator, Literal, ParamSpec, Path
+    from mesonpy._compat import (
+        Collection, Iterable, Iterator, Literal, Mapping, ParamSpec, Path
+    )
 
     P = ParamSpec('P')
     T = TypeVar('T')
@@ -791,7 +789,7 @@ class Project():
     def _get_config_key(self, key: str) -> Any:
         value: Any = self._config
         for part in f'tool.meson-python.{key}'.split('.'):
-            if not isinstance(value, Mapping):
+            if not isinstance(value, dict):
                 raise ConfigError(f'Configuration entry "tool.meson-python.{key}" should be a TOML table not {type(value)}')
             value = value.get(part, {})
         return value
@@ -927,10 +925,7 @@ class Project():
     def _info(self, name: str) -> Dict[str, Any]:
         """Read info from meson-info directory."""
         file = self._build_dir.joinpath('meson-info', f'{name}.json')
-        return typing.cast(
-            Dict[str, str],
-            json.loads(file.read_text())
-        )
+        return typing.cast(typing.Dict[str, Any], json.loads(file.read_text()))
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
@@ -1149,7 +1144,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
         builddir = None
 
     def _validate_string_collection(key: str) -> None:
-        assert isinstance(config_settings, Mapping)
+        assert isinstance(config_settings, dict)
         problematic_items: Sequence[Any] = list(filter(None, (
             item if not isinstance(item, str) else None
             for item in config_settings.get(key, ())
