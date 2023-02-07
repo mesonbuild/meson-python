@@ -53,7 +53,7 @@ import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import Collection, Iterable, Mapping, cached_property, read_binary
+from mesonpy._compat import Collection, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
@@ -192,16 +192,6 @@ def _setup_cli() -> None:
         pass
     else:  # pragma: no cover
         colorama.init()  # fix colors on windows
-
-
-def _as_python_declaration(value: Any) -> str:
-    if isinstance(value, str):
-        return f"r'{value}'"
-    elif isinstance(value, os.PathLike):
-        return _as_python_declaration(os.fspath(value))
-    elif isinstance(value, Iterable):
-        return '[' + ', '.join(map(_as_python_declaration, value)) + ']'
-    raise NotImplementedError(f'Unsupported type: {type(value)}')
 
 
 class Error(RuntimeError):
@@ -529,56 +519,30 @@ class _WheelBuilder():
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
-        install_path = self._source_dir / '.mesonpy' / 'editable' / 'install'
-        rebuild_commands = self._project.build_commands(install_path)
-
-        import_paths = set()
-        for name, raw_path in mesonpy._introspection.SYSCONFIG_PATHS.items():
-            if name not in ('purelib', 'platlib'):
-                continue
-            path = pathlib.Path(raw_path)
-            import_paths.add(install_path / path.relative_to(path.anchor))
-
-        install_path.mkdir(parents=True, exist_ok=True)
-
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
             whl.writestr(
                 f'{self.distinfo_dir}/direct_url.json',
-                self._source_dir.as_uri().encode(),
+                self._source_dir.as_uri().encode('utf-8'),
             )
 
-            # install hook module
-            hook_module_name = f'_mesonpy_hook_{self.normalized_name.replace(".", "_")}'
-            hook_install_code = textwrap.dedent(f'''
-                MesonpyFinder.install(
-                    project_name={_as_python_declaration(self._project.name)},
-                    hook_name={_as_python_declaration(hook_module_name)},
-                    project_path={_as_python_declaration(self._source_dir)},
-                    build_path={_as_python_declaration(self._build_dir)},
-                    import_paths={_as_python_declaration(import_paths)},
-                    top_level_modules={_as_python_declaration(self.top_level_modules)},
-                    rebuild_commands={_as_python_declaration(rebuild_commands)},
-                    verbose={verbose},
-                )
-            ''').strip().encode()
+            # install loader module
+            loader_module_name = f'_{self.normalized_name.replace(".", "_")}_editable_loader'
+            build_cmd = [self._project._ninja, *self._project._meson_args['compile']]
             whl.writestr(
-                f'{hook_module_name}.py',
-                read_binary('mesonpy', '_editable.py') + hook_install_code,
-            )
+                f'{loader_module_name}.py',
+                read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
+                   install(
+                       {self.top_level_modules!r},
+                       {os.fspath(self._build_dir)!r},
+                       {build_cmd},
+                       {verbose!r},
+                   )''').encode('utf-8'))
+
             # install .pth file
             whl.writestr(
-                f'{self.normalized_name}-editable-hook.pth',
-                f'import {hook_module_name}'.encode(),
-            )
-
-            # install non-code schemes
-            for scheme in _SCHEME_MAP:
-                if scheme in ('purelib', 'platlib', 'mesonpy-libs'):
-                    continue
-                for destination, origin in self._wheel_files[scheme]:
-                    destination = pathlib.Path(self.data_dir, scheme, destination)
-                    whl.write(origin, destination.as_posix())
+                f'{self.normalized_name}-editable.pth',
+                f'import {loader_module_name}'.encode('utf-8'))
 
         return wheel_file
 

@@ -2,183 +2,170 @@
 #
 # SPDX-License-Identifier: MIT
 
+# This file should be standalone! It is copied during the editable hook installation.
+
+from __future__ import annotations
+
 import functools
 import importlib.abc
+import importlib.machinery
+import importlib.util
+import json
 import os
+import pathlib
 import subprocess
 import sys
-import warnings
-
-from types import ModuleType
-from typing import List, Mapping, Optional, Union
+import typing
 
 
-if sys.version_info >= (3, 9):
-    from collections.abc import Sequence
+if typing.TYPE_CHECKING:
+    from collections.abc import Sequence, Set
+    from types import ModuleType
+    from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+    NodeBase = Dict[str, Union[Node, str]]
 else:
-    from typing import Sequence
+    NodeBase = dict
 
 
-# This file should be standalone!
-# It is copied during the editable hook installation.
+MARKER = 'MESONPY_EDITABLE_SKIP'
+VERBOSE = 'MESONPY_EDITABLE_VERBOSE'
+
+LOADERS = [
+    (importlib.machinery.ExtensionFileLoader, tuple(importlib.machinery.EXTENSION_SUFFIXES)),
+    (importlib.machinery.SourceFileLoader, tuple(importlib.machinery.SOURCE_SUFFIXES)),
+    (importlib.machinery.SourcelessFileLoader, tuple(importlib.machinery.BYTECODE_SUFFIXES)),
+]
 
 
-_COLORS = {
-    'cyan': '\33[36m',
-    'yellow': '\33[93m',
-    'light_blue': '\33[94m',
-    'bold': '\33[1m',
-    'dim': '\33[2m',
-    'underline': '\33[4m',
-    'reset': '\33[0m',
-}
-_NO_COLORS = {color: '' for color in _COLORS}
+class Node(NodeBase):
+    """Tree structure to store a virtual filesystem view."""
+
+    def __missing__(self, key: str) -> Node:
+        value = self[key] = Node()
+        return value
+
+    def __setitem__(self, key: Union[str, Tuple[str, ...]], value: Union[Node, str]) -> None:
+        node = self
+        if isinstance(key, tuple):
+            for k in key[:-1]:
+                node = typing.cast(Node, node[k])
+            key = key[-1]
+        dict.__setitem__(node, key, value)
+
+    def __getitem__(self, key: Union[str, Tuple[str, ...]]) -> Union[Node, str]:
+        node = self
+        if isinstance(key, tuple):
+            for k in key[:-1]:
+                node = typing.cast(Node, node[k])
+            key = key[-1]
+        return dict.__getitem__(node, key)
+
+    def get(self, key: Union[str, Tuple[str, ...]]) -> Optional[Union[Node, str]]:  # type: ignore[override]
+        node = self
+        if isinstance(key, tuple):
+            for k in key[:-1]:
+                v = dict.get(node, k)
+                if v is None:
+                    return None
+                node = typing.cast(Node, v)
+            key = key[-1]
+        return dict.get(node, key)
 
 
-def _init_colors() -> Mapping[str, str]:
-    """Detect if we should be using colors in the output. We will enable colors
-    if running in a TTY, and no environment variable overrides it. Setting the
-    NO_COLOR (https://no-color.org/) environment variable force-disables colors,
-    and FORCE_COLOR forces color to be used, which is useful for thing like
-    Github actions.
-    """
-    if 'NO_COLOR' in os.environ:
-        if 'FORCE_COLOR' in os.environ:
-            warnings.warn('Both NO_COLOR and FORCE_COLOR environment variables are set, disabling color')
-        return _NO_COLORS
-    elif 'FORCE_COLOR' in os.environ or sys.stdout.isatty():
-        return _COLORS
-    return _NO_COLORS
+def walk(root: str, path: str = '') -> Iterator[pathlib.Path]:
+    with os.scandir(os.path.join(root, path)) as entries:
+        for entry in entries:
+            if entry.is_dir():
+                yield from walk(root, os.path.join(path, entry.name))
+            else:
+                yield pathlib.Path(path, entry.name)
 
 
-_STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
+def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
+    tree = Node()
+    for key, data in install_plan.items():
+        for src, target in data.items():
+            path = pathlib.Path(target['destination'])
+            if path.parts[0] in {'{py_platlib}', '{py_purelib}'}:
+                if key == 'install_subdirs' and os.path.isdir(src):
+                    for entry in walk(src):
+                        tree[(*path.parts[1:], *entry.parts)] = os.path.join(src, *entry.parts)
+                else:
+                    tree[path.parts[1:]] = src
+    return tree
 
 
-class MesonpyFinder(importlib.abc.MetaPathFinder):
-    """Custom loader that whose purpose is to detect when the import system is
-    trying to load our modules, and trigger a rebuild. After triggering a
-    rebuild, we return None in find_spec, letting the normal finders pick up the
-    modules.
-    """
-
-    def __init__(
-        self,
-        project_name: str,
-        hook_name: str,
-        project_path: str,
-        build_path: str,
-        import_paths: List[str],
-        top_level_modules: List[str],
-        rebuild_commands: List[List[str]],
-        verbose: bool = False,
-    ) -> None:
-        self._project_name = project_name
-        self._hook_name = hook_name
-        self._project_path = project_path
-        self._build_path = build_path
-        self._import_paths = import_paths
-        self._top_level_modules = top_level_modules
-        self._rebuild_commands = rebuild_commands
+class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
+    def __init__(self, names: Set[str], path: str, cmd: List[str], verbose: bool = False):
+        self._top_level_modules = names
+        self._build_path = path
+        self._build_cmd = cmd
         self._verbose = verbose
-
-        for path in (self._project_path, self._build_path):
-            if not os.path.isdir(path):
-                raise ImportError(
-                    f'{path} is not a directory, but it is required to rebuild '
-                    f'"{self._project_name}", which is installed in editable '
-                    'mode. Please reinstall the project to get it back to '
-                    'working condition. If there are any issues uninstalling '
-                    'this installation, you can manually remove '
-                    f'{self._hook_name} and {os.path.basename(__file__)}, '
-                    f'located in {os.path.dirname(__file__)}.'
-                )
+        self._loaders: List[Tuple[type, str]] = []
+        for loader, suffixes in LOADERS:
+            self._loaders.extend((loader, suffix) for suffix in suffixes)
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self._project_path})'
-
-    def _debug(self, msg: str) -> None:
-        if self._verbose:
-            print(msg.format(**_STYLES))
-
-    def _proc(self, command: List[str]) -> None:
-        # skip editable hook installation in subprocesses, as during the build
-        # commands the module we are rebuilding might be imported, causing a
-        # rebuild loop
-        # see https://github.com/mesonbuild/meson-python/pull/87#issuecomment-1342548894
-        env = os.environ.copy()
-        env['_MESONPY_EDITABLE_SKIP'] = os.pathsep.join((
-            env.get('_MESONPY_EDITABLE_SKIP', ''),
-            self._project_path,
-        ))
-
-        if self._verbose:
-            subprocess.check_call(command, cwd=self._build_path, env=env)
-        else:
-            subprocess.check_output(command, cwd=self._build_path, env=env)
-
-    @functools.lru_cache(maxsize=1)
-    def rebuild(self) -> None:
-        self._debug(f'{{cyan}}{{bold}}+ rebuilding {self._project_path}{{reset}}')
-        for command in self._rebuild_commands:
-            self._proc(command)
-        self._debug('{cyan}{bold}+ successfully rebuilt{reset}')
+        return f'{self.__class__.__name__}({self._build_path!r})'
 
     def find_spec(
-        self,
-        fullname: str,
-        path: Optional[Sequence[Union[str, bytes]]],
-        target: Optional[ModuleType] = None,
-    ) -> None:
-        # if it's one of our modules, trigger a rebuild
+            self,
+            fullname: str,
+            path: Optional[Sequence[Union[bytes, str]]] = None,
+            target: Optional[ModuleType] = None
+    ) -> Optional[importlib.machinery.ModuleSpec]:
         if fullname.split('.', maxsplit=1)[0] in self._top_level_modules:
-            self.rebuild()
-            # prepend the project path to sys.path, so that the normal finder
-            # can find our modules
-            # we prepend so that our path comes before the current path (if
-            # the interpreter is run with -m), see gh-239
-            if sys.path[:len(self._import_paths)] != self._import_paths:
-                for path in self._import_paths:
-                    if path in sys.path:
-                        sys.path.remove(path)
-                sys.path = self._import_paths + sys.path
-        # return none (meaning we "didn't find" the module) and let the normal
-        # finders find/import it
+            if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
+                return None
+            namespace = False
+            tree = self.rebuild()
+            parts = fullname.split('.')
+
+            # look for a package
+            package = tree.get(tuple(parts))
+            if isinstance(package, Node):
+                for loader, suffix in self._loaders:
+                    src = package.get('__init__' + suffix)
+                    if isinstance(src, str):
+                        return build_module_spec(loader, fullname, src, package)
+                else:
+                    namespace = True
+
+            # look for a module
+            for loader, suffix in self._loaders:
+                src = tree.get((*parts[:-1], parts[-1] + suffix))
+                if isinstance(src, str):
+                    return build_module_spec(loader, fullname, src, None)
+
+            # namespace
+            if namespace:
+                spec = importlib.machinery.ModuleSpec(fullname, None)
+                spec.submodule_search_locations = []
+                return spec
+
         return None
 
-    @classmethod
-    def install(
-        cls,
-        project_name: str,
-        hook_name: str,
-        project_path: str,
-        build_path: str,
-        import_paths: List[str],
-        top_level_modules: List[str],
-        rebuild_commands: List[List[str]],
-        verbose: bool = False,
-    ) -> None:
-        if project_path in os.environ.get('_MESONPY_EDITABLE_SKIP', '').split(os.pathsep):
-            return
-        if os.environ.get('MESONPY_EDITABLE_VERBOSE', ''):
-            verbose = True
-        # install our finder
-        finder = cls(
-            project_name,
-            hook_name,
-            project_path,
-            build_path,
-            import_paths,
-            top_level_modules,
-            rebuild_commands,
-            verbose,
-        )
-        if finder not in sys.meta_path:
-            # prepend our finder to sys.meta_path, so that it is queried before
-            # the normal finders, and can trigger a project rebuild
-            sys.meta_path.insert(0, finder)
-            # we add the project path to sys.path later, so that we can prepend
-            # after the current directory is prepended (when -m is used)
-            # see gh-239
+    @functools.lru_cache(maxsize=1)
+    def rebuild(self) -> Node:
+        # skip editable wheel lookup during rebuild: during the build
+        # the module we are rebuilding might be imported causing a
+        # rebuild loop.
+        env = os.environ.copy()
+        env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
+
+        if self._verbose or bool(env.get(VERBOSE, '')):
+            print('+ ' + ' '.join(self._build_cmd))
+            stdout = None
+        else:
+            stdout = subprocess.DEVNULL
+
+        subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=stdout, check=True)
+
+        install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
+        with open(install_plan_path, 'r', encoding='utf8') as f:
+            install_plan = json.load(f)
+        return collect(install_plan)
 
 
-# generated hook install below
+def install(names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
+    sys.meta_path.insert(0, MesonpyMetaFinder(names, path, cmd, verbose))
