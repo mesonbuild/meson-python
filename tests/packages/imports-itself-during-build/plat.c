@@ -4,13 +4,13 @@
 
 #include <Python.h>
 
-static PyObject* foo(PyObject* self)
+static PyObject* data(PyObject* self)
 {
-    return PyUnicode_FromString("bar");
+    return PyUnicode_FromString("ABC");
 }
 
 static PyMethodDef methods[] = {
-    {"foo", (PyCFunction)foo, METH_NOARGS, NULL},
+    {"data", (PyCFunction)data, METH_NOARGS, NULL},
     {NULL, NULL, 0, NULL},
 };
 
