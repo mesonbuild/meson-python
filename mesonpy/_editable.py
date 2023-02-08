@@ -151,6 +151,10 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
         super().__init__(name, path)
         self._tree = tree
 
+    def set_data(self, path: Union[bytes, str], data: bytes, *, _mode: int = ...) -> None:
+        # disable saving bytecode
+        pass
+
     def get_resource_reader(self, name: str) -> TraversableResources:
         return MesonpyReader(name, self._tree)
 
