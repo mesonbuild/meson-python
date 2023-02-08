@@ -791,11 +791,7 @@ class Project():
         return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
-        """Configure Meson project.
-
-        We will try to reconfigure the build directory if possible to avoid
-        expensive rebuilds.
-        """
+        """Configure Meson project."""
         sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
         setup_args = [
             f'--prefix={sys.base_prefix}',
@@ -820,13 +816,7 @@ class Project():
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
 
-        try:
-            self._meson('setup', *setup_args)
-        except subprocess.CalledProcessError:
-            if reconfigure:  # if failed reconfiguring, try a normal configure
-                self._configure()
-            else:
-                raise
+        self._meson('setup', *setup_args)
 
     def _validate_metadata(self) -> None:
         """Check the pyproject.toml metadata and see if there are any issues."""
