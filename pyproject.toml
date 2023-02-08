@@ -29,7 +29,7 @@ classifiers = [
 dependencies = [
   'colorama; os_name == "nt"',
   'meson>=0.63.3',
-  'pyproject-metadata>=0.7.1', # not a hard dependency, only needed for projects that use PEP 621 metadata
+  'pyproject-metadata>=0.7.1',
   'tomli>=1.0.0; python_version<"3.11"',
 ]
 
