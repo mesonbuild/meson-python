@@ -2,17 +2,21 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'subdirs',
-    version: '1.0.0',
-)
+project('subdirs', version: '1.0.0')
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
-py.install_sources([
-    'subdirs' / '__init__.py',
-    'subdirs' / 'a' / '__init__.py',
-    'subdirs' / 'a' / 'b' / 'c.py',
-    'subdirs' / 'b' / 'c.py',
-])
+# in Meson >= 0.64 this could be replace with a single
+# py.install_sources() with the 'preserve_path: true' argument.
+py.install_sources(
+  'subdirs/__init__.py',
+  subdir: 'subdirs')
+py.install_sources(
+  'subdirs/a/__init__.py',
+  subdir: 'subdirs/a')
+py.install_sources(
+  'subdirs/a/b/c.py',
+  subdir: 'subdirs/a/b')
+py.install_sources(
+  'subdirs/b/c.py',
+  subdir: 'subdirs/b')
