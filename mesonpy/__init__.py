@@ -754,18 +754,18 @@ class Project():
             [binaries]
             python = '{sys.executable}'
         ''')
-        native_file_mismatch = (
-            not self._meson_native_file.exists()
-            or self._meson_native_file.read_text() != native_file_data
-        )
-        if native_file_mismatch:
-            self._meson_native_file.write_text(native_file_data)
+        self._meson_native_file.write_text(native_file_data)
 
-        # Don't reconfigure if build directory doesn't have meson-private/coredata.data
-        # (means something went wrong)
-        # See https://github.com/mesonbuild/meson-python/pull/257#discussion_r1067385517
-        has_valid_build_dir = self._build_dir.joinpath('meson-private', 'coredata.dat').is_file()
-        self._configure(reconfigure=has_valid_build_dir and not native_file_mismatch)
+        # reconfigure if we have a valid Meson build directory. Meson
+        # uses the presence of the 'meson-private/coredata.dat' file
+        # in the build directory as indication that the build
+        # directory has already been configured and arranges this file
+        # to be created as late as possible or deleted if something
+        # goes wrong during setup.
+        reconfigure = self._build_dir.joinpath('meson-private/coredata.dat').is_file()
+
+        # run meson setup
+        self._configure(reconfigure=reconfigure)
 
         # set version if dynamic (this fetches it from Meson)
         if self._metadata and 'version' in self._metadata.dynamic:
