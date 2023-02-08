@@ -679,8 +679,8 @@ class Project():
         self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
         self._editable_verbose = editable_verbose
         self._install_dir = self._working_dir / 'install'
-        self._meson_native_file = self._source_dir / '.mesonpy-native-file.ini'
-        self._meson_cross_file = self._source_dir / '.mesonpy-cross-file.ini'
+        self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
+        self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
         self._env = os.environ.copy()
 
@@ -759,14 +759,7 @@ class Project():
             or self._meson_native_file.read_text() != native_file_data
         )
         if native_file_mismatch:
-            try:
-                self._meson_native_file.write_text(native_file_data)
-            except OSError:
-                # if there are permission errors or something else in the source
-                # directory, put the native file in the working directory instead
-                # (this won't survive multiple calls -- Meson will have to be reconfigured)
-                self._meson_native_file = self._working_dir / '.mesonpy-native-file.ini'
-                self._meson_native_file.write_text(native_file_data)
+            self._meson_native_file.write_text(native_file_data)
 
         # Don't reconfigure if build directory doesn't have meson-private/coredata.data
         # (means something went wrong)
