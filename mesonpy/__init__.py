@@ -41,6 +41,8 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+import pyproject_metadata
+
 import mesonpy._compat
 import mesonpy._dylib
 import mesonpy._elf
@@ -54,8 +56,6 @@ from mesonpy._compat import Collection, Iterable, Mapping, cached_property, read
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, Set, TextIO, Tuple, Type, TypeVar, Union
-
-    import pyproject_metadata
 
     from mesonpy._compat import Iterator, Literal, ParamSpec, Path
 
@@ -719,12 +719,7 @@ class Project():
         self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
         self._pep621 = 'project' in self._config
         if self.pep621:
-            try:
-                import pyproject_metadata
-            except ModuleNotFoundError:  # pragma: no cover
-                self._metadata = None
-            else:
-                self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(self._config, self._source_dir)
+            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(self._config, self._source_dir)
         else:
             print(
                 '{yellow}{bold}! Using Meson to generate the project metadata '
