@@ -41,11 +41,6 @@ if typing.TYPE_CHECKING:
     else:
         from typing_extensions import ParamSpec
 
-    if sys.version_info >= (3, 8):
-        from typing import Literal
-    else:
-        from typing_extensions import Literal
-
     Path = Union[str, os.PathLike]
 
 
@@ -65,7 +60,6 @@ __all__ = [
     'Collection',
     'Iterable',
     'Iterator',
-    'Literal',
     'Mapping',
     'Path',
     'ParamSpec',
