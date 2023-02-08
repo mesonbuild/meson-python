@@ -57,9 +57,11 @@ from mesonpy._compat import Collection, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Any, Callable, ClassVar, DefaultDict, List, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
+    from typing import (
+        Any, Callable, ClassVar, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
+    )
 
-    from mesonpy._compat import Iterator, Literal, ParamSpec, Path
+    from mesonpy._compat import Iterator, ParamSpec, Path
 
     P = ParamSpec('P')
     T = TypeVar('T')
