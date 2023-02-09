@@ -41,6 +41,7 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+import packaging.version
 import pyproject_metadata
 
 import mesonpy._compat
@@ -690,7 +691,7 @@ class Project():
     _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
         'version',
     ]
-    _metadata: Optional[pyproject_metadata.StandardMetadata]
+    _metadata: pyproject_metadata.StandardMetadata
 
     def __init__(
         self,
@@ -745,20 +746,6 @@ class Project():
         # load pyproject.toml
         pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
 
-        # package metadata
-        self._pep621 = 'project' in pyproject:
-        if self.pep621:
-            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(pyproject, self._source_dir)
-        else:
-            print(
-                '{yellow}{bold}! Using Meson to generate the project metadata '
-                '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
-            )
-            self._metadata = None
-
-        if self._metadata:
-            self._validate_metadata()
-
         # load meson args from pyproject.toml
         pyproject_config = _validate_pyproject_config(pyproject)
         for key, value in pyproject_config.get('args', {}).items():
@@ -792,9 +779,21 @@ class Project():
         # run meson setup
         self._configure(reconfigure=reconfigure)
 
-        # set version if dynamic (this fetches it from Meson)
-        if self._metadata and 'version' in self._metadata.dynamic:
-            self._metadata.version = self.version
+        # package metadata
+        if 'project' in pyproject:
+            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(pyproject, self._source_dir)
+        else:
+            self._metadata = pyproject_metadata.StandardMetadata(
+                name=self._meson_name, version=packaging.version.Version(self._meson_version))
+            print(
+                '{yellow}{bold}! Using Meson to generate the project metadata '
+                '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
+            )
+        self._validate_metadata()
+
+        # set version from meson.build if dynamic
+        if 'version' in self._metadata.dynamic:
+            self._metadata.version = packaging.version.Version(self._meson_version)
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
@@ -833,8 +832,6 @@ class Project():
 
     def _validate_metadata(self) -> None:
         """Check the pyproject.toml metadata and see if there are any issues."""
-
-        assert self._metadata
 
         # check for unsupported dynamic fields
         unsupported_dynamic = {
@@ -958,45 +955,18 @@ class Project():
 
     @property
     def name(self) -> str:
-        """Project name. Specified in pyproject.toml."""
-        name = self._metadata.name if self._metadata else self._meson_name
-        assert isinstance(name, str)
-        return name.replace('-', '_')
+        """Project name."""
+        return str(self._metadata.name).replace('-', '_')
 
     @property
     def version(self) -> str:
-        """Project version. Either specified in pyproject.toml or meson.build."""
-        if self._metadata and 'version' not in self._metadata.dynamic:
-            version = str(self._metadata.version)
-        else:
-            version = self._meson_version
-        assert isinstance(version, str)
-        return version
+        """Project version."""
+        return str(self._metadata.version)
 
     @cached_property
     def metadata(self) -> bytes:
-        """Project metadata."""
-        # the rest of the keys are only available when using PEP 621 metadata
-        if not self.pep621:
-            data = textwrap.dedent(f'''
-                Metadata-Version: 2.1
-                Name: {self.name}
-                Version: {self.version}
-            ''').strip()
-            return data.encode()
-
-        # re-import pyproject_metadata to raise ModuleNotFoundError if it is really missing
-        import pyproject_metadata  # noqa: F401
-        assert self._metadata
-
-        core_metadata = self._metadata.as_rfc822()
-        # use self.version as the version may be dynamic -- fetched from Meson
-        #
-        # we need to overwrite this field in the RFC822 field as
-        # pyproject_metadata removes 'version' from the dynamic fields when
-        # giving it a value via the dataclass
-        core_metadata.headers['Version'] = [self.version]
-        return bytes(core_metadata)
+        """Project metadata as an RFC822 message."""
+        return bytes(self._metadata.as_rfc822())
 
     @property
     def license_file(self) -> Optional[pathlib.Path]:
@@ -1010,11 +980,6 @@ class Project():
     def is_pure(self) -> bool:
         """Is the wheel "pure" (architecture independent)?"""
         return bool(self._wheel_builder.is_pure)
-
-    @property
-    def pep621(self) -> bool:
-        """Does the project use PEP 621 metadata?"""
-        return self._pep621
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
