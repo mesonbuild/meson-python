@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import difflib
 import functools
 import importlib.machinery
 import io
@@ -76,7 +77,7 @@ if typing.TYPE_CHECKING:
     MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 else:
-    MesonArgs = None
+    MesonArgs = dict
 
 
 _COLORS = {
@@ -685,6 +686,44 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
     return scheme(table, 'tool.meson-python')
 
 
+def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate options received from build frontend."""
+
+    def _string(value: Any, name: str) -> str:
+        if not isinstance(value, str):
+            raise ConfigError(f'Only one value for "{name}" can be specified')
+        return value
+
+    def _bool(value: Any, name: str) -> bool:
+        return True
+
+    def _string_or_strings(value: Any, name: str) -> List[str]:
+        return list([value,] if isinstance(value, str) else value)
+
+    options = {
+        'builddir': _string,
+        'editable-verbose': _bool,
+        'dist-args': _string_or_strings,
+        'setup-args': _string_or_strings,
+        'compile-args': _string_or_strings,
+        'install-args': _string_or_strings,
+    }
+    assert all(f'{name}-args' in options for name in _MESON_ARGS_KEYS)
+
+    config = {}
+    for key, value in config_settings.items():
+        parser = options.get(key)
+        if parser is None:
+            matches = difflib.get_close_matches(key, options.keys(), n=2)
+            if matches:
+                alternatives = ' or '.join(f'"{match}"' for match in matches)
+                raise ConfigError(f'Unknown option "{key}". Did you mean {alternatives}?')
+            else:
+                raise ConfigError(f'Unknown option "{key}"')
+        config[key] = parser(value, key)
+    return config
+
+
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
@@ -1056,59 +1095,14 @@ class Project():
 @contextlib.contextmanager
 def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
     """Create the project given the given config settings."""
-    if config_settings is None:
-        config_settings = {}
 
-    # expand all string values to single element tuples and convert collections to tuple
-    config_settings = {
-        key: tuple(value) if isinstance(value, Collection) and not isinstance(value, str) else (value,)
-        for key, value in config_settings.items()
-    }
-
-    builddir_value = config_settings.get('builddir', {})
-    if len(builddir_value) > 0:
-        if len(builddir_value) != 1:
-            raise ConfigError('Only one value for configuration entry "builddir" can be specified')
-        builddir = builddir_value[0]
-        if not isinstance(builddir, str):
-            raise ConfigError(f'Configuration entry "builddir" should be a string not {type(builddir)}')
-    else:
-        builddir = None
-
-    def _validate_string_collection(key: str) -> None:
-        assert isinstance(config_settings, Mapping)
-        problematic_items: Sequence[Any] = list(filter(None, (
-            item if not isinstance(item, str) else None
-            for item in config_settings.get(key, ())
-        )))
-        if problematic_items:
-            s = ', '.join(f'"{item}" ({type(item)})' for item in problematic_items)
-            raise ConfigError(f'Configuration entries for "{key}" must be strings but contain: {s}')
-
-    meson_args_keys = _MESON_ARGS_KEYS
-    meson_args_cli_keys = tuple(f'{key}-args' for key in meson_args_keys)
-
-    for key in config_settings:
-        known_keys = ('builddir', 'editable-verbose', *meson_args_cli_keys)
-        if key not in known_keys:
-            import difflib
-            matches = difflib.get_close_matches(key, known_keys, n=3)
-            if len(matches):
-                alternatives = ' or '.join(f'"{match}"' for match in matches)
-                raise ConfigError(f'Unknown configuration entry "{key}". Did you mean {alternatives}?')
-            else:
-                raise ConfigError(f'Unknown configuration entry "{key}"')
-
-    for key in meson_args_cli_keys:
-        _validate_string_collection(key)
+    settings = _validate_config_settings(config_settings or {})
+    meson_args = {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS}
 
     with Project.with_temp_working_dir(
-        build_dir=builddir,
-        meson_args=typing.cast(MesonArgs, {
-            key: config_settings.get(f'{key}-args', ())
-            for key in meson_args_keys
-        }),
-        editable_verbose=bool(config_settings.get('editable-verbose'))
+            build_dir=settings.get('builddir'),
+            meson_args=typing.cast(MesonArgs, meson_args),
+            editable_verbose=bool(settings.get('editable-verbose'))
     ) as project:
         yield project
 
