@@ -3,6 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 import platform
+import sys
+import textwrap
+
+
+if sys.version_info < (3, 11):
+    import tomli as tomllib
+else:
+    import tomllib
 
 import pytest
 
@@ -99,3 +107,43 @@ def test_install_tags(package_purelib_and_platlib, tmp_path_session):
         }
     )
     assert project.is_pure
+
+
+def test_validate_pyproject_config_one():
+    pyproject_config = tomllib.loads(textwrap.dedent('''
+        [tool.meson-python.args]
+        setup = ['-Dfoo=true']
+    '''))
+    conf = mesonpy._validate_pyproject_config(pyproject_config)
+    assert conf['args'] == {'setup': ['-Dfoo=true']}
+
+
+def test_validate_pyproject_config_all():
+    pyproject_config = tomllib.loads(textwrap.dedent('''
+        [tool.meson-python.args]
+        setup = ['-Dfoo=true']
+        dist = []
+        compile = ['-j4']
+        install = ['--tags=python']
+    '''))
+    conf = mesonpy._validate_pyproject_config(pyproject_config)
+    assert conf['args'] == {
+        'setup': ['-Dfoo=true'],
+        'dist': [],
+        'compile': ['-j4'],
+        'install': ['--tags=python']}
+
+
+def test_validate_pyproject_config_unknown():
+    pyproject_config = tomllib.loads(textwrap.dedent('''
+        [tool.meson-python.args]
+        invalid = true
+    '''))
+    with pytest.raises(mesonpy.ConfigError, match='Unknown configuration entry "tool.meson-python.args.invalid"'):
+        mesonpy._validate_pyproject_config(pyproject_config)
+
+
+def test_validate_pyproject_config_empty():
+    pyproject_config = tomllib.loads(textwrap.dedent(''))
+    config = mesonpy._validate_pyproject_config(pyproject_config)
+    assert config == {}

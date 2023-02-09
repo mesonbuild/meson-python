@@ -654,6 +654,36 @@ class _WheelBuilder():
         return wheel_file
 
 
+def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _table(scheme: Dict[str, Callable[[Any, str], Any]]) -> Callable[[Any, str], Dict[str, Any]]:
+        def func(value: Any, name: str) -> Dict[str, Any]:
+            if not isinstance(value, dict):
+                raise ConfigError(f'Configuration entry "{name}" must be a table')
+            table = {}
+            for key, val in value.items():
+                check = scheme.get(key)
+                if check is None:
+                    raise ConfigError(f'Unknown configuration entry "{name}.{key}"')
+                table[key] = check(val, f'{name}.{key}')
+            return table
+        return func
+
+    def _strings(value: Any, name: str) -> List[str]:
+        if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
+            raise ConfigError(f'Configuration entry "{name}" must be a list of strings')
+        return value
+
+    scheme = _table({
+        'args': _table({
+            name: _strings for name in _MESON_ARGS_KEYS
+        })
+    })
+
+    table = pyproject.get('tool', {}).get('meson-python', {})
+    return scheme(table, 'tool.meson-python')
+
+
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
@@ -662,7 +692,7 @@ class Project():
     ]
     _metadata: Optional[pyproject_metadata.StandardMetadata]
 
-    def __init__(  # noqa: C901
+    def __init__(
         self,
         source_dir: Path,
         working_dir: Path,
@@ -712,11 +742,13 @@ class Project():
                     self._meson_cross_file.write_text(cross_file_data)
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
-        # load config -- PEP 621 support is optional
-        self._config = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
-        self._pep621 = 'project' in self._config
+        # load pyproject.toml
+        pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+
+        # package metadata
+        self._pep621 = 'project' in pyproject:
         if self.pep621:
-            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(self._config, self._source_dir)
+            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(pyproject, self._source_dir)
         else:
             print(
                 '{yellow}{bold}! Using Meson to generate the project metadata '
@@ -727,14 +759,10 @@ class Project():
         if self._metadata:
             self._validate_metadata()
 
-        # load meson args
-        for key in self._get_config_key('args'):
-            self._meson_args[key].extend(self._get_config_key(f'args.{key}'))
-        # XXX: We should validate the user args to make sure they don't conflict with ours.
-
-        self._check_for_unknown_config_keys({
-            'args': _MESON_ARGS_KEYS,
-        })
+        # load meson args from pyproject.toml
+        pyproject_config = _validate_pyproject_config(pyproject)
+        for key, value in pyproject_config.get('args', {}).items():
+            self._meson_args[key].extend(value)
 
         # meson arguments from the command line take precedence over
         # arguments from the configuration file thus are added later
@@ -767,14 +795,6 @@ class Project():
         # set version if dynamic (this fetches it from Meson)
         if self._metadata and 'version' in self._metadata.dynamic:
             self._metadata.version = self.version
-
-    def _get_config_key(self, key: str) -> Any:
-        value: Any = self._config
-        for part in f'tool.meson-python.{key}'.split('.'):
-            if not isinstance(value, Mapping):
-                raise ConfigError(f'Configuration entry "tool.meson-python.{key}" should be a TOML table not {type(value)}')
-            value = value.get(part, {})
-        return value
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
@@ -833,17 +853,6 @@ class Project():
                     f'Unsupported Python version {platform.python_version()}, '
                     f'expected {self._metadata.requires_python}'
                 )
-
-    def _check_for_unknown_config_keys(self, valid_args: Mapping[str, Collection[str]]) -> None:
-        config = self._config.get('tool', {}).get('meson-python', {})
-
-        for key, valid_subkeys in config.items():
-            if key not in valid_args:
-                raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}"')
-
-            for subkey in valid_args[key]:
-                if subkey not in valid_subkeys:
-                    raise ConfigError(f'Unknown configuration key "tool.meson-python.{key}.{subkey}"')
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
