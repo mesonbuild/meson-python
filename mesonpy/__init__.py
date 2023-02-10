@@ -1026,10 +1026,6 @@ class Project():
 
         with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as (tar, mtime):
             for member in meson_dist.getmembers():
-                # skip the generated meson native file
-                if member.name == f'{meson_dist_name}/.mesonpy-native-file.ini':
-                    continue
-
                 # calculate the file path in the source directory
                 assert member.name, member.name
                 member_parts = member.name.split('/')
