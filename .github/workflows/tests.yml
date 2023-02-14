@@ -51,6 +51,8 @@ jobs:
             python: '3.9'
           - os: ubuntu
             python: '3.10'
+          - os: ubuntu
+            python: '3.12-dev'
           # Test with older supported Meson version.
           - os: ubuntu
             python: '3.11'
