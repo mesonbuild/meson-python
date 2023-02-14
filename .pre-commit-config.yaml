@@ -25,12 +25,12 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: v0.0.242
+  rev: v0.0.246
   hooks:
   - id: ruff
     args: [--fix, --format, grouped]
 - repo: https://github.com/fsfe/reuse-tool
-  rev: v1.1.0
+  rev: v1.1.2
   hooks:
   - id: reuse
     name: add SPDX headers
