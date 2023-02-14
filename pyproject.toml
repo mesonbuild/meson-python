@@ -9,6 +9,7 @@ requires = [
   'meson >= 0.63.3',
   'pyproject-metadata >= 0.7.1',
   'tomli >= 1.0.0; python_version < "3.11"',
+  'setuptools >= 60.0; python_version >= "3.12"',
 ]
 
 [project]
@@ -31,6 +32,7 @@ dependencies = [
   'meson >= 0.63.3',
   'pyproject-metadata >= 0.7.1',
   'tomli >= 1.0.0; python_version < "3.11"',
+  'setuptools >= 60.0; python_version >= "3.12"',
 ]
 
 dynamic = [
