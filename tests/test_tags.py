@@ -37,11 +37,11 @@ def test_wheel_tag():
 @pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
 def test_macos_platform_tag(monkeypatch):
     for minor in range(9, 16):
-        monkeypatch.setenv('MACOS_DEPLOYMENT_TARGET', f'10.{minor}')
+        monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'10.{minor}')
         assert next(packaging.tags.mac_platforms((10, minor))) == mesonpy._tags.get_platform_tag()
     for major in range(11, 20):
         for minor in range(3):
-            monkeypatch.setenv('MACOS_DEPLOYMENT_TARGET', f'{major}.{minor}')
+            monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.{minor}')
             assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
 
 
