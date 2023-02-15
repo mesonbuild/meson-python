@@ -48,7 +48,7 @@ Environment variables
           Please check our :ref:`how-to-guides-editable-installs` guide for more
           information on how to use it.
 
-   * - ``MACOS_DEPLOYMENT_TARGET``
+   * - ``MACOSX_DEPLOYMENT_TARGET``
      - Specify the target macOS version.
 
        If ``MACOSX_DEPLOYMENT_TARGET`` is set, we will use the selected version
