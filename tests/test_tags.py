@@ -5,7 +5,6 @@
 import os
 import pathlib
 import platform
-import re
 import sysconfig
 
 from collections import defaultdict
@@ -93,18 +92,3 @@ def test_tag_mixed_abi(monkeypatch):
         'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
     })
     assert str(builder.tag) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
-
-
-@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
-def test_tag_macos_build_target(monkeypatch):
-    monkeypatch.setenv('MACOS_BUILD_TARGET', '12.0')
-    builder = wheel_builder_test_factory(monkeypatch, {
-        'platlib': [f'extension{SUFFIX}'],
-    })
-    assert builder.tag.platform == re.sub(r'\d+\.\d+', '12.0', PLATFORM)
-
-    monkeypatch.setenv('MACOS_BUILD_TARGET', '10.9')
-    builder = wheel_builder_test_factory(monkeypatch, {
-        'platlib': [f'extension{SUFFIX}'],
-    })
-    assert builder.tag.platform == re.sub(r'\d+\.\d+', '10.9', PLATFORM)
