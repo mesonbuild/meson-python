@@ -99,9 +99,9 @@ def _get_macosx_platform_tag() -> str:
         pass
 
     # Override the macOS version if one is provided via the
-    # MACOS_DEPLOYMENT_TARGET environment variable.
+    # MACOSX_DEPLOYMENT_TARGET environment variable.
     try:
-        version = tuple(map(int, os.environ.get('MACOS_DEPLOYMENT_TARGET', '').split('.')))[:2]
+        version = tuple(map(int, os.environ.get('MACOSX_DEPLOYMENT_TARGET', '').split('.')))[:2]
     except ValueError:
         version = tuple(map(int, ver.split('.')))[:2]
 
