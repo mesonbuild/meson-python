@@ -147,6 +147,7 @@ Contributors
    contributing/commit-format
    contributing/test-suite
    contributing/documentation
+   contributing/release-process
 
 
 .. toctree::
