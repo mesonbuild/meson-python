@@ -3,6 +3,13 @@ Changelog
 +++++++++
 
 
+0.12.1 (17-02-2023)
+===================
+
+- Fix regression where the ``MACOSX_DEPLOYMENT_TARGET`` environment variable was
+  accidentally renamed to ``MACOS_DEPLOYMENT_TARGET``
+
+
 0.12.0 (22-12-2022)
 ===================
 
