@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+name: build
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: if [[ "${{ github.ref }}" =~ [0-9]+\.[0-9]+\.[0-9]+(\..*)? ]]; then echo "UPLOAD=1" >> $GITHUB_ENV; fi
+      - run: python -m twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI }}
+        if: ${{ env.UPLOAD }}
