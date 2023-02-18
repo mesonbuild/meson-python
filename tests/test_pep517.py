@@ -21,6 +21,9 @@ from .conftest import package_dir
 @pytest.mark.parametrize('system_patchelf', ['patchelf', None], ids=['patchelf', 'nopatchelf'])
 @pytest.mark.parametrize('ninja', [None, '1.8.1', '1.8.3'], ids=['noninja', 'oldninja', 'newninja'])
 def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, ninja):
+    # the NINJA environment variable affects the ninja executable lookup and breaks the test
+    monkeypatch.delenv('NINJA', raising=False)
+
     def which(prog: str) -> bool:
         if prog == 'patchelf':
             return system_patchelf
