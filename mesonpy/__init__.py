@@ -334,13 +334,9 @@ class _WheelBuilder():
                 match = re.match(r'^[^.]+(.*)$', path.name)
                 assert match is not None
                 suffix = match.group(1)
-                if suffix not in _EXTENSION_SUFFIXES:
-                    raise ValueError(
-                        f'Extension module {str(path)!r} not compatible with Python interpreter. '
-                        f'Filename suffix {suffix!r} not in {set(_EXTENSION_SUFFIXES)}.')
                 match = _EXTENSION_SUFFIX_REGEX.match(suffix)
-                assert match is not None
-                abis.append(match.group('abi'))
+                if match:
+                    abis.append(match.group('abi'))
 
         stable = [x for x in abis if x and re.match(r'abi\d+', x)]
         if len(stable) > 0 and len(stable) == len(abis) and all(x == stable[0] for x in stable[1:]):
