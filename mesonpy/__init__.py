@@ -219,13 +219,11 @@ class _WheelBuilder():
     def __init__(
         self,
         project: Project,
-        metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
     ) -> None:
         self._project = project
-        self._metadata = metadata
         self._source_dir = source_dir
         self._build_dir = build_dir
         self._sources = sources
@@ -316,13 +314,13 @@ class _WheelBuilder():
     @property
     def entrypoints_txt(self) -> bytes:
         """dist-info entry_points.txt."""
-        if not self._metadata:
+        if not self._project.metadata:
             return b''
 
-        data = self._metadata.entrypoints.copy()
+        data = self._project.metadata.entrypoints.copy()
         data.update({
-            'console_scripts': self._metadata.scripts,
-            'gui_scripts': self._metadata.gui_scripts,
+            'console_scripts': self._project.metadata.scripts,
+            'gui_scripts': self._project.metadata.gui_scripts,
         })
 
         text = ''
@@ -475,7 +473,7 @@ class _WheelBuilder():
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
         # add metadata
-        whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
+        whl.writestr(f'{self.distinfo_dir}/METADATA', bytes(self._project.metadata.as_rfc822()))
         whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
         if self.entrypoints_txt:
             whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
@@ -792,7 +790,6 @@ class Project():
     def _wheel_builder(self) -> _WheelBuilder:
         return _WheelBuilder(
             self,
-            self._metadata,
             self._source_dir,
             self._build_dir,
             self._install_plan,
@@ -887,10 +884,10 @@ class Project():
         """Project version."""
         return str(self._metadata.version)
 
-    @cached_property
-    def metadata(self) -> bytes:
-        """Project metadata as an RFC822 message."""
-        return bytes(self._metadata.as_rfc822())
+    @property
+    def metadata(self) -> pyproject_metadata.StandardMetadata:
+        """Project metadata."""
+        return self._metadata
 
     @property
     def license_file(self) -> Optional[pathlib.Path]:
@@ -960,8 +957,9 @@ class Project():
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             if mtime:
                 pkginfo_info.mtime = mtime
-            pkginfo_info.size = len(self.metadata)
-            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))
+            metadata = bytes(self._metadata.as_rfc822())
+            pkginfo_info.size = len(metadata)
+            tar.addfile(pkginfo_info, fileobj=io.BytesIO(metadata))
 
         return sdist
 
