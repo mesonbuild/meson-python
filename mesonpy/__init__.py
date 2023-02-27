@@ -811,6 +811,7 @@ class Project():
             f'--native-file={os.fspath(self._meson_native_file)}',
             # TODO: Allow configuring these arguments
             '-Ddebug=false',
+            '-Db_ndebug=if-release',
             '-Doptimization=2',
 
             # XXX: This should not be needed, but Meson is using the wrong paths
