@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-import contextlib
 import platform
-import subprocess
-import sys
 
 import pytest
 
@@ -52,35 +49,29 @@ def test_unsupported_python_version(package_unsupported_python_version):
             pass
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason="unittest.mock doesn't support the required APIs for this test",
-)
-def test_user_args(package_user_args, mocker, tmp_path_session):
-    mocker.patch('mesonpy.Project._meson')
+def test_user_args(package_user_args, tmp_path, monkeypatch):
+    project_run = mesonpy.Project._run
+    call_args_list = []
+
+    def wrapper(self, cmd):
+        # intercept and filter out test arguments and forward the call
+        call_args_list.append(tuple(cmd))
+        return project_run(self, [x for x in cmd if not x.startswith(('config-', 'cli-'))])
+
+    monkeypatch.setattr(mesonpy.Project, '_run', wrapper)
 
     def last_two_meson_args():
-        return [call.args[-2:] for call in mesonpy.Project._meson.call_args_list]
-
-    # create the build directory ourselves because Project._meson is mocked
-    builddir = str(tmp_path_session / 'build')
+        return [args[-2:] for args in call_args_list]
 
     config_settings = {
-        'builddir': builddir,  # use the build directory we created
         'dist-args': ('cli-dist',),
         'setup-args': ('cli-setup',),
         'compile-args': ('cli-compile',),
         'install-args': ('cli-install',),
     }
 
-    with contextlib.suppress(FileNotFoundError):
-        mesonpy.build_sdist(tmp_path_session / 'dist', config_settings)
-
-    # run setup ourselves because Project._meson is mocked
-    subprocess.run(['meson', 'setup', '.', builddir], check=True)
-
-    with contextlib.suppress(FileNotFoundError):
-        mesonpy.build_wheel(tmp_path_session / 'dist', config_settings)
+    mesonpy.build_sdist(tmp_path, config_settings)
+    mesonpy.build_wheel(tmp_path, config_settings)
 
     assert last_two_meson_args() == [
         # sdist: calls to 'meson setup' and 'meson dist'
