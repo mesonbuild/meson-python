@@ -1141,7 +1141,7 @@ def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
         yield project
 
 
-def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pathlib.Path]:
+def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[str]:
     """
     Returns the path to ninja, or None if no ninja found.
     """
@@ -1161,7 +1161,7 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[pa
             continue
         if candidate_version < required_version:
             continue
-        return pathlib.Path(ninja_path)
+        return ninja_path
 
     return None
 
