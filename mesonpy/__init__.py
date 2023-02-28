@@ -775,16 +775,12 @@ class Project():
             value = value.get(part, {})
         return value
 
-    def _proc(self, *args: str) -> None:
+    def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
-        print('{cyan}{bold}+ {}{reset}'.format(' '.join(args), **_STYLES))
-        r = subprocess.run(list(args), env=self._env, cwd=self._build_dir)
+        print('{cyan}{bold}+ {}{reset}'.format(' '.join(cmd), **_STYLES))
+        r = subprocess.run(cmd, env=self._env, cwd=self._build_dir)
         if r.returncode != 0:
             raise SystemExit(r.returncode)
-
-    def _meson(self, *args: str) -> None:
-        """Invoke Meson."""
-        return self._proc('meson', *args)
 
     def _configure(self, reconfigure: bool = False) -> None:
         """Configure Meson project."""
@@ -812,7 +808,7 @@ class Project():
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
 
-        self._meson('setup', *setup_args)
+        self._run(['meson', 'setup', *setup_args])
 
     def _validate_metadata(self) -> None:
         """Check the pyproject.toml metadata and see if there are any issues."""
@@ -877,7 +873,7 @@ class Project():
     def build(self) -> None:
         """Trigger the Meson build."""
         for cmd in self.build_commands():
-            self._meson(*cmd[1:])
+            self._run(cmd)
 
     @classmethod
     @contextlib.contextmanager
@@ -1012,7 +1008,7 @@ class Project():
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
-        self._meson('dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist'],)
+        self._run(['meson', 'dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
