@@ -681,9 +681,10 @@ class Project():
         self._env = os.environ.copy()
 
         # prepare environment
-        ninja_path = _env_ninja_command()
-        if ninja_path is not None:
-            self._env.setdefault('NINJA', str(ninja_path))
+        self._ninja = _env_ninja_command()
+        if self._ninja is None:
+            raise ConfigError(f'Could not find ninja version {_NINJA_REQUIRED_VERSION} or newer.')
+        self._env.setdefault('NINJA', self._ninja)
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
@@ -857,8 +858,9 @@ class Project():
         )
 
     def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
+        assert self._ninja is not None  # help mypy out
         return (
-            ('meson', 'compile', *self._meson_args['compile'],),
+            (self._ninja, *self._meson_args['compile'],),
             (
                 'meson',
                 'install',
