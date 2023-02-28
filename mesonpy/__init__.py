@@ -1144,7 +1144,7 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[st
     Returns the path to ninja, or None if no ninja found.
     """
     required_version = tuple(int(v) for v in version.split('.'))
-    env_ninja = os.environ.get('NINJA', None)
+    env_ninja = os.environ.get('NINJA')
     ninja_candidates = [env_ninja] if env_ninja else ['ninja', 'ninja-build', 'samu']
     for ninja in ninja_candidates:
         ninja_path = shutil.which(ninja)
@@ -1179,7 +1179,9 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
 def get_requires_for_build_sdist(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
-    return [_depstr.ninja] if _env_ninja_command() is None else []
+    if os.environ.get('NINJA') is None and _env_ninja_command() is None:
+        return [_depstr.ninja]
+    return []
 
 
 @_pyproject_hook
@@ -1200,7 +1202,7 @@ def get_requires_for_build_wheel(
 ) -> List[str]:
     dependencies = []
 
-    if _env_ninja_command() is None:
+    if os.environ.get('NINJA') is None and _env_ninja_command() is None:
         dependencies.append(_depstr.ninja)
 
     if sys.platform.startswith('linux'):
