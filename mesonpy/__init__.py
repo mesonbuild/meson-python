@@ -624,7 +624,6 @@ class Project():
     _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
         'version',
     ]
-    _metadata: pyproject_metadata.StandardMetadata
 
     def __init__(
         self,
