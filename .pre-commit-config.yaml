@@ -25,10 +25,10 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: v0.0.249
+  rev: v0.0.253
   hooks:
   - id: ruff
-    args: [--fix, --format, grouped]
+    args: [--fix, --show-fixes, --format, grouped]
 - repo: https://github.com/fsfe/reuse-tool
   rev: v1.1.2
   hooks:
