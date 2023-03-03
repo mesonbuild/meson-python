@@ -9,7 +9,7 @@ SPDX-License-Identifier: MIT
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg)](https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main)
 [![tests](https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg)](https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk)](https://codecov.io/gh/mesonbuild/meson-python)
-[![Documentation Status](https://readthedocs.org/projects/meson-python/badge/?version=stable)](https://meson-python.readthedocs.io/en/stable/?badge=stable)
+[![Documentation Status](https://readthedocs.org/projects/meson-python/badge/?version=latest)](https://meson-python.readthedocs.io/en/stable/?badge=latest)
 
 `meson-python` is a Python build backend built on top of the [Meson][meson]
 build-system. It enables you to use [Meson][meson] for your Python packages.
@@ -31,7 +31,7 @@ If you are interested in contributing, please check out
 
 
 [meson]: https://github.com/mesonbuild/meson
-[docs]: https://meson-python.readthedocs.io/en/stable/
+[docs]: https://meson-python.readthedocs.io/en/latest/
 [new discussion]: https://github.com/mesonbuild/meson-python/discussions/new/choose
 [bugtracker]: https://github.com/mesonbuild/meson-python/issues
 [contributing docs]: https://meson-python.readthedocs.io/en/latest/contributing/getting-started.html
