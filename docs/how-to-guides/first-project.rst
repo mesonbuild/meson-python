@@ -17,6 +17,19 @@ First project
    instead.
 
 
+``meson-python`` builds on top of an existing Meson_ project, so you'll need the
+top-level ``meson.build`` for a Meson_ project next to your ``pyproject.toml``.
+You can check our `example project`_ or the projects in the
+:ref:`projects-using-meson-python` page for examples.
+
+
+.. admonition:: Getting started with Meson_
+   :class: seealso
+
+   If you are not familiar with Meson_, we would recommend checking out their
+   tutorial_.
+
+
 Specifying the backend
 ======================
 
@@ -74,3 +87,5 @@ Example
 .. _Cython: https://github.com/cython/cython
 .. _Meson: https://mesonbuild.com/
 .. _relevant PyPA documentation page: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+.. _example project: https://github.com/mesonbuild/meson-python/tree/main/docs/examples/spam
+.. _tutorial: https://mesonbuild.com/Tutorial.html
