@@ -23,8 +23,8 @@ Specifying the backend
 Our build backend is called ``mesonpy``, and that's what you should specify in
 the ``build-system.build-backend`` key of ``pyproject-toml``.
 
-You should need to add ``meson-python``, and all other build dependencies (eg.
-Cython_) needed by your Meson_ project, in the ``build-system.requires`` key.
+You should add ``meson-python``, and all other build dependencies (eg. Cython_)
+needed by your Meson_ project, in the ``build-system.requires`` key.
 
 
 Example
