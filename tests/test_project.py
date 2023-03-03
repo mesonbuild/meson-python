@@ -45,7 +45,7 @@ def test_version(package):
 
 
 def test_unsupported_dynamic(package_unsupported_dynamic):
-    with pytest.raises(mesonpy.ConfigError, match='unsupported dynamic metadata fields: "dependencies"'):
+    with pytest.raises(mesonpy.ConfigError, match='unsupported dynamic metadata fields: "requires-python"'):
         with mesonpy.Project.with_temp_working_dir():
             pass
 

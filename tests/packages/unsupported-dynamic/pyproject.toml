@@ -10,5 +10,5 @@ requires = ['meson-python']
 name = 'unsupported-dynamic'
 version = '1.0.0'
 dynamic = [
-    'dependencies',
+    'requires-python',
 ]
