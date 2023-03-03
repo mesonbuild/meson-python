@@ -57,9 +57,7 @@ from mesonpy._compat import Collection, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import (
-        Any, Callable, ClassVar, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
-    )
+    from typing import Any, Callable, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
     from mesonpy._compat import Iterator, ParamSpec, Path
 
@@ -618,13 +616,28 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
     return config
 
 
-class Project():
-    """Meson project wrapper to generate Python artifacts."""
+def _validate_metadata(metadata: pyproject_metadata.StandardMetadata) -> None:
+    """Validate package metadata."""
 
-    _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
+    allowed_dynamic_fields = [
         'version',
     ]
 
+    # check for unsupported dynamic fields
+    unsupported_dynamic = {key for key in metadata.dynamic if key not in allowed_dynamic_fields}
+    if unsupported_dynamic:
+        s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
+        raise ConfigError(f'unsupported dynamic metadata fields: {s}')
+
+    # check if we are running on an unsupported interpreter
+    if metadata.requires_python:
+        metadata.requires_python.prereleases = True
+        if platform.python_version().rstrip('+') not in metadata.requires_python:
+            raise ConfigError(f'building with Python {platform.python_version()}, version {metadata.requires_python} required')
+
+
+class Project():
+    """Meson project wrapper to generate Python artifacts."""
     def __init__(
         self,
         source_dir: Path,
@@ -722,7 +735,7 @@ class Project():
                 '{yellow}{bold}! Using Meson to generate the project metadata '
                 '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
             )
-        self._validate_metadata()
+        _validate_metadata(self._metadata)
 
         # set version from meson.build if dynamic
         if 'version' in self._metadata.dynamic:
@@ -763,27 +776,6 @@ class Project():
             setup_args.insert(0, '--reconfigure')
 
         self._run(['meson', 'setup', *setup_args])
-
-    def _validate_metadata(self) -> None:
-        """Check the pyproject.toml metadata and see if there are any issues."""
-
-        # check for unsupported dynamic fields
-        unsupported_dynamic = {
-            key for key in self._metadata.dynamic
-            if key not in self._ALLOWED_DYNAMIC_FIELDS
-        }
-        if unsupported_dynamic:
-            s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
-            raise MesonBuilderError(f'Unsupported dynamic fields: {s}')
-
-        # check if we are running on an unsupported interpreter
-        if self._metadata.requires_python:
-            self._metadata.requires_python.prereleases = True
-            if platform.python_version().rstrip('+') not in self._metadata.requires_python:
-                raise MesonBuilderError(
-                    f'Unsupported Python version {platform.python_version()}, '
-                    f'expected {self._metadata.requires_python}'
-                )
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
