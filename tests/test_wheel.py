@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import os
 import platform
 import re
 import stat
@@ -44,10 +43,6 @@ def wheel_contents(artifact):
         entry for entry in artifact.namelist()
         if not entry.endswith('/')
     }
-
-
-def wheel_filename(artifact):
-    return artifact.filename.split(os.sep)[-1]
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 12), reason='Cython generated code does not compile on Python 3.12')
