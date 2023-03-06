@@ -665,6 +665,9 @@ def _compute_build_time_dependencies(
             version = packaging.version.parse(importlib_metadata.version(name))
         except importlib_metadata.PackageNotFoundError as exc:
             raise ConfigError(f'package "{name}" specified in "build-time-pins" not found: {template!r}') from exc
+        if version.is_devrelease or version.is_prerelease:
+            print('meson-python: build-time pin for pre-release version "{version}" of "{name}" not generared: {template!r}')
+            continue
         pin = packaging.requirements.Requirement(template.format(v=version))
         if pin.marker:
             raise ConfigError(f'requirements in "build-time-pins" cannot contain markers: {template!r}')
