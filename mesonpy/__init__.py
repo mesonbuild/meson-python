@@ -1024,7 +1024,12 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
         try:
             return func(*args, **kwargs)
         except Error as exc:
-            print('{red}meson-python: error:{reset} {msg}'.format(msg=str(exc), **_STYLES))
+            print((
+                '{red}meson-python: error:{reset}\n'
+                '{red}>{reset}\n' +
+                textwrap.indent(str(exc).strip(), prefix='{red}>{reset}  ') + '\n' +
+                '{red}>{reset}\n'
+            ).format(**_STYLES))
             raise SystemExit(1) from exc
     return wrapper
 
