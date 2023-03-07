@@ -4,9 +4,12 @@
 
 import platform
 
+import pyproject_metadata
 import pytest
 
 import mesonpy
+
+from mesonpy._config import BuildHookSettings
 
 from .conftest import chdir, package_dir
 
@@ -86,7 +89,7 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
 
 @pytest.mark.parametrize('package', ('top-level', 'meson-args'))
 def test_unknown_user_args(package, tmp_path_session):
-    with pytest.raises(mesonpy.ConfigError):
+    with pytest.raises(pyproject_metadata.ConfigurationError):
         mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_path_session)
 
 
@@ -94,8 +97,8 @@ def test_install_tags(package_purelib_and_platlib, tmp_path_session):
     project = mesonpy.Project(
         package_purelib_and_platlib,
         tmp_path_session,
-        meson_args={
-            'install': ['--tags', 'purelib'],
-        }
+        hook_settings=BuildHookSettings.from_config_settings({
+            'install-args': ['--tags', 'purelib'],
+        }),
     )
     assert project.is_pure

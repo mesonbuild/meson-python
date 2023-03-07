@@ -19,7 +19,7 @@ from typing import IO
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Optional, Tuple
 
-    from mesonpy._compat import Iterable, Iterator, Path
+    from mesonpy._compat import Iterable, Iterator, Path, Sequence
 
 
 @contextlib.contextmanager
@@ -96,3 +96,20 @@ def cli_counter(total: int) -> Iterator[CLICounter]:
     counter = CLICounter(total)
     yield counter
     counter.finish()
+
+
+def natural_language_list(elements: Sequence[str], quote: str = '"', conjunction: str = 'and') -> str:
+    oxford_comma = ','
+    elements = [f'{quote}{x}{quote}' for x in elements]
+    if len(elements) == 0:
+        raise IndexError('no elements')
+    elif len(elements) == 1:
+        return elements[0]
+    elif len(elements) == 2:
+        oxford_comma = ''
+    return '{}{} {} {}'.format(
+        ', '.join(elements[:-1]),
+        oxford_comma,
+        conjunction,
+        elements[-1],
+    )

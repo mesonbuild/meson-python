@@ -66,8 +66,8 @@ def test_invalid_config_settings(capsys, package_pure, tmp_path_session):
         with pytest.raises(SystemExit):
             method(tmp_path_session, {'invalid': ()})
         out, err = capsys.readouterr()
-        assert out.splitlines()[-1].endswith(
-            'Unknown configuration entry "invalid"')
+        assert 'The following unknown configuration entries were found:' in out
+        assert '- invalid' in out
 
 
 def test_invalid_config_settings_suggest(capsys, package_pure, tmp_path_session):
@@ -75,5 +75,5 @@ def test_invalid_config_settings_suggest(capsys, package_pure, tmp_path_session)
         with pytest.raises(SystemExit):
             method(tmp_path_session, {'setup_args': ()})
         out, err = capsys.readouterr()
-        assert out.splitlines()[-1].endswith(
-            'Unknown configuration entry "setup_args". Did you mean "setup-args" or "dist-args"?')
+        assert 'The following unknown configuration entries were found:' in out
+        assert '- setup_args (did you mean "dist-args" or "setup-args"?)' in out

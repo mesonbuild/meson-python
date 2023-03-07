@@ -14,6 +14,7 @@ endif
 py.install_sources(
   'mesonpy/__init__.py',
   'mesonpy/_compat.py',
+  'mesonpy/_config.py',
   'mesonpy/_dylib.py',
   'mesonpy/_editable.py',
   'mesonpy/_elf.py',
