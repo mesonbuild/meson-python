@@ -152,6 +152,8 @@ def _map_meson_destination(destination: str) -> Tuple[Optional[str], pathlib.Pat
         if parts[0] in placeholders:
             return folder, pathlib.Path(*parts[1:])
     warnings.warn(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
+    if not re.match(r'^{\w+}$', parts[0]):
+        raise RuntimeError('Meson installation path {destination!r} does not start with a placeholder. Meson bug!')
     return None, pathlib.Path(destination)
 
 
