@@ -177,7 +177,7 @@ def _showwarning(
     line: Optional[str] = None,
 ) -> None:  # pragma: no cover
     """Callable to override the default warning handler, to have colored output."""
-    print('{yellow}WARNING{reset} {}'.format(message, **_STYLES))
+    print('{yellow}meson-python: warning:{reset} {}'.format(message, **_STYLES))
 
 
 def _setup_cli() -> None:
