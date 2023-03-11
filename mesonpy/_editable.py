@@ -23,18 +23,161 @@ if typing.TYPE_CHECKING:
     from types import ModuleType
     from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
     NodeBase = Dict[str, Union[Node, str]]
+    PathStr = Union[str, os.PathLike[str]]
 else:
     NodeBase = dict
+
+
+if sys.version_info >= (3, 12):
+    from importlib.resources.abc import Traversable, TraversableResources
+elif sys.version_info >= (3, 9):
+    from importlib.abc import Traversable, TraversableResources
+else:
+    class Traversable:
+        pass
+    class TraversableResources:
+        pass
 
 
 MARKER = 'MESONPY_EDITABLE_SKIP'
 VERBOSE = 'MESONPY_EDITABLE_VERBOSE'
 
+
+class MesonpyOrphan(Traversable):
+    def __init__(self, name: str):
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def is_dir(self) -> bool:
+        return False
+
+    def is_file(self) -> bool:
+        return False
+
+    def iterdir(self) -> Iterator[Traversable]:
+        raise FileNotFoundError()
+
+    def open(self, *args, **kwargs):  # type: ignore
+        raise FileNotFoundError()
+
+    def joinpath(self, *descendants: PathStr) -> Traversable:
+        if not descendants:
+            return self
+        name = os.fspath(descendants[-1]).split('/')[-1]
+        return MesonpyOrphan(name)
+
+    def __truediv__(self, child: PathStr) -> Traversable:
+        return self.joinpath(child)
+
+    def read_bytes(self) -> bytes:
+        raise FileNotFoundError()
+
+    def read_text(self, encoding: Optional[str] = None) -> str:
+        raise FileNotFoundError()
+
+
+class MesonpyTraversable(Traversable):
+    def __init__(self, name: str, tree: Node):
+        self._name = name
+        self._tree = tree
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def is_dir(self) -> bool:
+        return True
+
+    def is_file(self) -> bool:
+        return False
+
+    def iterdir(self) -> Iterator[Traversable]:
+        for name, node in self._tree.items():
+            yield MesonpyTraversable(name, node) if isinstance(node, dict) else pathlib.Path(node)  # type: ignore
+
+    def open(self, *args, **kwargs):  # type: ignore
+        raise IsADirectoryError()
+
+    @staticmethod
+    def _flatten(names: Tuple[PathStr, ...]) -> Iterator[str]:
+        for name in names:
+            yield from os.fspath(name).split('/')
+
+    def joinpath(self, *descendants: PathStr) -> Traversable:
+        if not descendants:
+            return self
+        names = self._flatten(descendants)
+        name = next(names)
+        node = self._tree.get(name)
+        if isinstance(node, dict):
+            return MesonpyTraversable(name, node).joinpath(*names)
+        if isinstance(node, str):
+            return pathlib.Path(node).joinpath(*names)
+        return MesonpyOrphan(name).joinpath(*names)
+
+    def __truediv__(self, child: PathStr) -> Traversable:
+        return self.joinpath(child)
+
+    def read_bytes(self) -> bytes:
+        raise IsADirectoryError()
+
+    def read_text(self, encoding: Optional[str] = None) -> str:
+        raise IsADirectoryError()
+
+
+class MesonpyReader(TraversableResources):
+    def __init__(self, name: str, tree: Node):
+        self._name = name
+        self._tree = tree
+
+    def files(self) -> Traversable:
+        return MesonpyTraversable(self._name, self._tree)
+
+
+class ExtensionFileLoader(importlib.machinery.ExtensionFileLoader):
+    def __init__(self, name: str, path: str, tree: Node):
+        super().__init__(name, path)
+        self._tree = tree
+
+    def get_resource_reader(self, name: str) -> TraversableResources:
+        return MesonpyReader(name, self._tree)
+
+
+class SourceFileLoader(importlib.machinery.SourceFileLoader):
+    def __init__(self, name: str, path: str, tree: Node):
+        super().__init__(name, path)
+        self._tree = tree
+
+    def get_resource_reader(self, name: str) -> TraversableResources:
+        return MesonpyReader(name, self._tree)
+
+
+class SourcelessFileLoader(importlib.machinery.SourcelessFileLoader):
+    def __init__(self, name: str, path: str, tree: Node):
+        super().__init__(name, path)
+        self._tree = tree
+
+    def get_resource_reader(self, name: str) -> TraversableResources:
+        return MesonpyReader(name, self._tree)
+
+
 LOADERS = [
-    (importlib.machinery.ExtensionFileLoader, tuple(importlib.machinery.EXTENSION_SUFFIXES)),
-    (importlib.machinery.SourceFileLoader, tuple(importlib.machinery.SOURCE_SUFFIXES)),
-    (importlib.machinery.SourcelessFileLoader, tuple(importlib.machinery.BYTECODE_SUFFIXES)),
+    (ExtensionFileLoader, tuple(importlib.machinery.EXTENSION_SUFFIXES)),
+    (SourceFileLoader, tuple(importlib.machinery.SOURCE_SUFFIXES)),
+    (SourcelessFileLoader, tuple(importlib.machinery.BYTECODE_SUFFIXES)),
 ]
+
+
+def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> importlib.machinery.ModuleSpec:
+    loader = cls(name, path, tree)
+    spec = importlib.machinery.ModuleSpec(name, loader, origin=path)
+    spec.has_location = True
+    if loader.is_package(name):
+        spec.submodule_search_locations = []
+    return spec
 
 
 class Node(NodeBase):
