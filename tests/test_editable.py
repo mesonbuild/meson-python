@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 import os
+import pathlib
+import sys
+
+import pytest
 
 import mesonpy
 
@@ -94,8 +98,37 @@ def test_mesonpy_meta_finder(package_complex, tmp_build_path):
         # remove finder from the meta path
         del sys.meta_path[0]
 
+
+def test_mesonpy_traversable():
+    tree = _editable.Node()
+    tree[('package', '__init__.py')] = '/tmp/src/package/__init__.py'
+    tree[('package', 'src.py')] = '/tmp/src/package/src.py'
+    tree[('package', 'data.txt')] = '/tmp/src/package/data.txt'
+    tree[('package', 'nested', '__init__.py')] = '/tmp/src/package/nested/__init__.py'
+    tree[('package', 'nested', 'some.py')] = '/tmp/src/package/nested/some.py'
+    tree[('package', 'nested', 'generated.txt')] = '/tmp/build/generated.txt'
+    traversable = _editable.MesonpyTraversable('package', tree['package'])
+    assert {x.name for x in traversable.iterdir()} == {'__init__.py', 'src.py', 'data.txt', 'nested'}
+    nested = traversable / 'nested'
+    assert nested.is_dir()
+    assert {x.name for x in nested.iterdir()} == {'__init__.py', 'some.py', 'generated.txt'}
+    generated = traversable.joinpath('nested', 'generated.txt')
+    assert isinstance(generated, pathlib.Path)
+    assert generated == pathlib.Path('/tmp/build/generated.txt')
+    bad = traversable / 'bad'
+    assert not bad.is_file()
+    assert not bad.is_dir()
+    with pytest.raises(FileNotFoundError):
+        bad.open()
+
+
+def test_resources(tmp_path):
+    # build a package in a temporary directory
+    package_path = pathlib.Path(__file__).parent / 'packages' / 'simple'
+    mesonpy.Project(package_path, tmp_path)
+
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path / 'build'), ['ninja'], False)
+    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path / 'build'), ['ninja'])
 
     # verify that we can look up resources
     spec = finder.find_spec('simple')
@@ -106,6 +139,30 @@ def test_mesonpy_meta_finder(package_complex, tmp_build_path):
         text = f.read().rstrip()
     assert text == 'ABC'
 
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason='importlib.resources not available')
+def test_importlib_resources(tmp_path):
+    # build a package in a temporary directory
+    package_path = pathlib.Path(__file__).parent / 'packages' / 'simple'
+    mesonpy.Project(package_path, tmp_path)
+
+    # point the meta finder to the build directory
+    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path / 'build'), ['ninja'])
+
+    try:
+        # install the finder in the meta path
+        sys.meta_path.insert(0, finder)
+        # verify that we can import the modules
+        import simple
+        assert simple.__spec__.origin == os.fspath(package_path / '__init__.py')
+        assert simple.__file__ == os.fspath(package_path / '__init__.py')
+        assert simple.data() == 'ABC'
+        # load resources via importlib
+        import importlib.resources
+        with importlib.resources.files(simple).joinpath('data.txt').open() as f:
+            text = f.read().rstrip()
+        assert text == 'ABC'
+        assert importlib.resources.files(simple).joinpath('data.txt').read_text().rstrip() == 'ABC'
     finally:
         # remove finder from the meta path
         del sys.meta_path[0]
