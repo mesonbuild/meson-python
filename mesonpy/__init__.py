@@ -686,8 +686,8 @@ class Project():
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
-            archflags = self._env.get('ARCHFLAGS')
-            if archflags is not None:
+            archflags = self._env.get('ARCHFLAGS', '').strip()
+            if archflags:
                 arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
                 if other:
                     raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
