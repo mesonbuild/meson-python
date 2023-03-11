@@ -628,16 +628,13 @@ class Project():
     def __init__(
         self,
         source_dir: Path,
-        working_dir: Path,
-        build_dir: Optional[Path] = None,
+        build_dir: Path,
         meson_args: Optional[MesonArgs] = None,
         editable_verbose: bool = False,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
-        self._working_dir = pathlib.Path(working_dir).absolute()
-        self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
+        self._build_dir = pathlib.Path(build_dir).absolute()
         self._editable_verbose = editable_verbose
-        self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
@@ -651,7 +648,6 @@ class Project():
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True, parents=True)
-        self._install_dir.mkdir(exist_ok=True, parents=True)
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
@@ -805,9 +801,9 @@ class Project():
         """Build the Meson project."""
         self._run(self._build_command)
 
-    def install(self) -> Dict[str, str]:
+    def install(self, destdir: Path) -> Dict[str, str]:
         """Install the Meson project."""
-        destdir = os.fspath(self._install_dir)
+        destdir = os.fspath(destdir)
         self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
 
         # Build a dictionary mapping file paths from the install plan to
@@ -818,19 +814,6 @@ class Project():
             installed[src] = os.fspath(destdir / path.relative_to(path.anchor))
 
         return installed
-
-    @classmethod
-    @contextlib.contextmanager
-    def with_temp_working_dir(
-        cls,
-        source_dir: Path = os.path.curdir,
-        build_dir: Optional[Path] = None,
-        meson_args: Optional[MesonArgs] = None,
-        editable_verbose: bool = False,
-    ) -> Iterator[Project]:
-        """Creates a project instance pointing to a temporary working directory."""
-        with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir, meson_args, editable_verbose)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Dict[str, Any]:
@@ -978,18 +961,19 @@ class Project():
 
 
 @contextlib.contextmanager
-def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
+def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Project]:
     """Create the project given the given config settings."""
 
     settings = _validate_config_settings(config_settings or {})
-    meson_args = {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS}
+    meson_args = typing.cast(MesonArgs, {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
+    source_dir = os.path.curdir
+    build_dir = settings.get('builddir')
+    editable_verbose = bool(settings.get('editable-verbose'))
 
-    with Project.with_temp_working_dir(
-            build_dir=settings.get('builddir'),
-            meson_args=typing.cast(MesonArgs, meson_args),
-            editable_verbose=bool(settings.get('editable-verbose'))
-    ) as project:
-        yield project
+    with contextlib.ExitStack() as ctx:
+        if build_dir is None:
+            build_dir = ctx.enter_context(tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=source_dir))
+        yield Project(source_dir, build_dir, meson_args, editable_verbose)
 
 
 def _parse_version_string(string: str) -> Tuple[int, ...]:
