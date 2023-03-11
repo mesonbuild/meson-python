@@ -28,7 +28,7 @@ from .conftest import chdir, package_dir
     ]
 )
 def test_name(package):
-    with chdir(package_dir / package), mesonpy.Project.with_temp_working_dir() as project:
+    with chdir(package_dir / package), mesonpy._project() as project:
         assert project.name == package.replace('-', '_')
 
 
@@ -40,13 +40,13 @@ def test_name(package):
     ]
 )
 def test_version(package):
-    with chdir(package_dir / package), mesonpy.Project.with_temp_working_dir() as project:
+    with chdir(package_dir / package), mesonpy._project() as project:
         assert project.version == '1.0.0'
 
 
 def test_unsupported_dynamic(package_unsupported_dynamic):
     with pytest.raises(mesonpy.MesonBuilderError, match='Unsupported dynamic fields: "dependencies"'):
-        with mesonpy.Project.with_temp_working_dir():
+        with mesonpy._project():
             pass
 
 
@@ -54,7 +54,7 @@ def test_unsupported_python_version(package_unsupported_python_version):
     with pytest.raises(mesonpy.MesonBuilderError, match=(
         f'Unsupported Python version {platform.python_version()}, expected ==1.0.0'
     )):
-        with mesonpy.Project.with_temp_working_dir():
+        with mesonpy._project():
             pass
 
 
@@ -76,7 +76,7 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         'dist-args': ('cli-dist',),
         'setup-args': ('cli-setup',),
         'compile-args': ('cli-compile',),
-        'install-args': ('cli-install',),
+        'install-args': ('cli-install',), # 'meson install' is not called thus we cannot test this
     }
 
     mesonpy.build_sdist(tmp_path, config_settings)
@@ -86,10 +86,9 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         # sdist: calls to 'meson setup' and 'meson dist'
         ('config-setup', 'cli-setup'),
         ('config-dist', 'cli-dist'),
-        # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
+        # wheel: calls to 'meson setup' and 'ninja'
         ('config-setup', 'cli-setup'),
         ('config-compile', 'cli-compile'),
-        ('config-install', 'cli-install'),
     ]
 
 
@@ -174,7 +173,7 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     meson.reset_mock()
 
     # corrupting the build direcory setup is run again
-    tmp_path.joinpath('build/meson-private/coredata.dat').unlink()
+    tmp_path.joinpath('meson-private/coredata.dat').unlink()
     project = mesonpy.Project(package_pure, tmp_path)
     assert len(meson.call_args_list) == 1
     assert meson.call_args_list[0].args[1][1] == 'setup'
@@ -183,7 +182,7 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     meson.reset_mock()
 
     # removing the build directory things should still work
-    shutil.rmtree(tmp_path.joinpath('build'))
+    shutil.rmtree(tmp_path)
     project = mesonpy.Project(package_pure, tmp_path)
     assert len(meson.call_args_list) == 1
     assert meson.call_args_list[0].args[1][1] == 'setup'

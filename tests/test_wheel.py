@@ -232,7 +232,7 @@ def test_entrypoints(wheel_full_metadata):
 
 
 def test_top_level_modules(package_module_types):
-    with mesonpy.Project.with_temp_working_dir() as project:
+    with mesonpy._project() as project:
         assert set(project._wheel_builder.top_level_modules) == {
             'file',
             'package',
