@@ -32,6 +32,6 @@ def test_ndebug(package_purelib_and_platlib, tmp_path, args, expected):
             # compile a C source file (the trailing ^ is used to
             # specify the target that is the first output of the rule
             # containing the specified source file).
-            ['ninja', '-C', os.fspath(project._build_dir), '-t', 'commands', '../../plat.c^'],
+            ['ninja', '-C', os.fspath(project._build_dir), '-t', 'commands', '../plat.c^'],
             stdout=subprocess.PIPE, check=True).stdout
         assert (b'-DNDEBUG' in command) == expected

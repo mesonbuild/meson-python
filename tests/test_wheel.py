@@ -235,7 +235,7 @@ def test_entrypoints(wheel_full_metadata):
 
 
 def test_top_level_modules(package_module_types):
-    with mesonpy.Project.with_temp_working_dir() as project:
+    with mesonpy._project() as project:
         assert set(project._wheel_builder.top_level_modules) == {
             'file',
             'package',
@@ -245,7 +245,7 @@ def test_top_level_modules(package_module_types):
 
 def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
     with pytest.raises(mesonpy.BuildError, match='The purelib-platlib-split package is split'):
-        with mesonpy.Project.with_temp_working_dir() as project:
+        with mesonpy._project() as project:
             project.wheel(tmp_path)
 
 
@@ -303,7 +303,7 @@ def test_limited_api(wheel_limited_api):
 @pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
 def test_limited_api_bad(package_limited_api, tmp_path):
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
-        with mesonpy.Project.with_temp_working_dir(meson_args={'setup': ['-Dextra=true']}) as project:
+        with mesonpy._project({'setup-args': ['-Dextra=true']}) as project:
             project.wheel(tmp_path)
 
 

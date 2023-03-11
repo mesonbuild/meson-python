@@ -61,13 +61,12 @@ def test_collect(package_complex):
 def test_mesonpy_meta_finder(package_complex, tmp_path):
     # build a package in a temporary directory
     mesonpy.Project(package_complex, tmp_path)
-    build_path = tmp_path / 'build'
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(build_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(tmp_path), ['ninja'])
 
     # check repr
-    assert repr(finder) == f'MesonpyMetaFinder({str(build_path)!r})'
+    assert repr(finder) == f'MesonpyMetaFinder({str(tmp_path)!r})'
 
     # verify that we can look up a pure module in the source directory
     spec = finder.find_spec('complex')
@@ -79,7 +78,7 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
     spec = finder.find_spec('complex.test')
     assert spec.name == 'complex.test'
     assert isinstance(spec.loader, _editable.ExtensionFileLoader)
-    assert spec.origin == os.fspath(build_path / f'test{EXT_SUFFIX}')
+    assert spec.origin == os.fspath(tmp_path / f'test{EXT_SUFFIX}')
 
     try:
         # install the finder in the meta path
@@ -89,7 +88,7 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         assert complex.__spec__.origin == os.fspath(package_complex / 'complex/__init__.py')
         assert complex.__file__ == os.fspath(package_complex / 'complex/__init__.py')
         import complex.test
-        assert complex.test.__spec__.origin == os.fspath(build_path / f'test{EXT_SUFFIX}')
+        assert complex.test.__spec__.origin == os.fspath(tmp_path / f'test{EXT_SUFFIX}')
         assert complex.test.answer() == 42
         import complex.namespace.foo
         assert complex.namespace.foo.__spec__.origin == os.fspath(package_complex / 'complex/namespace/foo.py')
@@ -128,7 +127,7 @@ def test_resources(tmp_path):
     mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path / 'build'), ['ninja'])
+    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path), ['ninja'])
 
     # verify that we can look up resources
     spec = finder.find_spec('simple')
@@ -147,7 +146,7 @@ def test_importlib_resources(tmp_path):
     mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path / 'build'), ['ninja'])
+    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path), ['ninja'])
 
     try:
         # install the finder in the meta path
