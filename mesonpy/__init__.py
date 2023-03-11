@@ -499,30 +499,33 @@ class _WheelBuilder():
     def build(self, directory: Path) -> pathlib.Path:
         # ensure project is built
         self._project.build()
-        # install the project
-        self._project.install()
 
-        wheel_file = pathlib.Path(directory, f'{self.name}.whl')
-        with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            self._wheel_write_metadata(whl)
+        # install project in temporary destination directory
+        with tempfile.TemporaryDirectory() as destdir:
+            self._project.install(destdir)
 
-            with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
+            wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
-                root = 'purelib' if self.is_pure else 'platlib'
+            with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
+                self._wheel_write_metadata(whl)
 
-                for path, entries in self._wheel_files.items():
-                    for dst, src in entries:
-                        counter.update(src)
+                with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
 
-                        if path == root:
-                            pass
-                        elif path == 'mesonpy-libs':
-                            # custom installation path for bundled libraries
-                            dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
-                        else:
-                            dst = pathlib.Path(self.data_dir, path, dst)
+                    root = 'purelib' if self.is_pure else 'platlib'
 
-                        self._install_path(whl, src, dst)
+                    for path, entries in self._wheel_files.items():
+                        for dst, src in entries:
+                            counter.update(src)
+
+                            if path == root:
+                                pass
+                            elif path == 'mesonpy-libs':
+                                # custom installation path for bundled libraries
+                                dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
+                            else:
+                                dst = pathlib.Path(self.data_dir, path, dst)
+
+                            self._install_path(whl, src, dst)
 
         return wheel_file
 
@@ -639,16 +642,13 @@ class Project():
     def __init__(  # noqa: C901
         self,
         source_dir: Path,
-        working_dir: Path,
-        build_dir: Optional[Path] = None,
+        build_dir: Path,
         meson_args: Optional[MesonArgs] = None,
         editable_verbose: bool = False,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
-        self._working_dir = pathlib.Path(working_dir).absolute()
-        self._build_dir = pathlib.Path(build_dir).absolute() if build_dir else (self._working_dir / 'build')
+        self._build_dir = pathlib.Path(build_dir).absolute()
         self._editable_verbose = editable_verbose
-        self._install_dir = self._working_dir / 'install'
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
@@ -663,7 +663,6 @@ class Project():
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True, parents=True)
-        self._install_dir.mkdir(exist_ok=True, parents=True)
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
@@ -819,23 +818,10 @@ class Project():
         """Build the Meson project."""
         self._run(self._build_command)
 
-    def install(self) -> None:
+    def install(self, destdir: Path) -> None:
         """Install the Meson project."""
-        destdir = os.fspath(self._install_dir)
+        destdir = os.fspath(destdir)
         self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
-
-    @classmethod
-    @contextlib.contextmanager
-    def with_temp_working_dir(
-        cls,
-        source_dir: Path = os.path.curdir,
-        build_dir: Optional[Path] = None,
-        meson_args: Optional[MesonArgs] = None,
-        editable_verbose: bool = False,
-    ) -> Iterator[Project]:
-        """Creates a project instance pointing to a temporary working directory."""
-        with tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=os.fspath(source_dir)) as tmpdir:
-            yield cls(source_dir, tmpdir, build_dir, meson_args, editable_verbose)
 
     @functools.lru_cache()
     def _info(self, name: str) -> Any:
@@ -984,18 +970,19 @@ class Project():
 
 
 @contextlib.contextmanager
-def _project(config_settings: Optional[Dict[Any, Any]]) -> Iterator[Project]:
+def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Project]:
     """Create the project given the given config settings."""
 
     settings = _validate_config_settings(config_settings or {})
-    meson_args = {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS}
+    meson_args = typing.cast(MesonArgs, {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
+    source_dir = os.path.curdir
+    build_dir = settings.get('builddir')
+    editable_verbose = bool(settings.get('editable-verbose'))
 
-    with Project.with_temp_working_dir(
-            build_dir=settings.get('builddir'),
-            meson_args=typing.cast(MesonArgs, meson_args),
-            editable_verbose=bool(settings.get('editable-verbose'))
-    ) as project:
-        yield project
+    with contextlib.ExitStack() as ctx:
+        if build_dir is None:
+            build_dir = ctx.enter_context(tempfile.TemporaryDirectory(prefix='.mesonpy-', dir=source_dir))
+        yield Project(source_dir, build_dir, meson_args, editable_verbose)
 
 
 def _parse_version_string(string: str) -> Tuple[int, ...]:
