@@ -133,30 +133,19 @@ _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
 
-# Maps wheel installation paths to Meson installation path placeholders.
+# Map Meson installation path placeholders to wheel installation paths.
 # See https://docs.python.org/3/library/sysconfig.html#installation-paths
-_SCHEME_MAP = {
-    'scripts': ('{bindir}',),
-    'purelib': ('{py_purelib}',),
-    'platlib': ('{py_platlib}', '{moduledir_shared}'),
-    'headers': ('{includedir}',),
-    'data': ('{datadir}',),
-    # our custom location
-    'mesonpy-libs': ('{libdir}', '{libdir_shared}')
+_INSTALLATION_PATH_MAP = {
+    '{bindir}': 'scripts',
+    '{py_purelib}': 'purelib',
+    '{py_platlib}': 'platlib',
+    '{moduledir_shared}': 'platlib',
+    '{includedir}': 'headers',
+    '{datadir}': 'data',
+    # custom location
+    '{libdir}': 'mesonpy-libs',
+    '{libdir_shared}': 'mesonpy-libs',
 }
-
-
-def _map_meson_destination(destination: str) -> Tuple[str, pathlib.Path]:
-    """Map a Meson installation path to a wheel installation location.
-
-    Return a (wheel path identifier, subpath inside the wheel path) tuple.
-
-    """
-    parts = pathlib.Path(destination).parts
-    for folder, placeholders in _SCHEME_MAP.items():
-        if parts[0] in placeholders:
-            return folder, pathlib.Path(*parts[1:])
-    raise BuildError(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
@@ -164,9 +153,12 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
     wheel_files = collections.defaultdict(list)
     for group in sources.values():
         for src, target in group.items():
-            directory, path = _map_meson_destination(target['destination'])
-            if directory is not None:
-                wheel_files[directory].append((path, src))
+            destination = pathlib.Path(target['destination'])
+            anchor = destination.parts[0]
+            path = _INSTALLATION_PATH_MAP.get(anchor)
+            if path is None:
+                raise BuildError(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
+            wheel_files[path].append((pathlib.Path(*destination.parts[1:]), src))
     return wheel_files
 
 
@@ -510,7 +502,7 @@ class _WheelBuilder():
                     self._install_path(whl, counter, origin, destination)
 
                 # install the other schemes
-                for scheme in _SCHEME_MAP:
+                for scheme in self._wheel_files.keys():
                     if scheme in (root_scheme, 'mesonpy-libs'):
                         continue
                     for destination, origin in self._wheel_files[scheme]:
