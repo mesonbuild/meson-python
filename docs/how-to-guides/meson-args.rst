@@ -24,7 +24,7 @@ individual Meson commands:
 These arguments can be added permanently to the project by adding a section
 to the project's ``pyproject.toml``:
 
-.. code-block::
+.. code-block:: toml
 
 	[tool.meson-python.args]
 	dist    = ['dist-argument_1', 'dist-argument_2', '...']
@@ -68,7 +68,7 @@ Set the default library type to *static* when building a binary wheel.
 
 To set this option permanently in the project's ``pyproject.toml``:
 
-.. code-block:: console
+.. code-block:: toml
 
 		[tool.meson-python.args]
 		dist = []
@@ -105,7 +105,7 @@ binary wheel (ignoring e.g. C++ headers).
 
 To set this option permanently in the project's ``pyproject.toml``:
 
-.. code-block:: console
+.. code-block:: toml
 
 			 [tool.meson-python.args]
 			 dist = []
@@ -153,11 +153,11 @@ currently set to 2. This can be overwritten by passing the
 
 To set this option permanently in the project's ``pyproject.toml``:
 
-.. code-block:: console
+.. code-block:: toml
 
 		[tool.meson-python.args]
 		dist = []
-		setup = ["-Doptimization=3"]
+		setup = ['-Doptimization=3;]
 		compile = []
 		install = []
 
