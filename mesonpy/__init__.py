@@ -130,46 +130,6 @@ _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
 
-# Maps wheel installation paths to Meson installation path placeholders.
-# See https://docs.python.org/3/library/sysconfig.html#installation-paths
-_SCHEME_MAP = {
-    'scripts': ('{bindir}',),
-    'purelib': ('{py_purelib}',),
-    'platlib': ('{py_platlib}', '{moduledir_shared}'),
-    'headers': ('{includedir}',),
-    'data': ('{datadir}',),
-    # our custom location
-    'mesonpy-libs': ('{libdir}', '{libdir_shared}')
-}
-
-
-def _map_meson_destination(destination: str) -> Tuple[Optional[str], pathlib.Path]:
-    """Map a Meson installation path to a wheel installation location.
-
-    Return a (wheel path identifier, subpath inside the wheel path) tuple.
-
-    """
-    parts = pathlib.Path(destination).parts
-    for folder, placeholders in _SCHEME_MAP.items():
-        if parts[0] in placeholders:
-            return folder, pathlib.Path(*parts[1:])
-    warnings.warn(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
-    if not re.match(r'^{\w+}$', parts[0]):
-        raise RuntimeError('Meson installation path {destination!r} does not start with a placeholder. Meson bug!')
-    return None, pathlib.Path(destination)
-
-
-def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-    """Map files to the wheel, organized by wheel installation directrory."""
-    wheel_files = collections.defaultdict(list)
-    for group in sources.values():
-        for src, target in group.items():
-            directory, path = _map_meson_destination(target['destination'])
-            if directory is not None:
-                wheel_files[directory].append((path, src))
-    return wheel_files
-
-
 def _showwarning(
     message: Union[Warning, str],
     category: Type[Warning],
@@ -212,25 +172,40 @@ class MesonBuilderError(Error):
 class _WheelBuilder():
     """Helper class to build wheels from projects."""
 
+    # Maps wheel scheme names to Meson placeholder directories
+    _SCHEME_MAP: ClassVar[Dict[str, Tuple[str, ...]]] = {
+        'scripts': ('{bindir}',),
+        'purelib': ('{py_purelib}',),
+        'platlib': ('{py_platlib}', '{moduledir_shared}'),
+        'headers': ('{includedir}',),
+        'data': ('{datadir}',),
+        # our custom location
+        'mesonpy-libs': ('{libdir}', '{libdir_shared}')
+    }
+
     def __init__(
         self,
         project: Project,
         metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
+        install_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
+        copy_files: Dict[str, str],
     ) -> None:
         self._project = project
         self._metadata = metadata
         self._source_dir = source_dir
+        self._install_dir = install_dir
         self._build_dir = build_dir
         self._sources = sources
+        self._copy_files = copy_files
 
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
     @cached_property
     def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-        return _map_to_wheel(self._sources)
+        return self._map_to_wheel(self._sources, self._copy_files)
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -413,6 +388,106 @@ class _WheelBuilder():
             return True
         return False
 
+    def _warn_unsure_platlib(self, origin: pathlib.Path, destination: pathlib.Path) -> None:
+        """Warn if we are unsure if the file should be mapped to purelib or platlib.
+
+        This happens when we use heuristics to try to map a file purelib or
+        platlib but can't differentiate between the two. In which case, we place
+        the file in platlib to be safe and warn the user.
+
+        If we can detect the file is architecture dependent and indeed does not
+        belong in purelib, we will skip the warning.
+        """
+        # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
+        # but we know that files that go there are supposed to go to platlib.
+        if self._is_native(origin):
+            # The file is architecture dependent and does not belong in puredir,
+            # so the warning is skipped.
+            return
+        warnings.warn(
+            'Could not tell if file was meant for purelib or platlib, '
+            f'so it was mapped to platlib: {origin} ({destination})',
+            stacklevel=2,
+        )
+
+    def _map_from_heuristics(self, origin: pathlib.Path, destination: pathlib.Path) -> Optional[Tuple[str, pathlib.Path]]:
+        """Extracts scheme and relative destination with heuristics based on the
+        origin file and the Meson destination path.
+        """
+        warnings.warn('Using heuristics to map files to wheel, this may result in incorrect locations')
+        sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
+        # Try to map to Debian dist-packages
+        if mesonpy._introspection.DEBIAN_PYTHON:
+            search_path = origin
+            while search_path != search_path.parent:
+                search_path = search_path.parent
+                if search_path.name == 'dist-packages' and search_path.parent.parent.name == 'lib':
+                    calculated_path = origin.relative_to(search_path)
+                    warnings.warn(f'File matched Debian heuristic ({calculated_path}): {origin} ({destination})')
+                    self._warn_unsure_platlib(origin, destination)
+                    return 'platlib', calculated_path
+        # Try to map to the interpreter purelib or platlib
+        for scheme in ('purelib', 'platlib'):
+            # try to match the install path on the system to one of the known schemes
+            scheme_path = pathlib.Path(sys_paths[scheme]).absolute()
+            destdir_scheme_path = self._install_dir / scheme_path.relative_to(scheme_path.anchor)
+            try:
+                wheel_path = pathlib.Path(origin).relative_to(destdir_scheme_path)
+            except ValueError:
+                continue
+            if sys_paths['purelib'] == sys_paths['platlib']:
+                self._warn_unsure_platlib(origin, destination)
+            return 'platlib', wheel_path
+        return None  # no match was found
+
+    def _map_from_scheme_map(self, destination: str) -> Optional[Tuple[str, pathlib.Path]]:
+        """Extracts scheme and relative destination from Meson paths.
+
+            Meson destination path -> (wheel scheme, subpath inside the scheme)
+        Eg. {bindir}/foo/bar       -> (scripts, foo/bar)
+        """
+        for scheme, placeholder in [
+            (scheme, placeholder)
+            for scheme, placeholders in self._SCHEME_MAP.items()
+            for placeholder in placeholders
+        ]:  # scheme name, scheme path (see self._SCHEME_MAP)
+            if destination.startswith(placeholder):
+                relative_destination = pathlib.Path(destination).relative_to(placeholder)
+                return scheme, relative_destination
+        return None  # no match was found
+
+    def _map_to_wheel(
+        self,
+        sources: Dict[str, Dict[str, Any]],
+        copy_files: Dict[str, str],
+    ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+        """Map files to the wheel, organized by scheme."""
+        wheel_files = collections.defaultdict(list)
+        for files in sources.values():  # entries in intro-install_plan.json
+            for file, details in files.items():  # install path -> {destination, tag}
+                # try mapping to wheel location
+                meson_destination = details['destination']
+                install_details = (
+                    # using scheme map
+                    self._map_from_scheme_map(meson_destination)
+                    # using heuristics
+                    or self._map_from_heuristics(
+                        pathlib.Path(copy_files[file]),
+                        pathlib.Path(meson_destination),
+                    )
+                )
+                if install_details:
+                    scheme, destination = install_details
+                    wheel_files[scheme].append((destination, file))
+                    continue
+                # not found
+                warnings.warn(
+                    'File could not be mapped to an equivalent wheel directory: '
+                    '{} ({})'.format(copy_files[file], meson_destination)
+                )
+
+        return wheel_files
+
     def _install_path(
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
@@ -507,7 +582,7 @@ class _WheelBuilder():
                     self._install_path(whl, counter, origin, destination)
 
                 # install the other schemes
-                for scheme in _SCHEME_MAP:
+                for scheme in self._SCHEME_MAP:
                     if scheme in (root_scheme, 'mesonpy-libs'):
                         continue
                     for destination, origin in self._wheel_files[scheme]:
@@ -791,8 +866,10 @@ class Project():
             self,
             self._metadata,
             self._source_dir,
+            self._install_dir,
             self._build_dir,
             self._install_plan,
+            self._copy_files,
         )
 
     def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
@@ -859,6 +936,17 @@ class Project():
                         del files[file]
 
         return install_plan
+
+    @property
+    def _copy_files(self) -> Dict[str, str]:
+        """Files that Meson will copy on install and the target location."""
+        copy_files = {}
+        for origin, destination in self._info('intro-installed').items():
+            destination_path = pathlib.Path(destination).absolute()
+            copy_files[origin] = os.fspath(
+                self._install_dir / destination_path.relative_to(destination_path.anchor)
+            )
+        return copy_files
 
     @property
     def _meson_name(self) -> str:
