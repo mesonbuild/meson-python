@@ -143,7 +143,7 @@ _SCHEME_MAP = {
 }
 
 
-def _map_meson_destination(destination: str) -> Tuple[Optional[str], pathlib.Path]:
+def _map_meson_destination(destination: str) -> Tuple[str, pathlib.Path]:
     """Map a Meson installation path to a wheel installation location.
 
     Return a (wheel path identifier, subpath inside the wheel path) tuple.
@@ -153,10 +153,7 @@ def _map_meson_destination(destination: str) -> Tuple[Optional[str], pathlib.Pat
     for folder, placeholders in _SCHEME_MAP.items():
         if parts[0] in placeholders:
             return folder, pathlib.Path(*parts[1:])
-    warnings.warn(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
-    if not re.match(r'^{\w+}$', parts[0]):
-        raise RuntimeError('Meson installation path {destination!r} does not start with a placeholder. Meson bug!')
-    return None, pathlib.Path(destination)
+    raise BuildError(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
@@ -203,6 +200,10 @@ class Error(RuntimeError):
 
 class ConfigError(Error):
     """Error in the backend configuration."""
+
+
+class BuildError(Error):
+    """Error when building the wheel."""
 
 
 class MesonBuilderError(Error):
