@@ -8,9 +8,11 @@
 Build config settings
 *********************
 
-This page lists the build configuration settings, that is, the settings you can
-pass when building the project. Please check our
-:ref:`how-to-guides-config-settings` guide for information on how to use them.
+This page lists the build configuration settings, that is, the
+settings you can pass when building the project. Please refer to the
+:ref:`how-to-guides-config-settings` and
+:ref:`how-to-guides-meson-args` guides for information on how to use
+them.
 
 
 .. list-table::
