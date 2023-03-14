@@ -113,7 +113,6 @@ Contributors
    how-to-guides/first-project
    how-to-guides/add-dependencies
    how-to-guides/editable-installs
-   how-to-guides/config-settings
    how-to-guides/meson-args
    how-to-guides/build-directory
    how-to-guides/executable-with-internal-dependencies

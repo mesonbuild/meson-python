@@ -13,9 +13,10 @@ install`` to build the files that will be included in the Python
 wheel, and ``meson dist`` to collect the files that will be included
 in the Python sdist. Commans line options can be passed to these
 commands to alther their behavior, either via tool specific settings
-in ``pyptoject.toml`` or via the Python build front-end command
-line. Options specified via the Python build front-end command line
-override the ones specified in ``pyproject.toml``.
+in ``pyptoject.toml`` or via configuration settings passed by the
+Python build front-end. Configuration settings specified via the
+Python build front-end override the ones specified in
+``pyproject.toml``.
 
 Command line arguments can be specified in ``pyproject.toml`` as lists
 of strings in the ``tool.meson-python.args`` table. Example:
@@ -28,8 +29,11 @@ of strings in the ``tool.meson-python.args`` table. Example:
    compile = ['-j4']
    install = ['--tags=bindings']
 
-They can also be temporarily overwritten at build time using the
-:ref:`build config settings<how-to-guides-config-settings>`:
+
+Several Python build front-ends exist, with different ways to pass
+configuration settings to the build back-end. The most popular are
+``pypa/build``, which uses the ``-C`` command line option, and
+``pip``, which uses the ``--config-settings`` option. For example:
 
 .. tab-set::
 
@@ -56,6 +60,13 @@ This examples use the ``python -m pip wheel`` command to build a
 Python wheel that can be later installed or distributed. To build a
 package and immediately install it, just replace ``wheel`` with
 ``install``.
+
+Refer to the `pypa/build documentation`_ or to the `pip
+documentation`_ for more information.
+
+.. _pypa/build documentation: https://pypa-build.readthedocs.io/en/stable/
+.. _pip documentation: https://pip.pypa.io/
+
 
 Please note while ``pypa/build`` concatenates arguments for the same
 key passed to the ``-C`` option, ``pip`` at least up to version 23.0.1
