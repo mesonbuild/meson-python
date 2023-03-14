@@ -4,77 +4,84 @@
 
 .. _how-to-guides-meson-args:
 
-***************************
-Passing arguments to Meson_
-***************************
+**************************
+Passing arguments to Meson
+**************************
 
-.. todo::
+``meson-python`` invokes the ``meson setup``, ``ninja``, and ``meson
+install`` to build the files that will be included in the Python
+wheel, and ``meson dist`` to collect the files that will be included
+in the Python sdist. Commans line options can be passed to these
+commands to alther their behavior, either via tool specific settings
+in ``pyptoject.toml`` or via the Python build front-end command
+line. Options specified via the Python build front-end command line
+override the ones specified in ``pyproject.toml``.
 
-   - Mention the order in which Meson arguments are added, and how it affect
-     Meson
-
-Advanced Meson options can be accessed by specifying extra arguments to the
-individual Meson commands:
-
-   - meson dist: https://mesonbuild.com/Commands.html#dist
-   - meson setup: https://mesonbuild.com/Commands.html#setup
-   - meson compile: https://mesonbuild.com/Commands.html#compile
-   - meson install: https://mesonbuild.com/Commands.html#install
-
-These arguments can be added permanently to the project by adding a section
-to the project's ``pyproject.toml``:
+Command line arguments can be specified in ``pyproject.toml`` as lists
+of strings in the ``tool.meson-python.args`` table. Example:
 
 .. code-block:: toml
 
-	[tool.meson-python.args]
-	dist    = ['dist-argument_1', 'dist-argument_2', '...']
-	setup   = ['setup-argument_1', 'setup-argument_2', '...']
-	compile = ['compile-argument_1', 'compile-argument_2', '...']
-	install = ['install-argument_1', 'install-argument_2', '...']
+   [tool.meson-python.args]
+   dist = ['--include-subprojects']
+   setup = ['-Doption=false', '-Dfeature=enable', '-Dvalue=42']
+   compile = ['-j4']
+   install = ['--tags=bindings']
 
 They can also be temporarily overwritten at build time using the
-:ref:`build config settings<how-to-guides-config-settings>`.
+:ref:`build config settings<how-to-guides-config-settings>`:
 
 .. tab-set::
 
     .. tab-item:: pypa/buid
         :sync: key_pypa_build
 
-		.. code-block:: console
+	.. code-block:: console
 
-			$ python -m build -Cdist-args="args"    \
-					  -Csetup-args="args"   \
-					  -Ccompile-args="args" \
-					  -Cinstall-args="args" .
+	   $ python -m build \
+               -Csetup-args="-Doption=true" \
+               -Csetup-args="-Dvalue=1" \
+               -Ccompile-args="-j6"
 
     .. tab-item:: pip
         :sync: key_pip
 
-		.. code-block:: console
+	.. code-block:: console
 
-			$ python -m pip --config-settings=dist-args="args"    \
-					--config-settings=setup-args="args"   \
-					--config-settings=compile-args="args" \
-					--config-settings=install-args="args" .
+	   $ python -m pip wheel . \
+               --config-settings=setup-args="-Doption=disable" \
+               --config-settings=compile-args="-j6"
+
+This examples use the ``python -m pip wheel`` command to build a
+Python wheel that can be later installed or distributed. To build a
+package and immediately install it, just replace ``wheel`` with
+``install``.
+
+Please note while ``pypa/build`` concatenates arguments for the same
+key passed to the ``-C`` option, ``pip`` at least up to version 23.0.1
+does not offer any way to set a build config setting to a list of
+strings: later values for the same key passed to ``--config-settings``
+override earlier ones. This effectively limits the number of options
+that can be passed to each command invoked in the build process to
+one. This limitation is tracked in `pip issue #11681`_.
+
+.. _pip issue #11681: https://github.com/pypa/pip/issues/11681
 
 
 Examples
 ========
 
-1) Set the default libraries to *static*
-------------------------------------------------
+Set the default libraries to static
+-----------------------------------
 
-Set the default library type to *static* when building a binary wheel.
+Set the default library type to static when building a binary wheel.
 
 To set this option permanently in the project's ``pyproject.toml``:
 
 .. code-block:: toml
 
-		[tool.meson-python.args]
-		dist = []
-		setup = ['--default-library=static']
-		compile = []
-		install = []
+   [tool.meson-python.args]
+   setup = ['--default-library=static']
 
 To set this option temporarily at build-time:
 
@@ -85,33 +92,37 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-			 $ python -m build -Csetup-args="--default-library=static" .
+           $ python -m build -Csetup-args="--default-library=static" .
 
     .. tab-item:: pip
         :sync: key_pip
 
         .. code-block:: console
 
-			 $ python -m pip --config-settings=setup-args="--default-library=static" .
+	   $ python -m pip wheel . --config-settings=setup-args="--default-library=static" .
 
 
-2) Use Meson install_tags for selective installs
-------------------------------------------------
+Use Meson installation tags to select the build targets to include
+------------------------------------------------------------------
 
-Meson install_tags can be used (since ``meson-python`` >= 0.13) to select which
-targets are installed into the binary wheels. This example causes meson-python
-to only install targets tagged with ``runtime`` or ``python-runtime``) into the
-binary wheel (ignoring e.g. C++ headers).
+It is possible to include in the Python wheel only a subset of the
+installable files using Meson `installation tags`_ via the ``meson
+install``'s ``--tags`` command line option. When ``--tags`` is
+specified, only files that have been tagged with one of the tags are
+going to be installed. Meson sets predefined tags on some
+files. Custom installation tag can be set using the ``install_tag``
+keyword argument passed to the target definition function.  In this
+example only targets tagged with ``runtime`` or ``python-runtime`` are
+included in the Python wheel.
+
+.. _installation tags: https://mesonbuild.com/Installing.html#installation-tags
 
 To set this option permanently in the project's ``pyproject.toml``:
 
 .. code-block:: toml
 
-			 [tool.meson-python.args]
-			 dist = []
-			 setup = []
-			 compile = []
-			 install = ['--tags=runtime,python-runtime']
+   [tool.meson-python.args]
+   install = ['--tags=runtime,python-runtime']
 
 To set this option temporarily at build-time:
 
@@ -122,30 +133,18 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-			 $ python -m build -install-args="--tags=runtime,python-runtime" .
+	   $ python -m build -install-args="--tags=runtime,python-runtime" .
 
     .. tab-item:: pip
         :sync: key_pip
 
         .. code-block:: console
 
-			$ python -m pip --config-settings=install-args="--tags=runtime,python-runtime" .
+	   $ python -m pip wheel . --config-settings=install-args="--tags=runtime,python-runtime" .
 
 
-.. admonition:: Meson installation tags
-	:class: seealso
-
-	Each Meson target has a default install_tag (e.g. ``runtime`` for shared
-	libraries and ``devel`` for headers.). Calling
-	``meson install --tags=tag1,tag2,...`` will cause Meson to only install
-	the targets tagged with any of the specified tags. The default tag of
-	each target can be overwritten using the target's "install_tag" option.
-	For more information refer Mesons documentation in installation-tags:
-	https://mesonbuild.com/Installing.html#installation-tags
-
-
-3) Set the build optimization level to 3
-----------------------------------------
+Set the build optimization level
+--------------------------------
 
 The default compile optimization level when building a binary wheel is
 currently set to 2. This can be overwritten by passing the
@@ -155,11 +154,8 @@ To set this option permanently in the project's ``pyproject.toml``:
 
 .. code-block:: toml
 
-		[tool.meson-python.args]
-		dist = []
-		setup = ['-Doptimization=3;]
-		compile = []
-		install = []
+   [tool.meson-python.args]
+   setup = ['-Doptimization=3']
 
 To set this option temporarily at build-time:
 
@@ -170,14 +166,11 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-			 $ python -m build -Csetup-args="-Doptimization=3" .
+	   $ python -m build -Csetup-args="-Doptimization=3" .
 
     .. tab-item:: pip
         :sync: key_pip
 
         .. code-block:: console
 
-			 $ python -m pip --config-settings=setup-args="-Doptimization=3" .
-
-
-.. _Meson: https://github.com/mesonbuild/meson
+	   $ python -m pip wheel . --config-settings=setup-args="-Doptimization=3" .
