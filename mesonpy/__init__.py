@@ -400,7 +400,7 @@ class _WheelBuilder():
         """
         # {moduledir_shared} is currently handled in heuristics due to a Meson bug,
         # but we know that files that go there are supposed to go to platlib.
-        if self._is_native(origin):
+        if origin.is_fifo() and self._is_native(origin):
             # The file is architecture dependent and does not belong in puredir,
             # so the warning is skipped.
             return
