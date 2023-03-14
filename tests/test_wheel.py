@@ -239,3 +239,16 @@ def test_top_level_modules(package_module_types):
             'namespace',
             'native',
         }
+
+
+@pytest.mark.filterwarnings("ignore:::mesonpy")
+def test_install_subdir_python_path(wheel_install_subdir_python_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_install_subdir_python_path)
+
+    assert wheel_contents(artifact) == {
+        'foo/__init__.py',
+        'foo/a.py',
+        'install_subdir_python_path-1.0.0.dist-info/METADATA',
+        'install_subdir_python_path-1.0.0.dist-info/RECORD',
+        'install_subdir_python_path-1.0.0.dist-info/WHEEL',
+    }
