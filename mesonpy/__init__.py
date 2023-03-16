@@ -418,7 +418,7 @@ class _WheelBuilder():
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
         counter: mesonpy._util.CLICounter,
-        origin: Path,
+        path_in_builddir: Path,
         destination: pathlib.Path,
     ) -> None:
         """"Install" file or directory into the wheel
@@ -427,6 +427,8 @@ class _WheelBuilder():
         Some files might need to be fixed up to set the RPATH to the internal
         library directory on Linux wheels for eg.
         """
+        builddir_to_installdir_mapping = self._project._copy_files
+        origin = pathlib.Path(builddir_to_installdir_mapping[os.fspath(path_in_builddir)])
         location = destination.as_posix()
         counter.update(location)
 
@@ -447,7 +449,7 @@ class _WheelBuilder():
                     # add .mesonpy.libs to the RPATH of ELF files
                     if self._is_native(os.fspath(origin)):
                         # copy ELF to our working directory to avoid Meson having to regenerate the file
-                        new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
+                        new_origin = self._libs_build_dir / destination
                         os.makedirs(new_origin.parent, exist_ok=True)
                         shutil.copy2(origin, new_origin)
                         origin = new_origin
@@ -860,6 +862,18 @@ class Project():
                         del files[file]
 
         return install_plan
+
+
+    @property
+    def _copy_files(self) -> Dict[str, str]:
+        """Files that Meson will copy on install and the target location."""
+        copy_files = {}
+        for origin, destination in self._info('intro-installed').items():
+            destination_path = pathlib.Path(destination).absolute()
+            copy_files[origin] = os.fspath(
+                self._install_dir / destination_path.relative_to(destination_path.anchor)
+            )
+        return copy_files
 
     @property
     def _meson_name(self) -> str:
