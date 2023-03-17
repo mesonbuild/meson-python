@@ -341,10 +341,6 @@ class _WheelBuilder():
         and .so on other platforms) and, if they all share the same
         PEP 3149 filename stable ABI tag, return it.
 
-        All files that look like extension modules are verified to
-        have a file name compatibel with what is expected by the
-        Python interpreter. An exception is raised otherwise.
-
         Other files are ignored.
 
         """
@@ -352,6 +348,9 @@ class _WheelBuilder():
         abis = []
 
         for path, _ in self._wheel_files['platlib']:
+            # NOTE: When searching for shared objects files, we assume the host
+            # and build machines have the same soext, even though that we might
+            # be cross compiling.
             if path.suffix == soext:
                 match = re.match(r'^[^.]+(.*)$', path.name)
                 assert match is not None
