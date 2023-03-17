@@ -426,18 +426,13 @@ class _WheelBuilder():
         """
         location = destination.as_posix()
 
-        # fix file
-        if os.path.isdir(origin):
-            for root, dirnames, filenames in os.walk(str(origin)):
-                # Sort the directory names so that `os.walk` will walk them in a
-                # defined order on the next iteration.
-                dirnames.sort()
-                for name in sorted(filenames):
-                    path = os.path.normpath(os.path.join(root, name))
-                    if os.path.isfile(path):
-                        arcname = os.path.join(destination, os.path.relpath(path, origin).replace(os.path.sep, '/'))
-                        wheel_file.write(path, arcname)
+        if origin.is_dir():
+            for child in origin.rglob('**/*'):
+                if child.is_file():
+                    arcname = destination / child.relative_to(origin)
+                    wheel_file.write(child, arcname.as_posix())
         else:
+            # fix file
             if self._has_internal_libs:
                 if platform.system() == 'Linux' or platform.system() == 'Darwin':
                     # add .mesonpy.libs to the RPATH of ELF files
