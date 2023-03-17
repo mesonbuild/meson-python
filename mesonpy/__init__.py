@@ -438,9 +438,23 @@ class _WheelBuilder():
             binary = mesonpy._dylib.Dylib(path)
             libdir_path = f'@loader_path/{mesonpy_libs_path}'
 
+        # add our .mesonpy.libs directory to RPATH
         assert binary and libdir_path
         if libdir_path not in binary.rpath:
             binary.rpath = [*binary.rpath, libdir_path]
+
+        # fix LC_LOAD_DYLIB entries on macOS to use the RPATH
+        if platform.system() == 'Darwin':
+            libs = {
+                destination.name: destination
+                for destination, _ in self._wheel_files['mesonpy-libs']
+            }
+
+            assert isinstance(binary, mesonpy._dylib.Dylib)
+            for entry in binary.load_dylib:
+                libname = entry.split('/')[-1]
+                if libname in libs:
+                    binary.replace_load_dylib(entry, f'@rpath/{libs[libname].as_posix()}')
 
     def _install_path(
         self,
