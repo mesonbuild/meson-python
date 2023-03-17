@@ -419,7 +419,7 @@ class _WheelBuilder():
         if platform.system() not in ('Linux', 'Darwin'):
             # Internal libraries are currently unsupported on this platform
             raise NotImplementedError(
-                "Bundling libraries in wheel is not supported "
+                'Bundling libraries in wheel is not supported '
                 f"on platform '{platform.system()}'"
             )
 
@@ -433,7 +433,7 @@ class _WheelBuilder():
         path = new_path
 
         mesonpy_libs_path = os.path.relpath(
-            f".{self._project.name}.mesonpy.libs",
+            f'.{self._project.name}.mesonpy.libs',
             destination.parent,
         )
 
