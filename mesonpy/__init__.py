@@ -414,6 +414,44 @@ class _WheelBuilder():
             return True
         return False
 
+    def _add_mesonpy_libs_to_rpath(self, path: pathlib.Path, destination: pathlib.Path) -> pathlib.Path:
+        """Adds .mesonpy.libs to the RPATH """
+        if platform.system() not in ('Linux', 'Darwin'):
+            # Internal libraries are currently unsupported on this platform
+            raise NotImplementedError(
+                "Bundling libraries in wheel is not supported "
+                f"on platform '{platform.system()}'"
+            )
+
+        if not self._is_native(path):
+            return path
+
+        # copy ELF to our working directory to avoid Meson having to regenerate the file
+        new_path = self._libs_build_dir / destination
+        os.makedirs(new_path.parent, exist_ok=True)
+        shutil.copy2(path, new_path)
+        path = new_path
+
+        mesonpy_libs_path = os.path.relpath(
+            f".{self._project.name}.mesonpy.libs",
+            destination.parent,
+        )
+
+        binary: Union[None, mesonpy._elf.ELF, mesonpy._dylib.Dylib] = None
+        libdir_path: Optional[str] = None
+        if platform.system() == 'Linux':
+            binary = mesonpy._elf.ELF(path)
+            libdir_path = f'$ORIGIN/{mesonpy_libs_path}'
+        elif platform.system() == 'Darwin':
+            binary = mesonpy._dylib.Dylib(path)
+            libdir_path = f'@loader_path/{mesonpy_libs_path}'
+
+        assert binary and libdir_path
+        if libdir_path not in binary.rpath:
+            binary.rpath = [*binary.rpath, libdir_path]
+
+        return path
+
     def _install_path(
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
@@ -438,34 +476,8 @@ class _WheelBuilder():
                     arcname = destination / child.relative_to(origin)
                     wheel_file.write(child, arcname.as_posix())
         else:
-            # fix file
             if self._has_internal_libs:
-                if platform.system() == 'Linux' or platform.system() == 'Darwin':
-                    # add .mesonpy.libs to the RPATH of ELF files
-                    if self._is_native(os.fspath(origin)):
-                        # copy ELF to our working directory to avoid Meson having to regenerate the file
-                        new_origin = self._libs_build_dir / destination
-                        os.makedirs(new_origin.parent, exist_ok=True)
-                        shutil.copy2(origin, new_origin)
-                        origin = new_origin
-                        # add our in-wheel libs folder to the RPATH
-                        if platform.system() == 'Linux':
-                            elf = mesonpy._elf.ELF(origin)
-                            libdir_path = \
-                                f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
-                            if libdir_path not in elf.rpath:
-                                elf.rpath = [*elf.rpath, libdir_path]
-                        elif platform.system() == 'Darwin':
-                            dylib = mesonpy._dylib.Dylib(origin)
-                            libdir_path = \
-                                f'@loader_path/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
-                            if libdir_path not in dylib.rpath:
-                                dylib.rpath = [*dylib.rpath, libdir_path]
-                        else:
-                            # Internal libraries are currently unsupported on this platform
-                            raise NotImplementedError("Bundling libraries in wheel is not supported on platform '{}'"
-                                                      .format(platform.system()))
-
+                origin = self._add_mesonpy_libs_to_rpath(origin, destination)
             wheel_file.write(origin, location)
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
