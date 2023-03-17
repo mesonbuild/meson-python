@@ -251,6 +251,8 @@ def test_install_subdir_exclude(wheel_install_subdir_exclude):
         'subdir2/bar/file1',
         'subdir3/bar/file1',
         'subdir4/file1',
+        'exclude/file1',
+        'exclude/subdir1/file1',
         'install_subdir_exclude-1.0.0.dist-info/METADATA',
         'install_subdir_exclude-1.0.0.dist-info/WHEEL',
         'install_subdir_exclude-1.0.0.dist-info/RECORD',

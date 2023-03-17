@@ -35,3 +35,11 @@ install_subdir(
   'new_directory',
   install_dir: purelib,
 )
+
+# Exercise exclude_* options
+install_subdir(
+  'exclude',
+  install_dir: purelib,
+  exclude_directories: ['subdir2', 'subdir3'],
+  exclude_files: ['file2', 'file3', 'subdir1/file2', 'subdir1/file3'],
+)
