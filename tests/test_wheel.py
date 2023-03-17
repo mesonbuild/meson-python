@@ -249,3 +249,25 @@ def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, ar
     filename = mesonpy.build_wheel(tmp_path)
     name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
     assert name.group('plat').endswith(arch)
+
+
+@pytest.mark.skipif(
+    platform.system() == 'Windows',
+    reason='Meson issue (see https://github.com/mesonbuild/meson-python/issues/352)',
+)
+def test_install_subdir_exclude(wheel_install_subdir_exclude):
+    artifact = wheel.wheelfile.WheelFile(wheel_install_subdir_exclude)
+
+    assert wheel_contents(artifact) == {
+        'subdir1/foo/file2',
+        'subdir1/foo/bar/file1',
+        'subdir2/file2',
+        'subdir2/bar/file1',
+        'subdir3/bar/file1',
+        'subdir4/file1',
+        'exclude/file1',
+        'exclude/subdir1/file1',
+        'install_subdir_exclude-1.0.0.dist-info/METADATA',
+        'install_subdir_exclude-1.0.0.dist-info/WHEEL',
+        'install_subdir_exclude-1.0.0.dist-info/RECORD',
+    }
