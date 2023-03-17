@@ -239,3 +239,19 @@ def test_top_level_modules(package_module_types):
             'namespace',
             'native',
         }
+
+
+def test_install_subdir_exclude(wheel_install_subdir_exclude):
+    artifact = wheel.wheelfile.WheelFile(wheel_install_subdir_exclude)
+
+    assert wheel_contents(artifact) == {
+        'subdir1/foo/file2',
+        'subdir1/foo/bar/file1',
+        'subdir2/file2',
+        'subdir2/bar/file1',
+        'subdir3/bar/file1',
+        'subdir4/file1',
+        'install_subdir_exclude-1.0.0.dist-info/METADATA',
+        'install_subdir_exclude-1.0.0.dist-info/WHEEL',
+        'install_subdir_exclude-1.0.0.dist-info/RECORD',
+    }
