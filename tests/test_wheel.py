@@ -193,10 +193,10 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
 
     if platform.system() == 'Linux':
         elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
-        assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+        assert elf.rpath == {'$ORIGIN/.link_against_local_lib.mesonpy.libs'}
     else:  # 'Darwin'
         dylib = mesonpy._dylib.Dylib(tmp_path / f'example{EXT_SUFFIX}')
-        assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
+        assert dylib.rpath == {'@loader_path/.link_against_local_lib.mesonpy.libs'}
 
 
 @pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
