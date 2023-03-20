@@ -867,6 +867,9 @@ class Project():
 
         # copy the install plan so we can modify it
         install_plan = self._info('intro-install_plan').copy()
+        print('=' * 30)
+        print(install_plan)
+        print('=' * 30)
 
         # parse install args for install tags (--tags)
         parser = argparse.ArgumentParser()
