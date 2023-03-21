@@ -44,21 +44,6 @@ Let's go through each option and why they are used:
   because Meson defaults to values that are appropriate for development, while
   the main purpose of meson-python is to build release artifacts.
 
-It is possible to override these defaults, either permanently in your project
-or at build time. For example, to build a wheel with debug symbols, use:
-
-.. code-block:: console
-
-   $ python -m build -Csetup-args=-Ddebug=true
-
-And to override all debug and optimization settings permanently, add this to
-your ``pyproject.toml`` file:
-
-.. code-block:: toml
-
-   [tool.meson-python.args]
-   setup = ['-Ddebug=true', '-Doptimization=0', '-Db_ndebug=false']
-
-For more details on overriding build options at build time see the
-:ref:`reference-config-settings` page, and in ``pyproject.toml`` see the
-:ref:`reference-pyproject-settings` page.
+It is possible to override these defaults, either permanently in your
+``pyproject.toml`` or at build time via the build frontend CLI.
+See the :ref:`how-to-guides-meson-args` page for examples of both methods.
