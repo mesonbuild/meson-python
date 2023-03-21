@@ -244,6 +244,10 @@ def test_top_level_modules(package_module_types):
         }
 
 
+@pytest.mark.skipif(
+    platform.system() == 'Windows',
+    reason='Meson issue (see https://github.com/mesonbuild/meson-python/issues/352)',
+)
 def test_install_subdir_exclude(wheel_install_subdir_exclude):
     artifact = wheel.wheelfile.WheelFile(wheel_install_subdir_exclude)
 
