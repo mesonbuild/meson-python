@@ -135,6 +135,7 @@ Contributors
    :hidden:
 
    explanations/design
+   explanations/default-options
    explanations/internal-dependencies
    explanations/editable-installs
 
