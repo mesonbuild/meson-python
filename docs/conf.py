@@ -42,6 +42,7 @@ extensions = [
     'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
+    'sphinx_issues',
     'sphinxcontrib.spelling',
     'sphinxext.opengraph',
 ]

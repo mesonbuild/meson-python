@@ -27,3 +27,4 @@ toml
 uncommited
 vendored
 vendoring
+Quansight

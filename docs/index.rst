@@ -94,6 +94,7 @@ Contributors
    changelog
    projects-using-meson-python
    security
+   about-us
 
 
 .. toctree::
