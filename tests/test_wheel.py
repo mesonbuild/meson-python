@@ -51,6 +51,7 @@ def wheel_filename(artifact):
     return artifact.filename.split(os.sep)[-1]
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 12), reason='Cython generated code does not compile on Python 3.12')
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
