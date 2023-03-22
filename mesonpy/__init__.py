@@ -721,10 +721,6 @@ class Project():
         else:
             self._metadata = pyproject_metadata.StandardMetadata(
                 name=self._meson_name, version=packaging.version.Version(self._meson_version))
-            print(
-                '{yellow}{bold}! Using Meson to generate the project metadata '
-                '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
-            )
         self._validate_metadata()
 
         # set version from meson.build if dynamic
