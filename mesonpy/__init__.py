@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import copy
 import difflib
 import functools
 import importlib.machinery
@@ -42,6 +43,12 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+
+import packaging.requirements
 import packaging.version
 import pyproject_metadata
 
@@ -57,9 +64,7 @@ from mesonpy._compat import Collection, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import (
-        Any, Callable, ClassVar, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
-    )
+    from typing import Any, Callable, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
     from mesonpy._compat import Iterator, ParamSpec, Path
 
@@ -131,6 +136,8 @@ _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COL
 _EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES.copy()
 _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
+
+_REQUIREMENT_NAME_REGEX = re.compile(r'^(?P<name>[A-Za-z0-9][A-Za-z0-9-_.]+)')
 
 
 # Maps wheel installation paths to Meson installation path placeholders.
@@ -219,17 +226,16 @@ class _WheelBuilder():
     def __init__(
         self,
         project: Project,
-        metadata: Optional[pyproject_metadata.StandardMetadata],
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
+        build_time_pins_templates: List[str],
     ) -> None:
         self._project = project
-        self._metadata = metadata
         self._source_dir = source_dir
         self._build_dir = build_dir
         self._sources = sources
-
+        self._build_time_pins = build_time_pins_templates
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
     @cached_property
@@ -316,13 +322,13 @@ class _WheelBuilder():
     @property
     def entrypoints_txt(self) -> bytes:
         """dist-info entry_points.txt."""
-        if not self._metadata:
+        if not self._project.metadata:
             return b''
 
-        data = self._metadata.entrypoints.copy()
+        data = self._project.metadata.entrypoints.copy()
         data.update({
-            'console_scripts': self._metadata.scripts,
-            'gui_scripts': self._metadata.gui_scripts,
+            'console_scripts': self._project.metadata.scripts,
+            'gui_scripts': self._project.metadata.gui_scripts,
         })
 
         text = ''
@@ -474,8 +480,12 @@ class _WheelBuilder():
             wheel_file.write(origin, location)
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
+        # copute dynamic dependencies
+        metadata = copy.copy(self._project.metadata)
+        metadata.dependencies = _compute_build_time_dependencies(metadata.dependencies, self._build_time_pins)
+
         # add metadata
-        whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
+        whl.writestr(f'{self.distinfo_dir}/METADATA', bytes(metadata.as_rfc822()))
         whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
         if self.entrypoints_txt:
             whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
@@ -575,7 +585,9 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
     scheme = _table({
         'args': _table({
             name: _strings for name in _MESON_ARGS_KEYS
-        })
+        }),
+        'dependencies': _strings,
+        'build-time-pins': _strings,
     })
 
     table = pyproject.get('tool', {}).get('meson-python', {})
@@ -620,15 +632,60 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
     return config
 
 
-class Project():
-    """Meson project wrapper to generate Python artifacts."""
+def _validate_metadata(metadata: pyproject_metadata.StandardMetadata) -> None:
+    """Validate package metadata."""
 
-    _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
+    allowed_dynamic_fields = [
+        'dependencies',
         'version',
     ]
-    _metadata: pyproject_metadata.StandardMetadata
 
-    def __init__(
+    # check for unsupported dynamic fields
+    unsupported_dynamic = {key for key in metadata.dynamic if key not in allowed_dynamic_fields}
+    if unsupported_dynamic:
+        s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
+        raise ConfigError(f'unsupported dynamic metadata fields: {s}')
+
+    # check if we are running on an unsupported interpreter
+    if metadata.requires_python:
+        metadata.requires_python.prereleases = True
+        if platform.python_version().rstrip('+') not in metadata.requires_python:
+            raise ConfigError(f'building with Python {platform.python_version()}, version {metadata.requires_python} required')
+
+
+def _compute_build_time_dependencies(
+        dependencies: List[packaging.requirements.Requirement],
+        pins: List[str]) -> List[packaging.requirements.Requirement]:
+    for template in pins:
+        match = _REQUIREMENT_NAME_REGEX.match(template)
+        if not match:
+            raise ConfigError(f'invalid requirement format in "build-time-pins": {template!r}')
+        name = match.group(1)
+        try:
+            version = packaging.version.parse(importlib_metadata.version(name))
+        except importlib_metadata.PackageNotFoundError as exc:
+            raise ConfigError(f'package "{name}" specified in "build-time-pins" not found: {template!r}') from exc
+        if version.is_devrelease or version.is_prerelease:
+            print('meson-python: build-time pin for pre-release version "{version}" of "{name}" not generared: {template!r}')
+            continue
+        pin = packaging.requirements.Requirement(template.format(v=version))
+        if pin.marker:
+            raise ConfigError(f'requirements in "build-time-pins" cannot contain markers: {template!r}')
+        if pin.extras:
+            raise ConfigError(f'requirements in "build-time-pins" cannot contain extras: {template!r}')
+        added = False
+        for d in dependencies:
+            if d.name == name:
+                d.specifier = d.specifier & pin.specifier
+                added = True
+        if not added:
+            dependencies.append(pin)
+    return dependencies
+
+
+class Project():
+    """Meson project wrapper to generate Python artifacts."""
+    def __init__(  # noqa: C901
         self,
         source_dir: Path,
         working_dir: Path,
@@ -645,6 +702,7 @@ class Project():
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
         self._env = os.environ.copy()
+        self._build_time_pins = []
 
         _check_meson_version()
 
@@ -725,11 +783,18 @@ class Project():
                 '{yellow}{bold}! Using Meson to generate the project metadata '
                 '(no `project` section in pyproject.toml){reset}'.format(**_STYLES)
             )
-        self._validate_metadata()
+        _validate_metadata(self._metadata)
 
         # set version from meson.build if dynamic
         if 'version' in self._metadata.dynamic:
             self._metadata.version = packaging.version.Version(self._meson_version)
+
+        # set base dependencie if dynamic
+        if 'dependencies' in self._metadata.dynamic:
+            dependencies = [packaging.requirements.Requirement(d) for d in pyproject_config.get('dependencies', [])]
+            self._metadata.dependencies = dependencies
+            self._metadata.dynamic.remove('dependencies')
+            self._build_time_pins = pyproject_config.get('build-time-pins', [])
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
@@ -767,35 +832,14 @@ class Project():
 
         self._run(['meson', 'setup', *setup_args])
 
-    def _validate_metadata(self) -> None:
-        """Check the pyproject.toml metadata and see if there are any issues."""
-
-        # check for unsupported dynamic fields
-        unsupported_dynamic = {
-            key for key in self._metadata.dynamic
-            if key not in self._ALLOWED_DYNAMIC_FIELDS
-        }
-        if unsupported_dynamic:
-            s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
-            raise MesonBuilderError(f'Unsupported dynamic fields: {s}')
-
-        # check if we are running on an unsupported interpreter
-        if self._metadata.requires_python:
-            self._metadata.requires_python.prereleases = True
-            if platform.python_version().rstrip('+') not in self._metadata.requires_python:
-                raise MesonBuilderError(
-                    f'Unsupported Python version {platform.python_version()}, '
-                    f'expected {self._metadata.requires_python}'
-                )
-
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
         return _WheelBuilder(
             self,
-            self._metadata,
             self._source_dir,
             self._build_dir,
             self._install_plan,
+            self._build_time_pins,
         )
 
     def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
@@ -887,10 +931,10 @@ class Project():
         """Project version."""
         return str(self._metadata.version)
 
-    @cached_property
-    def metadata(self) -> bytes:
-        """Project metadata as an RFC822 message."""
-        return bytes(self._metadata.as_rfc822())
+    @property
+    def metadata(self) -> pyproject_metadata.StandardMetadata:
+        """Project metadata."""
+        return self._metadata
 
     @property
     def license_file(self) -> Optional[pathlib.Path]:
@@ -960,8 +1004,9 @@ class Project():
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             if mtime:
                 pkginfo_info.mtime = mtime
-            pkginfo_info.size = len(self.metadata)
-            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))
+            metadata = bytes(self._metadata.as_rfc822())
+            pkginfo_info.size = len(metadata)
+            tar.addfile(pkginfo_info, fileobj=io.BytesIO(metadata))
 
         return sdist
 

@@ -11,7 +11,14 @@ import sys
 import sysconfig
 import textwrap
 
+
+if sys.version_info < (3, 8):
+    import importlib_metadata
+else:
+    import importlib.metadata as importlib_metadata
+
 import packaging.tags
+import packaging.version
 import pytest
 import wheel.wheelfile
 
@@ -240,3 +247,46 @@ def test_top_level_modules(package_module_types):
             'namespace',
             'native',
         }
+
+
+def test_build_time_pins(wheel_dynamic_dependencies):
+    artifact = wheel.wheelfile.WheelFile(wheel_dynamic_dependencies)
+
+    meson_version = packaging.version.parse(importlib_metadata.version('meson'))
+    packaging_version = packaging.version.parse(importlib_metadata.version('packaging'))
+
+    with artifact.open('dynamic_dependencies-1.0.0.dist-info/METADATA') as f:
+        assert f.read().decode() == textwrap.dedent(f'''\
+            Metadata-Version: 2.1
+            Name: dynamic-dependencies
+            Version: 1.0.0
+            Requires-Dist: meson>=0.63.0,>={meson_version}
+            Requires-Dist: meson-python>=0.13.0
+            Requires-Dist: packaging~={packaging_version.major}.{packaging_version.minor}
+        ''')
+
+
+def test_compute_build_time_dependencies(monkeypatch):
+    versions = {
+        'aaa': '1.2.3',
+        'bbb': '4.5.6',
+        'ddd': '1.0.0rc1', # pre-release will not be added to build-time dependencies
+    }
+    monkeypatch.setattr(importlib_metadata, 'version', lambda package: versions.get(package))
+    deps = [
+        'bbb>=0.1',
+        'ccc>=0.2',
+        'ddd>=0.3',
+    ]
+    pins = [
+        'aaa>={v}',
+        'bbb~={v.major}.{v.minor}',
+        'ddd=={v}',
+    ]
+    r = mesonpy._compute_build_time_dependencies([packaging.requirements.Requirement(x) for x in deps], pins)
+    assert sorted(str(x) for x in r) == [
+        'aaa>=1.2.3',
+        'bbb>=0.1,~=4.5',
+        'ccc>=0.2',
+        'ddd>=0.3',
+    ]

@@ -56,7 +56,7 @@ def wheel_builder_test_factory(monkeypatch, content):
     files = defaultdict(list)
     files.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})
     monkeypatch.setattr(mesonpy._WheelBuilder, '_wheel_files', files)
-    return mesonpy._WheelBuilder(None, None, pathlib.Path(), pathlib.Path(), pathlib.Path())
+    return mesonpy._WheelBuilder(None, pathlib.Path(), pathlib.Path(), {}, [])
 
 
 def test_tag_empty_wheel(monkeypatch):

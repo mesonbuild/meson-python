@@ -68,3 +68,16 @@ def test_dynamic_version(sdist_dynamic_version):
         Name: dynamic-version
         Version: 1.0.0
     ''')
+
+
+def test_dynamic_dependencies(sdist_dynamic_dependencies):
+    with tarfile.open(sdist_dynamic_dependencies, 'r:gz') as sdist:
+        sdist_pkg_info = sdist.extractfile('dynamic_dependencies-1.0.0/PKG-INFO').read().decode()
+
+    assert sdist_pkg_info == textwrap.dedent('''\
+        Metadata-Version: 2.1
+        Name: dynamic-dependencies
+        Version: 1.0.0
+        Requires-Dist: meson>=0.63.0
+        Requires-Dist: meson-python>=0.13.0
+    ''')

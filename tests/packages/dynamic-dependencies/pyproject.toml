@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2023 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'dynamic-dependencies'
+version = '1.0.0'
+dynamic = [
+  'dependencies',
+]
+
+[tool.meson-python]
+# base dependencies, used for the sdist
+dependencies = [
+  'meson >= 0.63.0',
+  'meson-python >= 0.13.0',
+]
+# additional requirements based on the versions of the dependencies
+# used during the build of the wheels, used for the wheels
+build-time-pins = [
+  'meson >= {v}',
+  'packaging ~= {v.major}.{v.minor}',
+]

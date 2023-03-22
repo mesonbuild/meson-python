@@ -45,14 +45,14 @@ def test_version(package):
 
 
 def test_unsupported_dynamic(package_unsupported_dynamic):
-    with pytest.raises(mesonpy.MesonBuilderError, match='Unsupported dynamic fields: "dependencies"'):
+    with pytest.raises(mesonpy.ConfigError, match='unsupported dynamic metadata fields: "requires-python"'):
         with mesonpy.Project.with_temp_working_dir():
             pass
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
-    with pytest.raises(mesonpy.MesonBuilderError, match=(
-        f'Unsupported Python version {platform.python_version()}, expected ==1.0.0'
+    with pytest.raises(mesonpy.ConfigError, match=(
+        f'building with Python {platform.python_version()}, version ==1.0.0 required'
     )):
         with mesonpy.Project.with_temp_working_dir():
             pass
