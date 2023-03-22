@@ -818,10 +818,18 @@ class Project():
         """Build the Meson project."""
         self._run(self._build_command)
 
-    def install(self, destdir: Path) -> None:
+    def install(self, destdir: Path) -> Dict[str, str]:
         """Install the Meson project."""
         destdir = os.fspath(destdir)
         self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
+
+        # Build a dictionary mapping file paths from the install plan to
+        # the concrete installation path in the destination directory.
+        installed = {}
+        for src, dst in self._info('intro-installed').items():
+            path = pathlib.Path(dst).absolute()
+            installed[src] = os.fspath(destdir / path.relative_to(path.anchor))
+        return installed
 
     @functools.lru_cache()
     def _info(self, name: str) -> Any:
