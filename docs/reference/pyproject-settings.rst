@@ -9,7 +9,9 @@
 ***************************
 
 This page lists the configuration settings supported by
-``meson-python`` in the ``pyproject.toml`` file.
+``meson-python`` in the ``pyproject.toml`` file. Please refer to the
+:ref:`how-to-guides-meson-args` guide for for information on how to
+use them and examples.
 
 .. option:: tool.meson-python.args.dist
 
@@ -26,13 +28,3 @@ This page lists the configuration settings supported by
 .. option:: tool.meson-python.args.install
 
    Extra arguments to be passed to the ``meson install`` command.
-
-Usage example:
-
-.. code-block:: toml
-
-   [tool.meson-python.args]
-   setup = ['-Dwarning_level=2', '-Db_pie=true']
-   dist = ['--include-subprojects']
-   compile = ['-j4']
-   install = ['--quiet']
