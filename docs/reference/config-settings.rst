@@ -72,14 +72,5 @@ them.
       editable install. Please check our :ref:`how-to-guides-editable-installs`
       guide for more information.
 
-.. admonition:: Check our guides
-   :class: seealso
-
-   Check our guides to learn more about how to use these settings:
-
-   - :ref:`how-to-guides-build-directory`
-   - :ref:`how-to-guides-meson-args`
-   - :ref:`how-to-guides-editable-installs`
-
 
 .. _Meson: https://github.com/mesonbuild/meson
