@@ -16,25 +16,16 @@ them.
 
 .. option:: builddir
 
-   Selects the Meson_ build directory to use. If the directory already
-   exists, it will be re-used, if it does not exists, it will be
-   created.  This lets you avoid rebuilding the whole project from
-   scratch when developing. It is also useful if you want to configure
-   the build yourself.
+   By default ``meson-python`` uses a temporary builds directory.
+   This settings allows to select the Meson build directory and
+   prevents it to be deleted when ``meson-python`` terminates.  If the
+   directory does not exists, it will be created.  If the directory
+   exists and contains a valid Meson build directory setup, the
+   project will be reconfigured using ``meson setup --reconfigure``.
 
-   .. admonition:: Use at your own risk
-      :class: warning
-
-      Re-using a build directory that was not configured by
-      ``meson-python`` can cause issues, so use at your own risk. We
-      cannot fully support this use-case, but will try to fix issues
-      where possible and reasonably viable.
-
-      Passing this option with a non-existent build directory, letting
-      ``meson-python`` configure it, and then passing it again on
-      subsequent builds, is perfectly fine. Just be sure to delete the
-      build directory after changing the ``meson-python`` version, as
-      that might cause issues.
+   The same build directory can be used by subsequent invocations of
+   ``meson-python``. This avoids having to rebuild the whole project
+   when testing changes during development.
 
 .. option:: dist-args
 
@@ -65,6 +56,3 @@ them.
    Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>`
    on editable an install. This option is only valid when building the
    project for an :ref:`editable install <how-to-guides-editable-installs>`.
-
-
-.. _Meson: https://github.com/mesonbuild/meson
