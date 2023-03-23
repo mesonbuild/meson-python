@@ -37,7 +37,7 @@ them.
 
 .. option:: compile-args
 
-   Extra arguments to be passed to the ``meson compile`` command.
+   Extra arguments to be passed to the ``ninja`` command.
 
 .. option:: install-args
 

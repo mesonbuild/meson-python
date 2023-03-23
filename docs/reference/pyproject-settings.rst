@@ -23,7 +23,7 @@ use them and examples.
 
 .. option:: tool.meson-python.args.compile
 
-   Extra arguments to be passed to the ``meson compile`` command.
+   Extra arguments to be passed to the ``ninja`` command.
 
 .. option:: tool.meson-python.args.install
 
