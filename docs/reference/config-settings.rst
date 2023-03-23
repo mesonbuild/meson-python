@@ -29,27 +29,19 @@ them.
 
 .. option:: dist-args
 
-   Extra arguments to be passed to the ``meson dist`` command. The
-   arguments are placed after the :ref:`reference-pyproject-settings`
-   ones.
+   Extra arguments to be passed to the ``meson dist`` command.
 
 .. option:: setup-args
 
-   Extra arguments to be passed to the ``meson setup`` command. The
-   arguments are placed after the :ref:`reference-pyproject-settings`
-   ones.
+   Extra arguments to be passed to the ``meson setup`` command.
 
 .. option:: compile-args
 
-   Extra arguments to be passed to the ``meson compile`` command. The
-   arguments are placed after the :ref:`reference-pyproject-settings`
-   ones.
+   Extra arguments to be passed to the ``meson compile`` command.
 
 .. option:: install-args
 
-   Extra arguments to be passed to the ``meson install`` command. The
-   arguments are placed after the :ref:`reference-pyproject-settings`
-   ones.
+   Extra arguments to be passed to the ``meson install`` command.
 
 .. option:: editable-verbose
 
