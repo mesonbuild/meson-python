@@ -14,63 +14,63 @@ settings you can pass when building the project. Please refer to the
 :ref:`how-to-guides-meson-args` guides for information on how to use
 them.
 
+.. option:: builddir
 
-.. list-table::
-   :widths: 20 80
-   :header-rows: 1
-   :stub-columns: 1
+   Selects the Meson_ build directory to use. If the directory already
+   exists, it will be re-used, if it does not exists, it will be
+   created.  This lets you avoid rebuilding the whole project from
+   scratch when developing. It is also useful if you want to configure
+   the build yourself.
 
-   * - Setting name
-     - Description
+   .. admonition:: Use at your own risk
+      :class: warning
 
-   * - ``builddir``
-     - Selects the Meson_ build directory to use. If the directory already
-       exists, it will be re-used, if it does not exists, it will be created.
-       This lets you avoid rebuilding the whole project from scratch when
-       developing. It is also useful if you want to configure the build
-       yourself.
+      Re-using a build directory that was not configured by
+      ``meson-python`` can cause issues, so use at your own risk. We
+      cannot fully support this use-case, but will try to fix issues
+      where possible and reasonably viable.
 
-       .. admonition:: Use at your own risk
-          :class: warning
+      Passing this option with a non-existent build directory, letting
+      ``meson-python`` configure it, and then passing it again on
+      subsequent builds, is perfectly fine. Just be sure to delete the
+      build directory after changing the ``meson-python`` version, as
+      that might cause issues.
 
-          Re-using a build directory that was not configured by ``meson-python``
-          can cause issues, so use at your own risk. We cannot fully support
-          this use-case, but will try to fix issues where possible and
-          reasonably viable.
+.. option:: dist-args
 
-          Passing this option with a non-existent build directory, letting
-          ``meson-python`` configure it, and then passing it again on subsequent
-          builds, is perfectly fine. Just be sure to delete the build directory
-          after changing the ``meson-python`` version, as that might cause
-          issues.
+   Extra arguments to be passed to the ``meson dist`` command. The
+   arguments are placed after the :ref:`reference-pyproject-settings`
+   ones.
 
-   * - ``dist-args``
-     - Extra arguments to be passed to the ``meson dist`` command. The arguments
-       are placed after the :ref:`reference-pyproject-settings` ones.
+.. option:: setup-args
 
-   * - ``setup-args``
-     - Extra arguments to be passed to the ``meson setup`` command. The
-       arguments are placed after the :ref:`reference-pyproject-settings` ones.
+   Extra arguments to be passed to the ``meson setup`` command. The
+   arguments are placed after the :ref:`reference-pyproject-settings`
+   ones.
 
-   * - ``compile-args``
-     - Extra arguments to be passed to the ``meson compile`` command. The
-       arguments are placed after the :ref:`reference-pyproject-settings` ones.
+.. option:: compile-args
 
-   * - ``install-args``
-     - Extra arguments to be passed to the ``meson install`` command. The
-       arguments are placed after the :ref:`reference-pyproject-settings` ones.
+   Extra arguments to be passed to the ``meson compile`` command. The
+   arguments are placed after the :ref:`reference-pyproject-settings`
+   ones.
 
-   * - ``editable-verbose``
-     - Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>` on
-       editable an install.
+.. option:: install-args
 
-       .. admonition:: Only valid on editable installs
-          :class: attention
+   Extra arguments to be passed to the ``meson install`` command. The
+   arguments are placed after the :ref:`reference-pyproject-settings`
+   ones.
 
-          This option is only valid when building the project for an editable
-          install. Please check our :ref:`how-to-guides-editable-installs` guide
-          for more information.
+.. option:: editable-verbose
 
+   Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>`
+   on editable an install.
+
+   .. admonition:: Only valid on editable installs
+      :class: attention
+
+      This option is only valid when building the project for an
+      editable install. Please check our :ref:`how-to-guides-editable-installs`
+      guide for more information.
 
 .. admonition:: Check our guides
    :class: seealso

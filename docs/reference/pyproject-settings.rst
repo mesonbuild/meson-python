@@ -8,29 +8,24 @@
 ``pyproject.toml`` settings
 ***************************
 
-This page lists the configuration settings supported by ``meson-python`` in the
-``pyproject.toml`` file.
+This page lists the configuration settings supported by
+``meson-python`` in the ``pyproject.toml`` file.
 
+.. option:: tool.meson-python.args.dist
 
-.. list-table::
-   :widths: 35 65
-   :header-rows: 1
-   :stub-columns: 1
+   Extra arguments to be passed to the ``meson dist`` command.
 
-   * - Setting name
-     - Description
+.. option:: tool.meson-python.args.setup
 
-   * - ``tool.meson-python.args.dist``
-     - Extra arguments to be passed to the ``meson dist`` command
+   Extra arguments to be passed to the ``meson setup`` command.
 
-   * - ``tool.meson-python.args.setup``
-     - Extra arguments to be passed to the ``meson setup`` command.
+.. option:: tool.meson-python.args.compile
 
-   * - ``tool.meson-python.args.compile``
-     - Extra arguments to be passed to the ``meson compile`` command.
+   Extra arguments to be passed to the ``meson compile`` command.
 
-   * - ``tool.meson-python.args.install``
-     - Extra arguments to be passed to the ``meson install`` command.
+.. option:: tool.meson-python.args.install
+
+   Extra arguments to be passed to the ``meson install`` command.
 
 Usage example:
 
