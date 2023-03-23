@@ -63,14 +63,8 @@ them.
 .. option:: editable-verbose
 
    Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>`
-   on editable an install.
-
-   .. admonition:: Only valid on editable installs
-      :class: attention
-
-      This option is only valid when building the project for an
-      editable install. Please check our :ref:`how-to-guides-editable-installs`
-      guide for more information.
+   on editable an install. This option is only valid when building the
+   project for an :ref:`editable install <how-to-guides-editable-installs>`.
 
 
 .. _Meson: https://github.com/mesonbuild/meson
