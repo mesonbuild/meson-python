@@ -8,11 +8,28 @@
 Environment variables
 *********************
 
+.. envvar:: ARCHFLAGS
 
-.. todo::
+   This environmental variable is used for supporting architecture cross
+   compilation on macOS in a way compatible with setuptools_. It is ignored on
+   all other platforms. It can be set to ``-arch arm64`` or to ``-arch
+   x86_64`` for compiling for the arm64 and the x86_64 architectures
+   respectively. Setting this environment variable to any other value is not
+   supported.
 
-   - Document ``ARCHFLAGS`` (see `#226`_)
+   The macOS toolchain allows architecture cross compilation passing the
+   ``-arch`` flat to the compilers. ``meson-python`` inspects the content of
+   this environment variable and synthesizes a Meson `cross build definition
+   file`_ with the appropriate content, and passes it to ``meson setup`` via
+   the ``--cross-file`` option.
 
+   Support for this environment variable is maintained only for
+   compatibility with existing tools, cibuildwheel_ in particular, and
+   is not the recommended solution for cross compilation.
+
+.. _setuptools: https://setuptools.pypa.io/en/latest/setuptools.html
+.. _cross build definition file: https://mesonbuild.com/Cross-compilation.html
+.. _cibuildwheel: https://cibuildwheel.readthedocs.io/en/stable/
 
 .. envvar:: NO_COLOR
 
@@ -61,7 +78,5 @@ Environment variables
    Specify the ninja_ executable to use. It can also be used to select
    ninja_ alternatives like samurai_.
 
-
-.. _#226: https://github.com/mesonbuild/meson-python/pull/226
 .. _ninja: https://ninja-build.org
 .. _samurai: https://github.com/michaelforney/samurai
