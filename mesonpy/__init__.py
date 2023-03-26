@@ -18,7 +18,6 @@ import difflib
 import functools
 import importlib.machinery
 import io
-import itertools
 import json
 import os
 import pathlib
@@ -505,30 +504,25 @@ class _WheelBuilder():
         self._project.install()
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
-
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
 
-            with mesonpy._util.cli_counter(
-                len(list(itertools.chain.from_iterable(self._wheel_files.values()))),
-            ) as counter:
-                # install root scheme files
-                root_scheme = 'purelib' if self.is_pure else 'platlib'
-                for destination, origin in self._wheel_files[root_scheme]:
-                    self._install_path(whl, counter, origin, destination)
+            with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
 
-                # install bundled libraries
-                for destination, origin in self._wheel_files['mesonpy-libs']:
-                    destination = pathlib.Path(f'.{self._project.name}.mesonpy.libs', destination)
-                    self._install_path(whl, counter, origin, destination)
+                root = 'purelib' if self.is_pure else 'platlib'
 
-                # install the other schemes
-                for scheme in self._wheel_files.keys():
-                    if scheme in (root_scheme, 'mesonpy-libs'):
-                        continue
-                    for destination, origin in self._wheel_files[scheme]:
-                        destination = pathlib.Path(self.data_dir, scheme, destination)
-                        self._install_path(whl, counter, origin, destination)
+                for path, entries in self._wheel_files.items():
+                    for dst, src in entries:
+
+                        if path == root:
+                            pass
+                        elif path == 'mesonpy-libs':
+                            # custom installation path for bundled libraries
+                            dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
+                        else:
+                            dst = pathlib.Path(self.data_dir, path, dst)
+
+                        self._install_path(whl, counter, src, dst)
 
         return wheel_file
 
