@@ -452,11 +452,6 @@ class _WheelBuilder():
                 if platform.system() == 'Linux' or platform.system() == 'Darwin':
                     # add .mesonpy.libs to the RPATH of ELF files
                     if self._is_native(os.fspath(origin)):
-                        # copy ELF to our working directory to avoid Meson having to regenerate the file
-                        new_origin = self._libs_build_dir / pathlib.Path(origin).relative_to(self._build_dir)
-                        os.makedirs(new_origin.parent, exist_ok=True)
-                        shutil.copy2(origin, new_origin)
-                        origin = new_origin
                         # add our in-wheel libs folder to the RPATH
                         if platform.system() == 'Linux':
                             elf = mesonpy._elf.ELF(origin)
@@ -502,7 +497,7 @@ class _WheelBuilder():
 
         # install project in temporary destination directory
         with tempfile.TemporaryDirectory() as destdir:
-            self._project.install(destdir)
+            installed = self._project.install(destdir)
 
             wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
@@ -514,8 +509,12 @@ class _WheelBuilder():
                     root = 'purelib' if self.is_pure else 'platlib'
 
                     for path, entries in self._wheel_files.items():
+
                         for dst, src in entries:
                             counter.update(src)
+
+                            # install files from installation path into the wheel
+                            src = installed[os.fspath(src)]
 
                             if path == root:
                                 pass
