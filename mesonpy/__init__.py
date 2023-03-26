@@ -272,12 +272,12 @@ class _WheelBuilder():
 
     @property
     def _has_internal_libs(self) -> bool:
-        return bool(self._wheel_files['mesonpy-libs'])
+        return bool(self._wheel_files.get('mesonpy-libs'))
 
     @property
     def _has_extension_modules(self) -> bool:
         # Assume that all code installed in {platlib} is Python ABI dependent.
-        return bool(self._wheel_files['platlib'])
+        return bool(self._wheel_files.get('platlib'))
 
     @property
     def normalized_name(self) -> str:
