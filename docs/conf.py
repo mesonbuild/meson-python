@@ -20,8 +20,7 @@ import mesonpy
 # -- Project information -----------------------------------------------------
 
 project = 'meson-python'
-copyright = '2021, Quansight Labs, Filipe Laíns'
-author = 'Filipe Laíns'
+copyright = '2021, The meson-python developers'
 
 # The short X.Y version
 version = mesonpy.__version__
