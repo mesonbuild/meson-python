@@ -425,7 +425,6 @@ class _WheelBuilder():
     def _install_path(  # noqa: C901
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
-        counter: mesonpy._util.CLICounter,
         origin: Path,
         destination: pathlib.Path,
     ) -> None:
@@ -436,7 +435,6 @@ class _WheelBuilder():
         library directory on Linux wheels for eg.
         """
         location = destination.as_posix()
-        counter.update(location)
 
         # fix file
         if os.path.isdir(origin):
@@ -514,6 +512,7 @@ class _WheelBuilder():
 
                 for path, entries in self._wheel_files.items():
                     for dst, src in entries:
+                        counter.update(src)
 
                         if path == root:
                             pass
@@ -523,7 +522,7 @@ class _WheelBuilder():
                         else:
                             dst = pathlib.Path(self.data_dir, path, dst)
 
-                        self._install_path(whl, counter, src, dst)
+                        self._install_path(whl, src, dst)
 
         return wheel_file
 
