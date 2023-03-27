@@ -46,7 +46,7 @@ test = [
   'pytest-cov[toml]',
   'pytest-mock',
   'auditwheel',
-  'cython >= 3.0b1', # includes fix for https://github.com/cython/cython/issues/5238
+  'cython >= 3.0b2', # includes fixes for compilation with Python 3.12
   'wheel',
   'typing-extensions >= 3.7.4; python_version < "3.10"',
 ]

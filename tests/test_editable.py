@@ -58,7 +58,6 @@ def test_collect(package_complex):
     assert tree['complex']['more']['__init__.py'] == os.path.join(root, 'complex', 'more', '__init__.py')
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 12), reason='Cython generated code does not compile on Python 3.12')
 def test_mesonpy_meta_finder(package_complex, tmp_build_path):
     # build a package in a temporary directory
     mesonpy.Project(package_complex, tmp_build_path)
