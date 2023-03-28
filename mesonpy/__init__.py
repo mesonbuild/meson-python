@@ -426,12 +426,6 @@ class _WheelBuilder():
         if not self._is_native(path):
             return path
 
-        # copy ELF to our working directory to avoid Meson having to regenerate the file
-        new_path = self._libs_build_dir / destination
-        os.makedirs(new_path.parent, exist_ok=True)
-        shutil.copy2(path, new_path)
-        path = new_path
-
         mesonpy_libs_path = os.path.relpath(
             f'.{self._project.name}.mesonpy.libs',
             destination.parent,
