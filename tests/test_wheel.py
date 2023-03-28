@@ -214,6 +214,24 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
             assert 'mesonpy.libs' not in rpath
 
 
+@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
+@pytest.mark.xfail(platform.system() == 'Darwin', reason='Meson bug')
+def test_custom_rpath(package_link_against_local_lib, monkeypatch, tmp_path):
+    monkeypatch.setenv('LDFLAGS', '-Wl,-rpath,custom-rpath')
+
+    wheel_name = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / wheel_name)
+    artifact.extractall(tmp_path)
+
+    module = tmp_path / f'example{EXT_SUFFIX}'
+    if platform.system() == 'Linux':
+        binary = mesonpy._elf.ELF(module)
+    elif platform.system() == 'Darwin':
+        binary = mesonpy._dylib.Dylib(module)
+
+    assert 'custom-rpath' in binary.rpath
+
+
 def test_entrypoints(wheel_full_metadata):
     artifact = wheel.wheelfile.WheelFile(wheel_full_metadata)
 
