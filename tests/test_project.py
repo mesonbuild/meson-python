@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+import ast
+import os.path
 import platform
 import shutil
 import sys
@@ -60,12 +62,26 @@ def test_unsupported_python_version(package_unsupported_python_version):
 
 def test_user_args(package_user_args, tmp_path, monkeypatch):
     project_run = mesonpy.Project._run
-    call_args_list = []
+    cmds = []
+    args = []
 
     def wrapper(self, cmd):
         # intercept and filter out test arguments and forward the call
-        call_args_list.append(tuple(cmd))
-        return project_run(self, [x for x in cmd if not x.startswith(('config-', 'cli-'))])
+        if cmd[:2] == ['meson', 'compile']:
+            # when using meson compile instead of ninja directly, the
+            # arguments needs to be unmarshalled from the form used to
+            # pass them to the --ninja-args option
+            assert cmd[-1].startswith('--ninja-args=')
+            cmds.append(cmd[:2])
+            args.append(ast.literal_eval(cmd[-1].split('=')[1]))
+        elif cmd[:1] == ['meson']:
+            cmds.append(cmd[:2])
+            args.append(cmd[2:])
+        else:
+            # direct ninja invocation
+            cmds.append([os.path.basename(cmd[0])])
+            args.append(cmd[1:])
+        return project_run(self, [x for x in cmd if not x.startswith(('config-', 'cli-', '--ninja-args'))])
 
     monkeypatch.setattr(mesonpy.Project, '_run', wrapper)
 
@@ -79,19 +95,32 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
     mesonpy.build_sdist(tmp_path, config_settings)
     mesonpy.build_wheel(tmp_path, config_settings)
 
-    expected = [
+    # check that the right commands are executed, namely that 'meson
+    # compile' is used on Windows rather than a 'ninja' direct
+    # invocation.
+    assert cmds == [
         # sdist: calls to 'meson setup' and 'meson dist'
-        ('config-setup', 'cli-setup'),
-        ('config-dist', 'cli-dist'),
+        ['meson', 'setup'],
+        ['meson', 'dist'],
         # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
-        ('config-setup', 'cli-setup'),
-        ('config-compile', 'cli-compile'),
-        ('config-install', 'cli-install'),
+        ['meson', 'setup'],
+        ['meson', 'compile'] if platform.system() == 'Windows' else ['ninja'],
+        ['meson', 'install']
     ]
 
-    for expected_args, call_args in zip(expected, call_args_list):
+    # check that the user options are passed to the invoked commands
+    expected = [
+        # sdist: calls to 'meson setup' and 'meson dist'
+        ['config-setup', 'cli-setup'],
+        ['config-dist', 'cli-dist'],
+        # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
+        ['config-setup', 'cli-setup'],
+        ['config-compile', 'cli-compile'],
+        ['config-install', 'cli-install'],
+    ]
+    for expected_args, cmd_args in zip(expected, args):
         for arg in expected_args:
-            assert arg in call_args
+            assert arg in cmd_args
 
 
 @pytest.mark.parametrize('package', ('top-level', 'meson-args'))
