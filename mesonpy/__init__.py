@@ -887,7 +887,7 @@ class Project():
 
     @property
     def _copy_files(self) -> Dict[str, str]:
-        """Files that Meson will copy on install and the target location."""
+        """Files that Meson will copy on install and their target locations."""
         copy_files = {}
         for origin, destination in self._info('intro-installed').items():
             destination_path = pathlib.Path(destination).absolute()
