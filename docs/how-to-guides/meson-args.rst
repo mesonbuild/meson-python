@@ -44,6 +44,20 @@ building a Python wheel. User options specified via ``pyproject.toml``
 or via Python build front-end config settings override the
 ``meson-python`` defaults.
 
+When building on Windows, ``meson-python`` invokes the ``ninja``
+command via the ``meson compile`` wrapper. When the GCC or the LLVM
+compilers are not found on the ``$PATH``, this activates the Visual
+Studio environment and allows ``ninja`` to use the MSVC compilers. To
+activate the Visual Studio environment unconditionally, pass the
+``--vsenv`` option to ``meson setup``, see this :ref:`example
+<vsenv-example>`. When using the ``meson compile`` wrapper, the user
+supplied options for the compilation command are passed via the
+``--ninja-args`` option. This ensures that the behaviour is
+independent of how the build is initiated. Refer to the `Meson
+documentation`__ for more details.
+
+__ https://mesonbuild.com/Commands.html#backend-specific-arguments
+
 
 Examples
 ========
@@ -152,3 +166,44 @@ To set this option temporarily at build-time:
         .. code-block:: console
 
 	   $ python -m pip wheel . --config-settings=setup-args="-Doptimization=3" .
+
+
+.. _vsenv-example:
+
+Force the use of the MSVC compilers on Windows
+----------------------------------------------
+
+The MSVC compilers are not installed in the ``$PATH``. The Visual
+Studio environment needs to be activated for ``ninja`` to be able to
+use these compilers. This is taken care of by ``meson compile`` but
+only when the GCC compilers or the LLVM compilers are not found on the
+``$PATH``. Passing the ``--vsenv`` option to ``meson setup`` forces
+the activation of the Visual Studio environment and generates an error
+when the activation fails.
+
+This option has no effect on other platforms thus, if your project
+requires to be compiled with MSVC, you can consider to set this option
+permanently in the project's ``pyproject.toml``:
+
+.. code-block:: toml
+
+   [tool.meson-python.args]
+   setup = ['--vsenv']
+
+To set this option temporarily at build-time:
+
+.. tab-set::
+
+    .. tab-item:: pypa/build
+        :sync: key_pypa_build
+
+        .. code-block:: console
+
+	   $ python -m build -Csetup-args="--vsenv" .
+
+    .. tab-item:: pip
+        :sync: key_pip
+
+        .. code-block:: console
+
+	   $ python -m pip wheel . --config-settings=setup-args="--vsenv" .

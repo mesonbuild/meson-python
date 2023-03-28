@@ -489,7 +489,10 @@ class _WheelBuilder():
             )
 
     def build(self, directory: Path) -> pathlib.Path:
-        self._project.build()  # ensure project is built
+        # ensure project is built
+        self._project.build()
+        # install the project
+        self._project.install()
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
@@ -521,7 +524,8 @@ class _WheelBuilder():
         return wheel_file
 
     def build_editable(self, directory: Path, verbose: bool = False) -> pathlib.Path:
-        self._project.build()  # ensure project is built
+        # ensure project is built
+        self._project.build()
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
 
@@ -534,14 +538,13 @@ class _WheelBuilder():
 
             # install loader module
             loader_module_name = f'_{self.normalized_name.replace(".", "_")}_editable_loader'
-            build_cmd = [self._project._ninja, *self._project._meson_args['compile']]
             whl.writestr(
                 f'{loader_module_name}.py',
                 read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
                    install(
                        {self.top_level_modules!r},
                        {os.fspath(self._build_dir)!r},
-                       {build_cmd},
+                       {self._project._build_command!r},
                        {verbose!r},
                    )''').encode('utf-8'))
 
@@ -787,18 +790,30 @@ class Project():
             self._install_plan,
         )
 
-    def build_commands(self) -> Sequence[Sequence[str]]:
+    @property
+    def _build_command(self) -> List[str]:
         assert self._ninja is not None  # help mypy out
-        return (
-            (self._ninja, *self._meson_args['compile'],),
-            ('meson', 'install', '--no-rebuild', '--destdir', os.fspath(self._install_dir), *self._meson_args['install']),
-        )
+        if platform.system() == 'Windows':
+            # On Windows use 'meson compile' to setup the MSVC compiler
+            # environment. Using the --ninja-args option allows to
+            # provide the exact same semantics for the compile arguments
+            # provided by the users.
+            cmd = ['meson', 'compile']
+            args = list(self._meson_args['compile'])
+            if args:
+                cmd.append(f'--ninja-args={args!r}')
+            return cmd
+        return [self._ninja, *self._meson_args['compile']]
 
     @functools.lru_cache(maxsize=None)
     def build(self) -> None:
-        """Trigger the Meson build."""
-        for cmd in self.build_commands():
-            self._run(cmd)
+        """Build the Meson project."""
+        self._run(self._build_command)
+
+    def install(self) -> None:
+        """Install the Meson project."""
+        destdir = os.fspath(self._install_dir)
+        self._run(['meson', 'install', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
 
     @classmethod
     @contextlib.contextmanager
