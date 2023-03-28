@@ -199,7 +199,10 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
         binary = mesonpy._dylib.Dylib(module)
         libdir_origin = '@loader_path'
 
-    assert binary.rpath == {f'{libdir_origin}/.link_against_local_lib.mesonpy.libs'}
+    assert f'{libdir_origin}/.link_against_local_lib.mesonpy.libs' in binary.rpath
+    # Meson adds $ORIGIN/ to the file in the build directory, but it should not
+    # be present on the file we copy to the wheel
+    assert '$ORIGIN/' not in binary.rpath
 
 
 @pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
