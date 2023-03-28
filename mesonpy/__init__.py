@@ -1023,7 +1023,7 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
-        except Error as exc:
+        except (Error, pyproject_metadata.ConfigurationError) as exc:
             print((
                 '{red}meson-python: error:{reset}\n'
                 '{red}>{reset}\n' +
