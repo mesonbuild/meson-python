@@ -56,7 +56,6 @@ Institutional Partners include:
 .. _Meson: https://mesonbuild.com
 .. _Python: https://python.org
 .. _MIT (Expat) license: https://github.com/mesonbuild/meson-python/blob/main/LICENSE
-.. _Filipe Laíns (FFY00): https://github.com/FFY00
 .. _The Meson Build System organization: https://github.com/mesonbuild
 .. _complete list of all contributors: https://github.com/mesonbuild/meson-python/graphs/contributors
 .. _contributors: https://github.com/mesonbuild/meson/graphs/contributors
