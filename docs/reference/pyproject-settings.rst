@@ -8,36 +8,23 @@
 ``pyproject.toml`` settings
 ***************************
 
-This page lists the configuration settings supported by ``meson-python`` in the
-``pyproject.toml`` file.
+This page lists the configuration settings supported by
+``meson-python`` in the ``pyproject.toml`` file. Please refer to the
+:ref:`how-to-guides-meson-args` guide for for information on how to
+use them and examples.
 
+.. option:: tool.meson-python.args.dist
 
-.. list-table::
-   :widths: 35 65
-   :header-rows: 1
-   :stub-columns: 1
+   Extra arguments to be passed to the ``meson dist`` command.
 
-   * - Setting name
-     - Description
+.. option:: tool.meson-python.args.setup
 
-   * - ``tool.meson-python.args.dist``
-     - Extra arguments to be passed to the ``meson dist`` command
+   Extra arguments to be passed to the ``meson setup`` command.
 
-   * - ``tool.meson-python.args.setup``
-     - Extra arguments to be passed to the ``meson setup`` command.
+.. option:: tool.meson-python.args.compile
 
-   * - ``tool.meson-python.args.compile``
-     - Extra arguments to be passed to the ``meson compile`` command.
+   Extra arguments to be passed to the ``ninja`` command.
 
-   * - ``tool.meson-python.args.install``
-     - Extra arguments to be passed to the ``meson install`` command.
+.. option:: tool.meson-python.args.install
 
-Usage example:
-
-.. code-block:: toml
-
-   [tool.meson-python.args]
-   setup = ['-Dwarning_level=2', '-Db_pie=true']
-   dist = ['--include-subprojects']
-   compile = ['-j4']
-   install = ['--quiet']
+   Extra arguments to be passed to the ``meson install`` command.
