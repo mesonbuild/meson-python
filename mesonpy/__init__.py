@@ -1023,8 +1023,17 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         try:
             return func(*args, **kwargs)
-        except Error as exc:
-            print('{red}meson-python: error:{reset} {msg}'.format(msg=str(exc), **_STYLES))
+        except (Error, pyproject_metadata.ConfigurationError) as exc:
+            error_msg = '\n{red}meson-python: error:{reset}'
+            if '\n' in str(exc):
+                error_msg += (
+                    '{red}>{reset}\n' +
+                    textwrap.indent(str(exc).strip(), prefix='{red}>{reset}  ') + '\n' +
+                    '{red}>{reset}\n'
+                )
+            else:
+                error_msg += f' {exc}'
+            print(error_msg.format(**_STYLES))
             raise SystemExit(1) from exc
     return wrapper
 
