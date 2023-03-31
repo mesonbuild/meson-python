@@ -60,6 +60,9 @@ jobs:
           - os: ubuntu
             python: '3.11'
             meson: '~=0.64.0'
+          - os: ubuntu
+            python: '3.11'
+            meson: '~=1.0.0'
 
     steps:
       - name: Checkout
