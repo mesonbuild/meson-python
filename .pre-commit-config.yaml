@@ -38,3 +38,8 @@ repos:
     pass_filenames: true
   - id: reuse
     name: reuse lint
+- repo: https://github.com/FFY00/muon-pre-commit
+  rev: 0.1.0-c6207ca1
+  hooks:
+  - id: muon-fmt
+    args: [-c, muon_fmt.ini]
