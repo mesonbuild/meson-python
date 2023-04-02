@@ -157,7 +157,7 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
             anchor = destination.parts[0]
             path = _INSTALLATION_PATH_MAP.get(anchor)
             if path is None:
-                raise BuildError(f'Could not map installation path to an equivalent wheel directory: {destination!r}')
+                raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
             wheel_files[path].append((pathlib.Path(*destination.parts[1:]), src))
     return wheel_files
 
