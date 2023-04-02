@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import ast
-import os.path
+import os
 import platform
 import shutil
 import sys
@@ -219,3 +219,15 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     assert meson.call_args_list[0].args[1][1] == 'setup'
     assert '--reconfigure' not in meson.call_args_list[0].args[1]
     project.build()
+
+
+@pytest.mark.skipif(not os.getenv('CI') or platform.system() != 'Windows', reason='Requires MSVC')
+def test_compiler(venv, package_detect_compiler, tmp_path):
+    # Check that things are setup properly to use the MSVC compiler on
+    # Windows. This effectively means running the compilation step
+    # with 'meson compile' instead of 'ninja' on Windows. Run this
+    # test only on CI where we know that MSVC is available.
+    wheel = mesonpy.build_wheel(tmp_path, {'setup-args': ['--vsenv']})
+    venv.pip('install', os.fspath(tmp_path / wheel))
+    compiler = venv.python('-c', 'import detect_compiler; print(detect_compiler.compiler())').strip()
+    assert compiler == 'msvc'
