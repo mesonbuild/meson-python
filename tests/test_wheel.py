@@ -233,3 +233,8 @@ def test_top_level_modules(package_module_types):
             'namespace',
             'native',
         }
+
+def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
+    with pytest.raises(mesonpy.BuildError, match='The purelib-platlib-split package is split'):
+        with mesonpy.Project.with_temp_working_dir() as project:
+            project.wheel(tmp_path)

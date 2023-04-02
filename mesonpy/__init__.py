@@ -150,14 +150,28 @@ _INSTALLATION_PATH_MAP = {
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
     """Map files to the wheel, organized by wheel installation directrory."""
-    wheel_files = collections.defaultdict(list)
+    wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
+    packages: Dict[str, str] = {}
+
     for group in sources.values():
         for src, target in group.items():
             destination = pathlib.Path(target['destination'])
             anchor = destination.parts[0]
+
             path = _INSTALLATION_PATH_MAP.get(anchor)
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
+
+            if path == 'purelib' or path == 'platlib':
+                package = destination.parts[1]
+                other = packages.setdefault(package, path)
+                if other != path:
+                    this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
+                    that = os.fspath(other / next(d for d, s in wheel_files[other] if d.parts[0] == destination.parts[1]))
+                    raise BuildError(
+                        f'The {package} package is split between {path} and {other}: '
+                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build')
+
             wheel_files[path].append((pathlib.Path(*destination.parts[1:]), src))
     return wheel_files
 
