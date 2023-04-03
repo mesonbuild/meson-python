@@ -56,10 +56,10 @@ jobs:
           # Test with older supported Meson version.
           - os: ubuntu
             python: '3.11'
-            meson: '0.63.3'
+            meson: '~=0.63.3'
           - os: ubuntu
             python: '3.11'
-            meson: '0.64.1'
+            meson: '~=0.64.0'
 
     steps:
       - name: Checkout
@@ -83,7 +83,7 @@ jobs:
         if: ${{ matrix.os == 'windows' }}
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
@@ -196,7 +196,7 @@ jobs:
           restore-keys: cygwin-pip-
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
@@ -252,7 +252,7 @@ jobs:
         run: sudo apt-get install ninja-build
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
@@ -301,7 +301,7 @@ jobs:
         run: python -m pip --disable-pip-version-check install --upgrade "pip >= 23.0"
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
