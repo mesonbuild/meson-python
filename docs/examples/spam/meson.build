@@ -29,7 +29,8 @@ py.install_sources(
   [
     'src/__init__.py'
   ],
-  subdir: 'spam'
+  subdir: 'spam',
+  pure: false
 )
 
 py.extension_module(
