@@ -40,9 +40,9 @@ precedence over, and can be used to override, the ones specified in
 
 ``meson-python`` overrides some of the default Meson options with
 :ref:`settings <explanations-default-options>` more appropriate for
-building Python wheel. User options specified via ``pyproject.toml``
-or via Python build front-end config settings can be used to override
-the ``meson-python`` defaults..
+building a Python wheel. User options specified via ``pyproject.toml``
+or via Python build front-end config settings override the
+``meson-python`` defaults.
 
 
 Examples
