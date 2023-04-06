@@ -48,7 +48,6 @@ import pyproject_metadata
 import mesonpy._compat
 import mesonpy._dylib
 import mesonpy._elf
-import mesonpy._introspection
 import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
@@ -742,26 +741,15 @@ class Project():
 
     def _configure(self, reconfigure: bool = False) -> None:
         """Configure Meson project."""
-        sys_paths = mesonpy._introspection.SYSCONFIG_PATHS
         setup_args = [
-            f'--prefix={sys.base_prefix}',
             os.fspath(self._source_dir),
             os.fspath(self._build_dir),
             f'--native-file={os.fspath(self._meson_native_file)}',
-            # TODO: Allow configuring these arguments
-            '-Ddebug=false',
+            # default build options
+            '-Dbuildtype=release',
             '-Db_ndebug=if-release',
-            '-Doptimization=2',
-
-            # XXX: This should not be needed, but Meson is using the wrong paths
-            #      in some scenarios, like on macOS.
-            #      https://github.com/mesonbuild/meson-python/pull/87#discussion_r1047041306
-            '--python.purelibdir',
-            sys_paths['purelib'],
-            '--python.platlibdir',
-            sys_paths['platlib'],
-
-            # user args
+            '-Db_vscrt=md',
+            # user build options
             *self._meson_args['setup'],
         ]
         if reconfigure:
