@@ -788,18 +788,11 @@ class Project():
             self._install_plan,
         )
 
-    def build_commands(self, install_dir: Optional[pathlib.Path] = None) -> Sequence[Sequence[str]]:
+    def build_commands(self) -> Sequence[Sequence[str]]:
         assert self._ninja is not None  # help mypy out
         return (
             (self._ninja, *self._meson_args['compile'],),
-            (
-                'meson',
-                'install',
-                '--only-changed',
-                '--destdir',
-                os.fspath(install_dir or self._install_dir),
-                *self._meson_args['install'],
-            ),
+            ('meson', 'install', '--no-rebuild', '--destdir', os.fspath(self._install_dir), *self._meson_args['install']),
         )
 
     @functools.lru_cache(maxsize=None)
