@@ -127,6 +127,7 @@ def _init_colors() -> Dict[str, str]:
 _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
 
 
+_SUFFIXES = importlib.machinery.all_suffixes()
 _EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES.copy()
 _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
@@ -377,25 +378,15 @@ class _WheelBuilder():
         modules = set()
         for type_ in self._wheel_files:
             for path, _ in self._wheel_files[type_]:
-                top_part = path.parts[0]
-                # file module
-                if top_part.endswith('.py'):
-                    modules.add(top_part[:-3])
+                name, dot, ext = path.parts[0].partition('.')
+                if dot:
+                    # module
+                    suffix = dot + ext
+                    if suffix in _SUFFIXES:
+                        modules.add(name)
                 else:
-                    # native module
-                    for extension in _EXTENSION_SUFFIXES:
-                        if top_part.endswith(extension):
-                            modules.add(top_part[:-len(extension)])
-                            # XXX: We assume the order in _EXTENSION_SUFFIXES
-                            #      goes from more specific to last, so we go
-                            #      with the first match we find.
-                            break
-                    else:  # nobreak
-                        # skip Windows import libraries
-                        if top_part.endswith('.a'):
-                            continue
-                        # package module
-                        modules.add(top_part)
+                    # package
+                    modules.add(name)
         return modules
 
     def _is_native(self, file: Union[str, pathlib.Path]) -> bool:
