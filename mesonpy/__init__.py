@@ -421,7 +421,7 @@ class _WheelBuilder():
             return True
         return False
 
-    def _install_path(
+    def _install_path(  # noqa: C901
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
         counter: mesonpy._util.CLICounter,
@@ -476,7 +476,12 @@ class _WheelBuilder():
                             raise NotImplementedError("Bundling libraries in wheel is not supported on platform '{}'"
                                                       .format(platform.system()))
 
-            wheel_file.write(origin, location)
+            try:
+                wheel_file.write(origin, location)
+            except FileNotFoundError:
+                # work around for Meson bug, see https://github.com/mesonbuild/meson/pull/11655
+                if not os.fspath(origin).endswith('.pdb'):
+                    raise
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
         # add metadata
