@@ -128,7 +128,7 @@ _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COL
 
 
 _SUFFIXES = importlib.machinery.all_suffixes()
-_EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES.copy()
+_EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES
 _EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
 
