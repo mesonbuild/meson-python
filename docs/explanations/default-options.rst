@@ -50,9 +50,10 @@ The options that ``meson-python`` specifies by default are:
 
    Additional ``--native-file`` options can be passed to ``meson
    setup`` if further adjustments to the native environment need to be
-   made. Meson will merge the contents of all machine files. The
-   user-provided machine files must not override the path for the
-   ``python`` binary.
+   made. Meson will merge the contents of all machine files. To ensure
+   everything works as expected, the ``meson-python`` native file is
+   last in the command line, overriding the ``python`` binary path
+   that may have been specified in user supplied native files.
 
 .. option:: buildtype=release
 
