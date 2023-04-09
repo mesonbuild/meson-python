@@ -740,13 +740,16 @@ class Project():
         setup_args = [
             os.fspath(self._source_dir),
             os.fspath(self._build_dir),
-            f'--native-file={os.fspath(self._meson_native_file)}',
             # default build options
             '-Dbuildtype=release',
             '-Db_ndebug=if-release',
             '-Db_vscrt=md',
             # user build options
             *self._meson_args['setup'],
+            # pass native file last to have it override the python
+            # interpreter path that may have been specified in user
+            # provided native files
+            f'--native-file={os.fspath(self._meson_native_file)}',
         ]
         if reconfigure:
             setup_args.insert(0, '--reconfigure')

@@ -69,9 +69,6 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
 
     monkeypatch.setattr(mesonpy.Project, '_run', wrapper)
 
-    def last_two_meson_args():
-        return [args[-2:] for args in call_args_list]
-
     config_settings = {
         'dist-args': ('cli-dist',),
         'setup-args': ('cli-setup',),
@@ -82,7 +79,7 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
     mesonpy.build_sdist(tmp_path, config_settings)
     mesonpy.build_wheel(tmp_path, config_settings)
 
-    assert last_two_meson_args() == [
+    expected = [
         # sdist: calls to 'meson setup' and 'meson dist'
         ('config-setup', 'cli-setup'),
         ('config-dist', 'cli-dist'),
@@ -91,6 +88,10 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         ('config-compile', 'cli-compile'),
         ('config-install', 'cli-install'),
     ]
+
+    for expected_args, call_args in zip(expected, call_args_list):
+        for arg in expected_args:
+            assert arg in call_args
 
 
 @pytest.mark.parametrize('package', ('top-level', 'meson-args'))
