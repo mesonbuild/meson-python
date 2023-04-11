@@ -23,9 +23,9 @@ else:
 if sys.version_info >= (3, 8):
     from functools import cached_property
 else:
-    cached_property = lambda x: property(
-        functools.lru_cache(maxsize=None)(x)
-    )  # noqa: E731
+
+    def cached_property(x):
+        return property(functools.lru_cache(maxsize=None)(x))
 
 
 if sys.version_info >= (3, 9):

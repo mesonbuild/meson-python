@@ -499,12 +499,20 @@ class _WheelBuilder:
                         # add our in-wheel libs folder to the RPATH
                         if platform.system() == "Linux":
                             elf = mesonpy._elf.ELF(origin)
-                            libdir_path = f'$ORIGIN/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
+                            relativepath = os.path.relpath(
+                                f".{self._project.name}.mesonpy.libs",
+                                destination.parent,
+                            )
+                            libdir_path = f"$ORIGIN/{relativepath}"
                             if libdir_path not in elf.rpath:
                                 elf.rpath = [*elf.rpath, libdir_path]
                         elif platform.system() == "Darwin":
                             dylib = mesonpy._dylib.Dylib(origin)
-                            libdir_path = f'@loader_path/{os.path.relpath(f".{self._project.name}.mesonpy.libs", destination.parent)}'
+                            relativepath = os.path.relpath(
+                                f".{self._project.name}.mesonpy.libs",
+                                destination.parent,
+                            )
+                            libdir_path = f"@loader_path/{relativepath}"
                             if libdir_path not in dylib.rpath:
                                 dylib.rpath = [*dylib.rpath, libdir_path]
                         else:
