@@ -22,23 +22,27 @@ class Dylib:
         self._needed: Optional[Collection[str]] = None
 
     def _otool(self, *args: str) -> str:
-        return subprocess.check_output(['otool', *args, self._path], stderr=subprocess.STDOUT).decode()
+        return subprocess.check_output(
+            ["otool", *args, self._path], stderr=subprocess.STDOUT
+        ).decode()
 
     def _install_name_tool(self, *args: str) -> str:
-        return subprocess.check_output(['install_name_tool', *args, self._path], stderr=subprocess.STDOUT).decode()
+        return subprocess.check_output(
+            ["install_name_tool", *args, self._path], stderr=subprocess.STDOUT
+        ).decode()
 
     @property
     def rpath(self) -> Collection[str]:
         if self._rpath is None:
             self._rpath = []
             # Run otool -l to get the load commands
-            otool_output = self._otool('-l').strip()
+            otool_output = self._otool("-l").strip()
             # Manually parse the output for LC_RPATH
             rpath_tag = False
-            for line in [x.split() for x in otool_output.split('\n')]:
-                if line == ['cmd', 'LC_RPATH']:
+            for line in [x.split() for x in otool_output.split("\n")]:
+                if line == ["cmd", "LC_RPATH"]:
                     rpath_tag = True
-                elif len(line) >= 2 and line[0] == 'path' and rpath_tag:
+                elif len(line) >= 2 and line[0] == "path" and rpath_tag:
                     self._rpath += [line[1]]
                     rpath_tag = False
         return frozenset(self._rpath)
@@ -48,8 +52,8 @@ class Dylib:
         # We clear all LC_RPATH load commands
         if self._rpath:
             for rpath in self._rpath:
-                self._install_name_tool('-delete_rpath', rpath)
+                self._install_name_tool("-delete_rpath", rpath)
         # We then rewrite the new load commands
         for rpath in value:
-            self._install_name_tool('-add_rpath', rpath)
+            self._install_name_tool("-add_rpath", rpath)
         self._rpath = value

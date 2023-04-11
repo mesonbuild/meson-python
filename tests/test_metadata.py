@@ -7,21 +7,26 @@ import textwrap
 
 
 def test_no_pep621(sdist_library):
-    with tarfile.open(sdist_library, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read().decode()
+    with tarfile.open(sdist_library, "r:gz") as sdist:
+        sdist_pkg_info = sdist.extractfile("library-1.0.0/PKG-INFO").read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert sdist_pkg_info == textwrap.dedent(
+        """\
         Metadata-Version: 2.1
         Name: library
         Version: 1.0.0
-    ''')
+    """
+    )
 
 
 def test_pep621(sdist_full_metadata):
-    with tarfile.open(sdist_full_metadata, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read().decode()
+    with tarfile.open(sdist_full_metadata, "r:gz") as sdist:
+        sdist_pkg_info = (
+            sdist.extractfile("full_metadata-1.2.3/PKG-INFO").read().decode()
+        )
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert sdist_pkg_info == textwrap.dedent(
+        """\
         Metadata-Version: 2.1
         Name: full-metadata
         Version: 1.2.3
@@ -56,15 +61,20 @@ def test_pep621(sdist_full_metadata):
         # full-metadata
 
         An example package with all of the PEP 621 metadata!
-    ''')
+    """
+    )
 
 
 def test_dynamic_version(sdist_dynamic_version):
-    with tarfile.open(sdist_dynamic_version, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read().decode()
+    with tarfile.open(sdist_dynamic_version, "r:gz") as sdist:
+        sdist_pkg_info = (
+            sdist.extractfile("dynamic_version-1.0.0/PKG-INFO").read().decode()
+        )
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert sdist_pkg_info == textwrap.dedent(
+        """\
         Metadata-Version: 2.1
         Name: dynamic-version
         Version: 1.0.0
-    ''')
+    """
+    )

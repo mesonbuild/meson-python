@@ -6,5 +6,5 @@ import pathlib
 
 
 def data():
-    with pathlib.Path(__file__).parent.joinpath('data.txt').open() as f:
+    with pathlib.Path(__file__).parent.joinpath("data.txt").open() as f:
         return f.read().rstrip()

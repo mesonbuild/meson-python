@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-print('hello!')
+print("hello!")

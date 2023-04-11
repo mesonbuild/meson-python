@@ -2,5 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
+
 def bar():
-    return 'bar'
+    return "bar"

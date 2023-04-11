@@ -2,5 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
+
 def foo():
-    return 'foo'
+    return "foo"
