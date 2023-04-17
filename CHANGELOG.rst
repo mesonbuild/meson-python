@@ -20,7 +20,7 @@ Change-log
 - Make sure that the directory where the wheel or sdist build artifacts are
   created exists. Fixes building with PDM.
 - Fix the specification of the C++ compiler for cross-compilation with
-  ``$ARChFLAGS`` on macOS.
+  ``$ARCHFLAGS`` on macOS.
 - Pass the ``--reconfigure`` option to ``meson setup`` if and only if the
   specified build directory exists and is a valid Meson build directory.
 - Pass the ``--no-rebuild`` option to ``meson install``.
@@ -32,7 +32,7 @@ Change-log
 - Do not add ``ninja`` to the build dependencies if ``$NINJA`` is set but it
   does not point to a ``ninja`` executable with the required minimum version.
 - Verify at run time that Meson satisfies the minimum required version.
-- Place native and cross files in the build directory instead than in the
+- Place native and cross files in the build directory instead of in the
   source directory.
 - Drop the ``typing-extensions`` package dependency.
 - Add dependency on ``setuptools`` on Python 3.12 and later. This fixes build
@@ -53,7 +53,7 @@ Change-log
 
 Daniele Nicolodi, Doron Behar, Eli Schwartz, Filipe Laíns, Lars Pastewka,
 Luigi Giugliano, Matthias Köppe, Peter Urban, Ralf Gommers, Stefan van der
-Walt, Thomas Li --- 15-04-2023.
+Walt, Thomas Li --- 17-04-2023.
 
 
 0.12.1
