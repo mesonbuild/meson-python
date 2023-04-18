@@ -53,7 +53,7 @@ Change-log
 
 Daniele Nicolodi, Doron Behar, Eli Schwartz, Filipe Laíns, Lars Pastewka,
 Luigi Giugliano, Matthias Köppe, Peter Urban, Ralf Gommers, Stefan van der
-Walt, Thomas Li --- 17-04-2023.
+Walt, Thomas Li --- 18-04-2023.
 
 
 0.12.1
