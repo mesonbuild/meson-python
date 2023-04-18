@@ -15,7 +15,7 @@ requires = [
 [project]
 name = 'meson-python'
 description = 'Meson Python build backend (PEP 517)'
-readme = 'README.md'
+readme = 'README.rst'
 requires-python = '>= 3.7'
 license = { file = 'LICENSES/MIT.txt' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
