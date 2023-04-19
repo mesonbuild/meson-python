@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import atexit
 import contextlib
 import os
 import os.path
@@ -73,24 +72,6 @@ def tmp_path_session(tmp_path_factory):
         prefix='mesonpy-test-',
         dir=tmp_path_factory.mktemp('test'),
     ))
-
-
-@pytest.fixture
-def tmp_build_path():
-    # Similar to the tmp_path fixture but ensures that the temporary
-    # directory is on the same Windows drive as the test packages
-    # source directory. This is required to work around a Cython bug
-    # exposed in our test packages. See https://github.com/cython/cython/pull/5279
-    tmpdir = tempfile.mkdtemp(prefix='.build-', dir=package_dir)
-    # The clenup is implemented with an atexit hook rather than with a
-    # regular context manager because we import extension modules from
-    # the build directory in the tests and these need to stay around
-    # till the Python interpreter is being teared down. Orherwise
-    # PermissionError removing the folder are obtained on Windows, but
-    # more importantly, the removal succeeds on Cygwin but memory
-    # mapping errors are obtained when Python tries to fork().
-    atexit.register(shutil.rmtree, tmpdir, ignore_errors=True)
-    yield pathlib.Path(tmpdir)
 
 
 class VEnv(EnvBuilder):

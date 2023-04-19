@@ -58,10 +58,10 @@ def test_collect(package_complex):
     assert tree['complex']['more']['__init__.py'] == os.path.join(root, 'complex', 'more', '__init__.py')
 
 
-def test_mesonpy_meta_finder(package_complex, tmp_build_path):
+def test_mesonpy_meta_finder(package_complex, tmp_path):
     # build a package in a temporary directory
-    mesonpy.Project(package_complex, tmp_build_path)
-    build_path = tmp_build_path / 'build'
+    mesonpy.Project(package_complex, tmp_path)
+    build_path = tmp_path / 'build'
 
     # point the meta finder to the build directory
     finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(build_path), ['ninja'])
