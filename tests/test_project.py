@@ -19,7 +19,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir, package_dir
+from .conftest import chdir, in_git_repo_context, package_dir
 
 
 @pytest.mark.parametrize(
@@ -92,8 +92,9 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         'install-args': ('cli-install',),
     }
 
-    mesonpy.build_sdist(tmp_path, config_settings)
-    mesonpy.build_wheel(tmp_path, config_settings)
+    with in_git_repo_context():
+        mesonpy.build_sdist(tmp_path, config_settings)
+        mesonpy.build_wheel(tmp_path, config_settings)
 
     # check that the right commands are executed, namely that 'meson
     # compile' is used on Windows rather than a 'ninja' direct
