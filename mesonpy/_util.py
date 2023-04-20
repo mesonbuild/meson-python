@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import gzip
+import itertools
 import os
 import sys
 import tarfile
@@ -73,22 +74,18 @@ def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
 class CLICounter:
     def __init__(self, total: int) -> None:
         self._total = total - 1
-        self._count = -1
-        self._current_line = ''
+        self._count = itertools.count()
 
     def update(self, description: str) -> None:
-        self._count += 1
-        new_line = f'[{self._count}/{self._total}] {description}'
+        line = f'[{next(self._count)}/{self._total}] {description}'
         if sys.stdout.isatty():
-            pad_size = abs(len(self._current_line) - len(new_line))
-            print(' ' + new_line + ' ' * pad_size, end='\r', flush=True)
+            print('\r', line, sep='', end='\33[0K', flush=True)
         else:
-            print(new_line)
-        self._current_line = new_line
+            print(line)
 
     def finish(self) -> None:
         if sys.stdout.isatty():
-            print(f'\r{self._current_line}')
+            print()
 
 
 @contextlib.contextmanager
