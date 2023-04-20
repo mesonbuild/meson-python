@@ -499,7 +499,6 @@ class _WheelBuilder():
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
 
-            print('{light_blue}{bold}Copying files to wheel...{reset}'.format(**_STYLES))
             with mesonpy._util.cli_counter(
                 len(list(itertools.chain.from_iterable(self._wheel_files.values()))),
             ) as counter:
@@ -816,7 +815,7 @@ class Project():
     def install(self) -> None:
         """Install the Meson project."""
         destdir = os.fspath(self._install_dir)
-        self._run(['meson', 'install', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
+        self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
 
     @classmethod
     @contextlib.contextmanager
