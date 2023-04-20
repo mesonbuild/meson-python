@@ -733,7 +733,10 @@ class Project():
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
-        print('{cyan}{bold}+ {}{reset}'.format(' '.join(cmd), **_STYLES))
+        # Flush the line to ensure that the log line with the executed
+        # command line appears before the command output. Without it,
+        # the lines appear in the wrong order in pip output.
+        print('{cyan}{bold}+ {}{reset}'.format(' '.join(cmd), **_STYLES), flush=True)
         r = subprocess.run(cmd, env=self._env, cwd=self._build_dir)
         if r.returncode != 0:
             raise SystemExit(r.returncode)
