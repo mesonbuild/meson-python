@@ -286,10 +286,9 @@ If the build succeeded, you'll have the binary artifacts in the ``dist`` folder.
 Distributing the project
 ------------------------
 
-Now that we have the distribution artifacts, we can upload them to a repository.
-We will upload them to the `Python Package Index`_ (:spelling:word:`abv`. *PyPI*,
-`pronounced "pie pea eye"`_), which is repository that comes enabled by default
-in most tools.
+Now that we have the distribution artifacts, we can upload them to a
+repository.  We will upload them to the `Python Package Index`_ (PyPI), which
+is repository that comes enabled by default in most tools.
 
 For this, we will use Twine_.
 
