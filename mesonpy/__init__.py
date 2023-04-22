@@ -656,6 +656,10 @@ class Project():
             raise ConfigError(f'Could not find ninja version {_NINJA_REQUIRED_VERSION} or newer.')
         self._env.setdefault('NINJA', self._ninja)
 
+        # make sure the build dir exists
+        self._build_dir.mkdir(exist_ok=True, parents=True)
+        self._install_dir.mkdir(exist_ok=True, parents=True)
+
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
             archflags = self._env.get('ARCHFLAGS', '').strip()
@@ -695,10 +699,6 @@ class Project():
         if meson_args:
             for key, value in meson_args.items():
                 self._meson_args[key].extend(value)
-
-        # make sure the build dir exists
-        self._build_dir.mkdir(exist_ok=True, parents=True)
-        self._install_dir.mkdir(exist_ok=True, parents=True)
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
