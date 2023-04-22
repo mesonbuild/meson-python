@@ -34,20 +34,13 @@ release = mesonpy.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx_autodoc_typehints',
     'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
     'sphinxext.opengraph',
 ]
 
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'importlib_resources': ('https://importlib-resources.readthedocs.io/en/latest/', None),
-}
 
 try:
     import sphinxcontrib.spelling
@@ -102,5 +95,3 @@ ogp_site_name = 'meson-python documentation'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named 'default.css' will overwrite the builtin 'default.css'.
 # html_static_path = ['_static']
-
-autoclass_content = 'both'
