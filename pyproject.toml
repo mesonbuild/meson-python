@@ -58,7 +58,6 @@ docs = [
   'sphinx-copybutton >= 0.5.0',
   'sphinx-design >= 0.1.0',
   'sphinx-autobuild',
-  'sphinxcontrib-spelling >= 7.0.0',
   'sphinxext-opengraph >= 0.7.0',
 ]
 
@@ -89,7 +88,9 @@ select = [
   'W',       # pycodestyle
   'RUF100',  # ruff
 ]
-
+exclude = [
+  'docs/conf.py',
+]
 
 [tool.ruff.mccabe]
 max-complexity = 12
@@ -101,6 +102,9 @@ lines_after_imports = 2
 multi_line_output = 5
 known_first_party = 'mesonpy'
 line_length = 127
+skip = [
+  'docs/conf.py',
+]
 
 
 [tool.coverage.run]

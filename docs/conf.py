@@ -41,7 +41,6 @@ extensions = [
     'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
-    'sphinxcontrib.spelling',
     'sphinxext.opengraph',
 ]
 
@@ -49,6 +48,14 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'importlib_resources': ('https://importlib-resources.readthedocs.io/en/latest/', None),
 }
+
+try:
+    import sphinxcontrib.spelling
+    extensions.append('sphinxcontrib.spelling')
+    spelling_show_suggestions = True
+    spelling_warning = True
+except ImportError:
+    pass
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -83,12 +90,6 @@ html_theme_options = {
         ),
     },
 }
-
-
-# Spellchecking
-
-spelling_show_suggestions = True
-spelling_warning = True
 
 
 # Open Graph
