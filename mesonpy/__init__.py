@@ -647,14 +647,13 @@ class Project():
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
-        self._env = os.environ.copy()
 
         _check_meson_version()
 
         self._ninja = _env_ninja_command()
         if self._ninja is None:
             raise ConfigError(f'Could not find ninja version {_NINJA_REQUIRED_VERSION} or newer.')
-        self._env.setdefault('NINJA', self._ninja)
+        os.environ.setdefault('NINJA', self._ninja)
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True, parents=True)
@@ -662,14 +661,14 @@ class Project():
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
-            archflags = self._env.get('ARCHFLAGS', '').strip()
+            archflags = os.environ.get('ARCHFLAGS', '').strip()
             if archflags:
                 arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
                 if other:
                     raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
                 macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:
-                    x = self._env.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
+                    x = os.environ.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
                     if not x.endswith(arch):
                         raise ConfigError(f'$ARCHFLAGS={archflags!r} and $_PYTHON_HOST_PLATFORM={x!r} do not agree')
                     family = 'aarch64' if arch == 'arm64' else arch
@@ -736,7 +735,7 @@ class Project():
         # command line appears before the command output. Without it,
         # the lines appear in the wrong order in pip output.
         print('{cyan}{bold}+ {}{reset}'.format(' '.join(cmd), **_STYLES), flush=True)
-        r = subprocess.run(cmd, env=self._env, cwd=self._build_dir)
+        r = subprocess.run(cmd, cwd=self._build_dir)
         if r.returncode != 0:
             raise SystemExit(r.returncode)
 

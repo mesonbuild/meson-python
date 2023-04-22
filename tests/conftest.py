@@ -156,8 +156,8 @@ def disable_pip_version_check():
 
 @pytest.fixture(scope='session')
 def pep518_wheelhouse(tmp_path_factory):
-    wheelhouse = tmp_path_factory.mktemp('wheelhouse')
-    meson_python = str(package_dir.parent.parent)
+    wheelhouse = os.fspath(tmp_path_factory.mktemp('wheelhouse'))
+    meson_python = os.fspath(package_dir.parent.parent)
     # Populate wheelhouse with wheel for the following packages and
     # their dependencies.  Wheels are downloaded from PyPI or built
     # from the source distribution as needed.  Sources or wheels in
@@ -165,8 +165,9 @@ def pep518_wheelhouse(tmp_path_factory):
     packages = [
         meson_python,
     ]
-    subprocess.run([sys.executable, '-m', 'pip', 'wheel', '--wheel-dir', str(wheelhouse), *packages], check=True)
-    return str(wheelhouse)
+    cmd = [sys.executable, '-m', 'pip', 'wheel', '--no-build-isolation', '--wheel-dir', wheelhouse, *packages]
+    subprocess.run(cmd, check=True)
+    return wheelhouse
 
 
 @pytest.fixture

@@ -240,3 +240,12 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
     with pytest.raises(mesonpy.BuildError, match='The purelib-platlib-split package is split'):
         with mesonpy.Project.with_temp_working_dir() as project:
             project.wheel(tmp_path)
+
+
+@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
+@pytest.mark.parametrize(('arch'), ['x86_64', 'arm64'])
+def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):
+    monkeypatch.setenv('ARCHFLAGS', f'-arch {arch}')
+    filename = mesonpy.build_wheel(tmp_path)
+    name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
+    assert name.group('plat').endswith(arch)
