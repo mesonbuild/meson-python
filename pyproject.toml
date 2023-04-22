@@ -53,7 +53,6 @@ test = [
 docs = [
   'furo >= 2021.08.31',
   'sphinx ~= 4.0',
-  'sphinx-autodoc-typehints >= 1.10',
   'sphinx-contributors >= 0.2.2',
   'sphinx-copybutton >= 0.5.0',
   'sphinx-design >= 0.1.0',
