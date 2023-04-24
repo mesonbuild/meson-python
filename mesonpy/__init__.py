@@ -170,7 +170,8 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
                     that = os.fspath(other / next(d for d, s in wheel_files[other] if d.parts[0] == destination.parts[1]))
                     raise BuildError(
                         f'The {package} package is split between {path} and {other}: '
-                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build')
+                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                        f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             wheel_files[path].append((pathlib.Path(*destination.parts[1:]), src))
     return wheel_files
