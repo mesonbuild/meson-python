@@ -12,6 +12,25 @@ Change-log
 ++++++++++
 
 
+0.13.1
+======
+
+- Fix regression in cross-compilation via ``$ARCHFLAGS`` on macOS where the
+  cross file was written in the build directory before it was created,
+  resulting in an error.
+- Do not require setting ``$_PYTHON_HOST_PLATFORM`` when cross-compiling via
+  ``$ARCHFLAGS`` on macOS.
+- Add the ``--quiet`` option when invoking ``meson install``. The installation
+  paths are a detail of the ``meson-python`` implementation and are generally
+  not interesting for the user.
+- Fix terminal logging when overriding the current line when listing files
+  added to the wheel.
+- Improve the error message emitted when a package split between the
+  ``purelib`` and ``platlib`` wheel locations is detected.
+
+Daniele Nicolodi, Ralf Gommers --- 28-04-2023.
+
+
 0.13.0
 ======
 
