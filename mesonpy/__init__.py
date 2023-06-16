@@ -853,11 +853,10 @@ class Project():
 
         # filter the install_plan for files that do not fit the install tags
         if args.tags:
-            install_tags = args.tags.split(',')
-
+            install_tags = {tag.strip() for tag in args.tags.split(',')}
             for files in install_plan.values():
                 for file, details in list(files.items()):
-                    if details['tag'].strip() not in install_tags:
+                    if details['tag'] not in install_tags:
                         del files[file]
 
         return install_plan
