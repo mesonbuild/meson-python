@@ -29,6 +29,12 @@ debian-11_task:
     cpu: 1
   << : *test
 
+debian-12_task:
+  container:
+    dockerfile: ci/debian-12.docker
+    cpu: 1
+  << : *test
+
 debian-unstable_task:
   container:
     dockerfile: ci/debian-unstable.docker
