@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2023 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+# 20230620
+FROM debian:bookworm
+RUN apt-get update && apt-get install -y git ninja-build patchelf python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
