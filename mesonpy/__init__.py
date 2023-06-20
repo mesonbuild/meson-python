@@ -678,7 +678,7 @@ class Project():
                         c = ['cc', '-arch', {arch!r}]
                         cpp = ['c++', '-arch', {arch!r}]
                         [host_machine]
-                        system = 'Darwin'
+                        system = 'darwin'
                         cpu = {arch!r}
                         cpu_family = {family!r}
                         endian = 'little'
