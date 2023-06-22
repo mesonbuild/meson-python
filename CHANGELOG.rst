@@ -12,6 +12,15 @@ Change-log
 ++++++++++
 
 
+0.13.2
+======
+
+- Fix system name in cross file generated when using ``$ARCHFLAGS``.
+- Fix handling of ``null`` Meson install tags.
+
+Charles Brunet, Daniele Nicolodi --- 22-06-2023.
+
+
 0.13.1
 ======
 
