@@ -147,9 +147,9 @@ _INSTALLATION_PATH_MAP = {
 }
 
 
-def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, pathlib.Path]]]:
     """Map files to the wheel, organized by wheel installation directrory."""
-    wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
+    wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, pathlib.Path]]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
 
     for group in sources.values():
@@ -172,7 +172,7 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
                         f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
                         f'It is recommended to set it in "import(\'python\').find_installation()"')
 
-            wheel_files[path].append((pathlib.Path(*destination.parts[1:]), src))
+            wheel_files[path].append((pathlib.Path(*destination.parts[1:]), pathlib.Path(src)))
     return wheel_files
 
 
@@ -239,7 +239,7 @@ class _WheelBuilder():
         self._libs_build_dir = self._build_dir / 'mesonpy-wheel-libs'
 
     @cached_property
-    def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+    def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, pathlib.Path]]]:
         return _map_to_wheel(self._sources)
 
     @property
@@ -459,7 +459,7 @@ class _WheelBuilder():
     def _install_path(
         self,
         wheel_file: mesonpy._wheelfile.WheelFile,
-        origin: Path,
+        origin: pathlib.Path,
         destination: pathlib.Path,
     ) -> None:
         """"Install" file or directory into the wheel
@@ -517,14 +517,14 @@ class _WheelBuilder():
 
                     for path, entries in self._wheel_files.items():
                         for dst, src in entries:
-                            counter.update(src)
+                            counter.update(os.fspath(src))
 
                             # Install files from installation path into the wheel. This guarantees
                             # that the installed files had the build path rpath removed by Meson
                             # during 'meson install' and that directories installed with
                             # 'install_subdir()' had 'excluded_files' and 'excluded_directories'
                             # omitted.
-                            src = installed[os.fspath(src)]
+                            src = installed[src]
 
                             if path == root:
                                 pass
@@ -823,7 +823,7 @@ class Project():
         """Build the Meson project."""
         self._run(self._build_command)
 
-    def install(self, destdir: Path) -> Dict[str, str]:
+    def install(self, destdir: Path) -> Dict[pathlib.Path, pathlib.Path]:
         """Install the Meson project."""
         destdir = os.fspath(destdir)
         self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
@@ -833,7 +833,7 @@ class Project():
         installed = {}
         for src, dst in self._info('intro-installed').items():
             path = pathlib.Path(dst).absolute()
-            installed[src] = os.fspath(destdir / path.relative_to(path.anchor))
+            installed[pathlib.Path(src)] = destdir / path.relative_to(path.anchor)
 
         return installed
 
