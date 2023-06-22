@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project('meson-python', version: '0.13.2')
+project('meson-python', version: '0.14.0.dev0')
 
 py_mod = import('python')
 py = py_mod.find_installation()
