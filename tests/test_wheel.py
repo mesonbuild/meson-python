@@ -20,11 +20,12 @@ import mesonpy
 from .conftest import adjust_packaging_platform_tag
 
 
+_meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+MESON_VERSION = tuple(map(int, _meson_ver_str.split('.')[:3]))
+
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 if sys.version_info <= (3, 8, 7):
-    meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
-    meson_version = tuple(map(int, meson_ver_str.split('.')[:2]))
-    if meson_version >= (0, 99):
+    if MESON_VERSION >= (0, 99):
         # Fixed in Meson 1.0, see https://github.com/mesonbuild/meson/pull/10961.
         from distutils.sysconfig import get_config_var
         EXT_SUFFIX = get_config_var('EXT_SUFFIX')
@@ -249,3 +250,29 @@ def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, ar
     filename = mesonpy.build_wheel(tmp_path)
     name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
     assert name.group('plat').endswith(arch)
+
+
+def test_subprojects(package_subproject, tmp_path):
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        'subproject-1.0.0.dist-info/METADATA',
+        'subproject-1.0.0.dist-info/RECORD',
+        'subproject-1.0.0.dist-info/WHEEL',
+        'subproject.py',
+        'dep.py',
+    }
+
+
+# Requires Meson 1.2.0, see https://github.com/mesonbuild/meson/pull/11909.
+@pytest.mark.skipif(MESON_VERSION < (1, 1, 99), reason='Meson version too old')
+@pytest.mark.parametrize(('arg'), ['--skip-subprojects', '--skip-subprojects=dep'])
+def test_skip_subprojects(package_subproject, tmp_path, arg):
+    filename = mesonpy.build_wheel(tmp_path, {'install-args': [arg]})
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        'subproject-1.0.0.dist-info/METADATA',
+        'subproject-1.0.0.dist-info/RECORD',
+        'subproject-1.0.0.dist-info/WHEEL',
+        'subproject.py',
+    }
