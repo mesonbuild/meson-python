@@ -842,24 +842,29 @@ class Project():
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
         """Meson install_plan metadata."""
+        install_plan = self._info('intro-install_plan')
 
-        # copy the install plan so we can modify it
-        install_plan = self._info('intro-install_plan').copy()
-
-        # parse install args for install tags (--tags)
+        # parse install args to extract --tags and --skip-subprojects
         parser = argparse.ArgumentParser()
         parser.add_argument('--tags')
+        parser.add_argument('--skip-subprojects', nargs='?', const='*', default='')
         args, _ = parser.parse_known_args(self._meson_args['install'])
+        install_tags = {t.strip() for t in args.tags.split(',')} if args.tags else None
+        skip_subprojects = {p for p in (p.strip() for p in args.skip_subprojects.split(',')) if p}
 
-        # filter the install_plan for files that do not fit the install tags
-        if args.tags:
-            install_tags = {tag.strip() for tag in args.tags.split(',')}
-            for files in install_plan.values():
-                for file, details in list(files.items()):
-                    if details['tag'] not in install_tags:
-                        del files[file]
+        manifest: DefaultDict[str, Dict[str, Dict[str, str]]] = collections.defaultdict(dict)
 
-        return install_plan
+        # filter install_plan accordingly
+        for key, targets in install_plan.items():
+            for target, details in targets.items():
+                if install_tags is not None and details['tag'] not in install_tags:
+                    continue
+                subproject = details.get('subproject')
+                if subproject is not None and (subproject in skip_subprojects or '*' in skip_subprojects):
+                    continue
+                manifest[key][target] = details
+
+        return manifest
 
     @property
     def _meson_name(self) -> str:
