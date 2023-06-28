@@ -63,6 +63,10 @@ jobs:
           - os: ubuntu
             python: '3.11'
             meson: '~=1.0.0'
+          # Test with Meson master branch.
+          - os: ubuntu
+            python: '3.11'
+            meson: '@git+https://github.com/mesonbuild/meson.git'
 
     steps:
       - name: Checkout
