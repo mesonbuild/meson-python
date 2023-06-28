@@ -19,56 +19,38 @@ other maintainer.
 
 After that is done, you may release the project by following these steps:
 
-#. Release to the Git_ repository
+#. Release to the Git repository on GitHub:
     #. Create the release commit
         #. Bump the versions in ``meson.build`` and ``mesonpy/__init__.py``
         #. Create ``CHANGELOG.rst`` section for the new release and fill it
-
-        .. admonition:: Release commit format
-           :class: important
-
-           The commit message should follow the ``release X.Y.Z`` format.
+        #. The commit message should read: ``REL: set version to X.Y.Z``
     #. Create a signed tag for the release
-        .. code-block:: console
-
-           $ git tag -s X.Y.Z
-
-        .. admonition:: Release commit format
-           :class: important
-
-           The tag title should follow the ``meson-python X.Y.Z`` format, and the
+        #. Create a GPG-signed tag with ``$ git tag -s X.Y.Z``
+        #. The tag title should follow the ``meson-python X.Y.Z`` format, and the
            tag body should be a plain text version of the change-log for the current
            release.
-
-        .. admonition:: Converting the change-log text to plain text
-             :class: hint
-
-             To easily get a plain text version of the change-log, you can push the
-             release commit and then copy the text from rendered version of the
-             change-log in Github.
-
     #. Push the commit and tag to the repository
         .. code-block:: console
 
            $ git push
            $ git push --tags
 
-#. Release to PyPI_
+#. Release to `PyPI <https://pypi.org/project/meson-python/>`_
     #. Build the Python artifacts
         .. code-block:: console
 
            $ python -m build
 
-    #. Sign and push the artifacts to PyPI
+    #. Push the artifacts to PyPI
         .. code-block:: console
 
-           $ twine upload -s dist/*
+           $ twine upload dist/*
 
+       Note that there is no need to GPG-sign the artifacts; PyPI no longer
+       supports uploading GPG signatures.
 
 If you have any questions, please look at previous releases and/or ping the
 other maintainers.
 
 
 .. _installation page: installation
-.. _Git: https://git-scm.com/
-.. _PyPI: https://pypi.org/
