@@ -106,6 +106,7 @@ Contributors
    how-to-guides/editable-installs
    how-to-guides/config-settings
    how-to-guides/meson-args
+   projects-using-meson-python
 
 .. how-to-guides/add-dependencies
    how-to-guides/build-directory
@@ -141,7 +142,6 @@ Contributors
 
    changelog
    security
-   projects-using-meson-python
    contributing/index
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
