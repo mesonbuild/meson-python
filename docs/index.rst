@@ -3,29 +3,9 @@
 .. SPDX-License-Identifier: MIT
 
 
-*************************
-meson-python |PyPI badge|
-*************************
-
-.. image:: https://results.pre-commit.ci/badge/github/mesonbuild/meson-python/main.svg
-   :target: https://results.pre-commit.ci/latest/github/mesonbuild/meson-python/main
-   :alt: pre-commit.ci status
-
-
-.. image:: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml/badge.svg
-   :target: https://github.com/mesonbuild/meson-python/actions/workflows/tests.yml
-   :alt: Github Action 'tests' workflow status
-
-
-.. image:: https://codecov.io/gh/mesonbuild/meson-python/branch/main/graph/badge.svg?token=xcb2u2YvVk
-   :target: https://codecov.io/gh/mesonbuild/meson-python
-   :alt: Codecov coverage status
-
-
-.. image:: https://readthedocs.org/projects/meson-python/badge/?version=stable
-   :target: https://meson-python.readthedocs.io/en/stable/?badge=stable
-   :alt: Documentation Status
-
+************
+meson-python
+************
 
 .. highlights::
 
@@ -145,11 +125,6 @@ Contributors
    contributing/index
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
-
-
-.. |PyPI badge| image:: https://badge.fury.io/py/meson-python.svg
-   :target: https://pypi.org/project/meson-python
-   :alt: PyPI version badge
 
 
 .. _Meson: https://github.com/mesonbuild/meson
