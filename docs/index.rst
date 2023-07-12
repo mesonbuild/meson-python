@@ -101,7 +101,8 @@ Contributors
    :hidden:
 
    tutorials/introduction
-   tutorials/data
+
+.. tutorials/data
    tutorials/entrypoints
    tutorials/executable
 
@@ -111,10 +112,11 @@ Contributors
    :hidden:
 
    how-to-guides/first-project
-   how-to-guides/add-dependencies
    how-to-guides/editable-installs
    how-to-guides/config-settings
    how-to-guides/meson-args
+
+.. how-to-guides/add-dependencies
    how-to-guides/build-directory
    how-to-guides/executable-with-internal-dependencies
 
@@ -126,16 +128,18 @@ Contributors
    reference/config-settings
    reference/pyproject-settings
    reference/environment-variables
-   reference/quirks
    reference/limitations
+
+.. reference/quirks
 
 
 .. toctree::
    :caption: Explanations
    :hidden:
 
-   explanations/design
    explanations/default-options
+
+.. explanations/design
    explanations/internal-dependencies
    explanations/editable-installs
 
@@ -144,11 +148,12 @@ Contributors
    :caption: Contributing
    :hidden:
 
-   contributing/getting-started
-   contributing/commit-format
-   contributing/test-suite
    contributing/documentation
    contributing/release-process
+
+.. contributing/getting-started
+   contributing/commit-format
+   contributing/test-suite
 
 
 .. toctree::
