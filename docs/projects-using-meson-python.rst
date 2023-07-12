@@ -4,9 +4,9 @@
 
 .. _projects-using-meson-python:
 
-*******************************
-Projects using ``meson-python``
-*******************************
+********
+Examples
+********
 
 Here's a curated list of projects using ``meson-python``.
 
