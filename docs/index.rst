@@ -88,15 +88,6 @@ Contributors
 
 
 .. toctree::
-   :caption: Information
-   :hidden:
-
-   changelog
-   projects-using-meson-python
-   security
-
-
-.. toctree::
    :caption: Tutorials
    :hidden:
 
@@ -157,9 +148,12 @@ Contributors
 
 
 .. toctree::
-   :caption: Project Links
+   :caption: Project
    :hidden:
 
+   changelog
+   security
+   projects-using-meson-python
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
 
