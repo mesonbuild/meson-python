@@ -7,9 +7,9 @@
    git log --format='%aN' $PREV..HEAD | sort -u | awk '$1=$1' RS='' FS='\n' OFS=', '
 
 
-++++++++++
-Change-log
-++++++++++
++++++++++
+Changelog
++++++++++
 
 
 0.13.2
