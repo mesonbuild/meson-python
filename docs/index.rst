@@ -136,24 +136,13 @@ Contributors
 
 
 .. toctree::
-   :caption: Contributing
-   :hidden:
-
-   contributing/documentation
-   contributing/release-process
-
-.. contributing/getting-started
-   contributing/commit-format
-   contributing/test-suite
-
-
-.. toctree::
    :caption: Project
    :hidden:
 
    changelog
    security
    projects-using-meson-python
+   contributing/index
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
 
