@@ -20,34 +20,46 @@ other maintainer.
 After that is done, you may release the project by following these steps:
 
 #. Release to the Git repository on GitHub:
-    #. Create the release commit
-        #. Bump the versions in ``meson.build`` and ``mesonpy/__init__.py``
-        #. Create ``CHANGELOG.rst`` section for the new release and fill it
-        #. The commit message should read: ``REL: set version to X.Y.Z``
-    #. Create a signed tag for the release
-        #. Create a GPG-signed tag with ``$ git tag -s X.Y.Z``
-        #. The tag title should follow the ``meson-python X.Y.Z`` format, and the
-           tag body should be a plain text version of the change-log for the current
-           release.
-    #. Push the commit and tag to the repository
-        .. code-block:: console
 
-           $ git push
-           $ git push --tags
+   #. Create the release commit
+
+      #. Bump the versions in ``meson.build`` and ``mesonpy/__init__.py``.
+      #. Create ``CHANGELOG.rst`` section for the new release and fill it.
+      #. The commit message should read: ``REL: set version to X.Y.Z``
+
+   #. Create a GPG-signed tag for the release:
+
+      .. code-block:: console
+
+         $ git tag -s X.Y.Z
+
+      The tag title should follow the ``meson-python X.Y.Z`` format, and the
+      tag body should be a plain text version of the change-log for the current
+      release.
+
+   #. Push the commit and tag to the repository:
+
+      .. code-block:: console
+
+         $ git push
+         $ git push --tags
 
 #. Release to `PyPI <https://pypi.org/project/meson-python/>`_
-    #. Build the Python artifacts
-        .. code-block:: console
 
-           $ python -m build
+   #. Build the Python artifacts:
 
-    #. Push the artifacts to PyPI
-        .. code-block:: console
+      .. code-block:: console
 
-           $ twine upload dist/*
+         $ python -m build
 
-       Note that there is no need to GPG-sign the artifacts; PyPI no longer
-       supports uploading GPG signatures.
+   #. Push the artifacts to PyPI:
+
+      .. code-block:: console
+
+         $ twine upload dist/*
+
+      There is no need to GPG-sign the artifacts: PyPI no longer
+      supports uploading GPG signatures.
 
 If you have any questions, please look at previous releases and/or ping the
 other maintainers.
