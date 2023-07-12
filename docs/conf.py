@@ -38,7 +38,6 @@ release = mesonpy.__version__
 # ones.
 extensions = [
     'sphinx.ext.todo',
-    'sphinx_contributors',
     'sphinx_copybutton',
     'sphinx_design',
     'sphinxext.opengraph',
