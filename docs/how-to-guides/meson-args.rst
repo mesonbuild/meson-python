@@ -125,7 +125,7 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-	   $ python -m build -install-args="--tags=runtime,python-runtime" .
+	   $ python -m build -Cinstall-args="--tags=runtime,python-runtime" .
 
     .. tab-item:: pip
         :sync: key_pip
