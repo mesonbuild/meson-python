@@ -10,13 +10,15 @@ on:
     branches:
       - main
       - release-*
-    paths-ignore:
+    paths:
       # This is spelt like this to do not ignore the docs/examples/ folder.
-      - docs/*
-      - docs/usage/*
-      - CHANGELOG.rst
-      - LICENSE
-      - README.md
+      - '**'
+      - '!docs/**'
+      - 'docs/examples/**'
+      - '!CHANGELOG.rst'
+      - '!LICENSE'
+      - '!LICENSES/**'
+      - '!README.rst'
   workflow_dispatch:
     # Allow to run manually
 
