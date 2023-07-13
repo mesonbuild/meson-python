@@ -65,8 +65,7 @@ for quick questions - one ``meson-python`` maintainer is active there.
 
    tutorials/introduction
 
-.. tutorials/data
-   tutorials/entrypoints
+.. tutorials/entrypoints
    tutorials/executable
 
 
@@ -80,8 +79,7 @@ for quick questions - one ``meson-python`` maintainer is active there.
    how-to-guides/meson-args
    projects-using-meson-python
 
-.. how-to-guides/add-dependencies
-   how-to-guides/build-directory
+.. how-to-guides/build-directory
    how-to-guides/executable-with-internal-dependencies
 
 
