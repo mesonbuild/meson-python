@@ -80,7 +80,6 @@ for quick questions - one ``meson-python`` maintainer is active there.
    projects-using-meson-python
 
 .. how-to-guides/build-directory
-   how-to-guides/executable-with-internal-dependencies
 
 
 .. toctree::
