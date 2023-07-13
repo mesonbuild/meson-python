@@ -26,7 +26,7 @@ for the ``setup``, ``compile``, ``install``, and ``dist`` keys in the
 .. code-block:: toml
 
    [tool.meson-python.args]
-   setup = ['-Doption=false', '-Dfeature=enable', '-Dvalue=42']
+   setup = ['-Doption=false', '-Dfeature=enabled', '-Dvalue=42']
    compile = ['-j4']
    install = ['--tags=bindings']
    dist = ['--include-subprojects']
