@@ -120,18 +120,18 @@ Contributors
    reference/config-settings
    reference/pyproject-settings
    reference/environment-variables
+   explanations/default-options
    reference/limitations
 
 .. reference/quirks
 
 
-.. toctree::
+..
+   toctree::
    :caption: Explanations
    :hidden:
 
-   explanations/default-options
-
-.. explanations/design
+   explanations/design
    explanations/internal-dependencies
    explanations/editable-installs
 
