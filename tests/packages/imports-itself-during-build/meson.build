@@ -2,16 +2,14 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'imports-itself-during-build', 'c',
-    version: '1.0.0',
-)
+project('imports-itself-during-build', 'c', version: '1.0.0')
 
 py = import('python').find_installation()
 
 py.install_sources('pure.py')
 py.extension_module(
-    'plat', 'plat.c',
+    'plat',
+    'plat.c',
     install: true,
 )
 

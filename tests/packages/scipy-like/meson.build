@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project('scipy-like',
-  'c', 'cython',
-  version: '2.3.4',
-)
+project('scipy-like', 'c', 'cython', version: '2.3.4')
 
 # Work around Python bug on mingw-w64, fixed in Python 3.12
 # https://github.com/python/cpython/pull/100137

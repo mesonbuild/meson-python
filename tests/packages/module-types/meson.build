@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'module-types', 'c',
-    version: '1.0.0',
-)
+project('module-types', 'c', version: '1.0.0')
 
 py = import('python').find_installation()
 
@@ -19,6 +16,7 @@ py.install_sources(
     subdir: 'namespace',
 )
 py.extension_module(
-    'native', 'native.c',
+    'native',
+    'native.c',
     install: true,
 )

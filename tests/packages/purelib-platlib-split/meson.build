@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'purelib-platlib-split',
-    version: '1.0.0',
-)
+project('purelib-platlib-split', version: '1.0.0')
 
 py = import('python').find_installation()
 

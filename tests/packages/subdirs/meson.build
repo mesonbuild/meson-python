@@ -9,14 +9,21 @@ py = import('python').find_installation()
 # in Meson >= 0.64 this could be replace with a single
 # py.install_sources() with the 'preserve_path: true' argument.
 py.install_sources(
-  'subdirs/__init__.py',
-  subdir: 'subdirs')
+    'subdirs/__init__.py',
+    subdir: 'subdirs',
+)
+
 py.install_sources(
-  'subdirs/a/__init__.py',
-  subdir: 'subdirs/a')
+    'subdirs/a/__init__.py',
+    subdir: 'subdirs/a',
+)
+
 py.install_sources(
-  'subdirs/a/b/c.py',
-  subdir: 'subdirs/a/b')
+    'subdirs/a/b/c.py',
+    subdir: 'subdirs/a/b',
+)
+
 py.install_sources(
-  'subdirs/b/c.py',
-  subdir: 'subdirs/b')
+    'subdirs/b/c.py',
+    subdir: 'subdirs/b',
+)
