@@ -110,6 +110,7 @@ for quick questions - one ``meson-python`` maintainer is active there.
    :hidden:
 
    changelog
+   about
    security
    contributing/index
    Source Code <https://github.com/mesonbuild/meson-python>
