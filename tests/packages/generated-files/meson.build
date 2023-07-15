@@ -2,16 +2,14 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'executable-bit', 'c',
-    version: '1.0.0',
-)
+project('executable-bit', 'c', version: '1.0.0')
 
 fs = import('fs')
 py = import('python').find_installation()
 
 executable(
-    'example', 'example.c',
+    'example',
+    'example.c',
     install: true,
 )
 
@@ -28,15 +26,14 @@ version_gen = files('generate_version.py')
 if fs.exists('_version_meson.py')
     py.install_sources('_version_meson.py')
 else
-    custom_target('write_version_file',
+    custom_target(
+        'write_version_file',
         output: '_version_meson.py',
-        command: [
-            py, version_gen, '-o', '@OUTPUT@'
-        ],
+        command: [py, version_gen, '-o', '@OUTPUT@'],
         build_by_default: true,
         build_always_stale: true,
         install: true,
-        install_dir: py.get_install_dir(pure: false)
+        install_dir: py.get_install_dir(pure: false),
     )
     meson.add_dist_script(py, version_gen, '-o', '_version_meson.py')
 endif

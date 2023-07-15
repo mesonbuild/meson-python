@@ -6,8 +6,4 @@ project('simple', version: '1.0.0')
 
 py = import('python').find_installation()
 
-py.install_sources(
-  '__init__.py',
-  'test.py',
-  'data.txt',
-  subdir: 'simple')
+py.install_sources('__init__.py', 'test.py', 'data.txt', subdir: 'simple')

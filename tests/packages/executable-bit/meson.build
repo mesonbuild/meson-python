@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'executable-bit', 'c',
-    version: '1.0.0',
-)
+project('executable-bit', 'c', version: '1.0.0')
 
 py = import('python').find_installation()
 
 executable(
-    'example', 'example.c',
+    'example',
+    'example.c',
     install: true,
 )
 

@@ -2,7 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'dynamic-version',
-    version: '1.0.0',
-)
+project('dynamic-version', version: '1.0.0')

@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'detect-compiler',
-    'c',
-    version: '1.0',
-)
+project('detect-compiler', 'c', version: '1.0')
 
 py = import('python').find_installation()
 

@@ -2,7 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'license-file',
-    version: '1.0.0',
-)
+project('license-file', version: '1.0.0')

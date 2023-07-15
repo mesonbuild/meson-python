@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'user-args',
-    version: '1.0.0',
-)
+project('user-args', version: '1.0.0')
 
 py = import('python').find_installation()
 

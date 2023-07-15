@@ -2,7 +2,4 @@
 #
 # SPDX-License-Identifier: MIT
 
-project(
-    'unsupported-python-version',
-    version: '1.0.0',
-)
+project('unsupported-python-version', version: '1.0.0')
