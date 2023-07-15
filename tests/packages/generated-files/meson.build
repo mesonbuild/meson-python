@@ -7,9 +7,8 @@ project(
     version: '1.0.0',
 )
 
-py_mod = import('python')
 fs = import('fs')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 executable(
     'example', 'example.c',

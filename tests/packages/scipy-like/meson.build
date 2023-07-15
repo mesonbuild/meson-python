@@ -7,8 +7,7 @@ project('scipy-like',
   version: '2.3.4',
 )
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 cc = meson.get_compiler('c')
 is_windows = host_machine.system() == 'windows'

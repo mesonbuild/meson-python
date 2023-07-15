@@ -7,8 +7,7 @@ project(
     version: '1.0.0',
 )
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 configure_file(
     input: 'configure_data.py.in',

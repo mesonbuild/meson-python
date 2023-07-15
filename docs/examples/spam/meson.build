@@ -7,8 +7,7 @@ project(
   'c',
 )
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 # Specify directories to be included - usually this is where your header files live.
 # Note that specifying the path to Python.h is not necessary with meson-python.
