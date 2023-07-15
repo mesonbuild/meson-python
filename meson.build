@@ -4,8 +4,7 @@
 
 project('meson-python', version: '0.14.0.dev0')
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 py.install_sources(
   'mesonpy/__init__.py',

@@ -12,8 +12,7 @@ example_lib = shared_library(
     install: true,
 )
 
-py_mod = import('python')
-py = py_mod.find_installation()
+py = import('python').find_installation()
 
 py.extension_module(
     'example', 'examplemod.c',
