@@ -65,6 +65,9 @@ jobs:
           - os: ubuntu
             python: '3.11'
             meson: '~=1.0.0'
+          - os: ubuntu
+            python: '3.11'
+            meson: '~=1.1.0'
           # Test with Meson master branch.
           - os: ubuntu
             python: '3.11'
