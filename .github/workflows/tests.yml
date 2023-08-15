@@ -72,6 +72,9 @@ jobs:
           - os: ubuntu
             python: '3.11'
             meson: '@git+https://github.com/mesonbuild/meson.git'
+          - os: windows
+            python: '3.11'
+            meson: '@git+https://github.com/mesonbuild/meson.git'
 
     steps:
       - name: Checkout
