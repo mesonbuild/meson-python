@@ -31,6 +31,7 @@ import sysconfig
 import tarfile
 import tempfile
 import textwrap
+import time
 import typing
 import warnings
 
@@ -928,7 +929,7 @@ class Project():
         meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')
 
-        with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as (tar, mtime):
+        with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as tar:
             for member in meson_dist.getmembers():
                 # calculate the file path in the source directory
                 assert member.name, member.name
@@ -955,6 +956,7 @@ class Project():
 
                 info = tarfile.TarInfo(member.name)
                 file_stat = os.stat(path)
+                info.mtime = member.mtime
                 info.size = file_stat.st_size
                 info.mode = int(oct(file_stat.st_mode)[-3:], 8)
 
@@ -970,8 +972,7 @@ class Project():
 
             # add PKG-INFO to dist file to make it a sdist
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
-            if mtime:
-                pkginfo_info.mtime = mtime
+            pkginfo_info.mtime = time.time()  # type: ignore[assignment]
             pkginfo_info.size = len(self.metadata)
             tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))
 
