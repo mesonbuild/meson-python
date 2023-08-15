@@ -18,7 +18,7 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from mesonpy._compat import Iterable, Iterator, Path
+    from mesonpy._compat import Iterator, Path
 
 
 @contextlib.contextmanager
@@ -30,19 +30,6 @@ def chdir(path: Path) -> Iterator[Path]:
         yield path
     finally:
         os.chdir(old_cwd)
-
-
-@contextlib.contextmanager
-def add_ld_path(paths: Iterable[str]) -> Iterator[None]:
-    """Context manager helper to add a path to LD_LIBRARY_PATH."""
-    old_value = os.environ.get('LD_LIBRARY_PATH')
-    old_paths = old_value.split(os.pathsep) if old_value else []
-    os.environ['LD_LIBRARY_PATH'] = os.pathsep.join([*paths, *old_paths])
-    try:
-        yield
-    finally:
-        if old_value is not None:  # pragma: no cover
-            os.environ['LD_LIBRARY_PATH'] = old_value
 
 
 @contextlib.contextmanager
