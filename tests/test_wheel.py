@@ -282,3 +282,32 @@ def test_skip_subprojects(package_subproject, tmp_path, arg):
         'subproject-1.0.0.dist-info/WHEEL',
         'subproject.py',
     }
+
+
+# Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+def test_limited_api(wheel_limited_api):
+    artifact = wheel.wheelfile.WheelFile(wheel_limited_api)
+    name = artifact.parsed_filename
+    assert name.group('pyver') == INTERPRETER
+    assert name.group('abi') == 'abi3'
+    assert name.group('plat') == PLATFORM
+
+
+# Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+def test_limited_api_bad(package_limited_api, tmp_path):
+    with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
+        with mesonpy.Project.with_temp_working_dir(meson_args={'setup': ['-Dextra=true']}) as project:
+            project.wheel(tmp_path)
+
+
+# Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+def test_limited_api_disabled(package_limited_api, tmp_path):
+    filename = mesonpy.build_wheel(tmp_path, {'setup-args': ['-Dpython.allow_limited_api=false']})
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    name = artifact.parsed_filename
+    assert name.group('pyver') == INTERPRETER
+    assert name.group('abi') == ABI
+    assert name.group('plat') == PLATFORM
