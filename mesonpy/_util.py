@@ -18,8 +18,6 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Optional, Tuple
-
     from mesonpy._compat import Iterable, Iterator, Path
 
 
@@ -48,18 +46,13 @@ def add_ld_path(paths: Iterable[str]) -> Iterator[None]:
 
 
 @contextlib.contextmanager
-def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
+def create_targz(path: Path) -> Iterator[tarfile.TarFile]:
     """Opens a .tar.gz file in the file system for edition.."""
-
-    # reproducibility
-    source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
-    mtime = int(source_date_epoch) if source_date_epoch else None
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
     file = typing.cast(IO[bytes], gzip.GzipFile(
         path,
         mode='wb',
-        mtime=mtime,
     ))
     tar = tarfile.TarFile(
         mode='w',
@@ -68,7 +61,7 @@ def create_targz(path: Path) -> Iterator[Tuple[tarfile.TarFile, Optional[int]]]:
     )
 
     with contextlib.closing(file), tar:
-        yield tar, mtime
+        yield tar
 
 
 class CLICounter:
