@@ -128,9 +128,8 @@ _STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COL
 
 
 _SUFFIXES = importlib.machinery.all_suffixes()
-_EXTENSION_SUFFIXES = importlib.machinery.EXTENSION_SUFFIXES
-_EXTENSION_SUFFIX_REGEX = re.compile(r'^\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
-assert all(re.match(_EXTENSION_SUFFIX_REGEX, x) for x in _EXTENSION_SUFFIXES)
+_EXTENSION_SUFFIX_REGEX = re.compile(r'^[^.]+\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
+assert all(re.match(_EXTENSION_SUFFIX_REGEX, f'foo{x}') for x in importlib.machinery.EXTENSION_SUFFIXES)
 
 
 # Map Meson installation path placeholders to wheel installation paths.
@@ -344,34 +343,20 @@ class _WheelBuilder():
 
     @cached_property
     def _stable_abi(self) -> Optional[str]:
-        """Determine stabe ABI compatibility.
-
-        Examine all files installed in {platlib} that look like
-        extension modules (extension .pyd on Windows, .dll on Cygwin,
-        and .so on other platforms) and, if they all share the same
-        PEP 3149 filename stable ABI tag, return it.
-
-        Other files are ignored.
-
-        """
-        soext = sorted(_EXTENSION_SUFFIXES, key=len)[0]
-        abis = []
-
-        for path, _ in self._wheel_files['platlib']:
-            # NOTE: When searching for shared objects files, we assume the host
-            # and build machines have the same soext, even though that we might
-            # be cross compiling.
-            if path.suffix == soext:
-                match = re.match(r'^[^.]+(.*)$', path.name)
-                assert match is not None
-                suffix = match.group(1)
-                match = _EXTENSION_SUFFIX_REGEX.match(suffix)
+        if self._project._limited_api:
+            # Verify stabe ABI compatibility: examine files installed
+            # in {platlib} that look like extension modules, and raise
+            # an exception if any of them has a Python version
+            # specific extension filename suffix ABI tag.
+            for path, _ in self._wheel_files['platlib']:
+                match = _EXTENSION_SUFFIX_REGEX.match(path.name)
                 if match:
-                    abis.append(match.group('abi'))
-
-        stable = [x for x in abis if x and re.match(r'abi\d+', x)]
-        if len(stable) > 0 and len(stable) == len(abis) and all(x == stable[0] for x in stable[1:]):
-            return stable[0]
+                    abi = match.group('abi')
+                    if abi is not None and abi != 'abi3':
+                        raise BuildError(
+                            f'The package declares compatibility with Python limited API but extension '
+                            f'module {os.fspath(path)!r} is tagged for a specific Python version.')
+            return 'abi3'
         return None
 
     @property
@@ -576,10 +561,16 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
             raise ConfigError(f'Configuration entry "{name}" must be a list of strings')
         return value
 
+    def _bool(value: Any, name: str) -> bool:
+        if not isinstance(value, bool):
+            raise ConfigError(f'Configuration entry "{name}" must be a boolean')
+        return value
+
     scheme = _table({
+        'limited-api': _bool,
         'args': _table({
             name: _strings for name in _MESON_ARGS_KEYS
-        })
+        }),
     })
 
     table = pyproject.get('tool', {}).get('meson-python', {})
@@ -632,7 +623,7 @@ class Project():
     ]
     _metadata: pyproject_metadata.StandardMetadata
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         source_dir: Path,
         working_dir: Path,
@@ -648,6 +639,7 @@ class Project():
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
+        self._limited_api = False
 
         _check_meson_version()
 
@@ -729,6 +721,15 @@ class Project():
         # set version from meson.build if dynamic
         if 'version' in self._metadata.dynamic:
             self._metadata.version = packaging.version.Version(self._meson_version)
+
+        # limited API
+        self._limited_api = pyproject_config.get('limited-api', False)
+        if self._limited_api:
+            # check whether limited API is disabled for the Meson project
+            options = self._info('intro-buildoptions')
+            value = next((option['value'] for option in options if option['name'] == 'python.allow_limited_api'), None)
+            if not value:
+                self._limited_api = False
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
