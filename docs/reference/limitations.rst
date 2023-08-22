@@ -18,24 +18,22 @@ requires them, and use :py:mod:`importlib.resources` (or the
 :py:mod:`importlib_resources` backport) to access it.
 
 
-Platform-specific limitations
-=============================
+Shared libraries on Windows
+===========================
 
+On Windows, ``meson-python`` cannot encapsulate shared libraries
+installed as part of the Meson project into the Python wheel for
+Python extension modules or executables, in a way suitable for them to
+be found at run-time.
 
-Executables with internal dependencies :bdg-warning:`Windows`
--------------------------------------------------------------
+This limitation can be overcome with static linking or using
+`delvewheel`_ to post-process the Python wheel to bundle the required
+shared libraries and include the setup code to properly set the
+library search path.
 
-
-If you have an executable that links against a shared library provided by your
-project, on Windows ``meson-python`` will not be able to correctly bundle it
-into the *wheel*.
-
-The executable will be included in the *wheel*, but it
-will not be able to find the project libraries it links against.
-
-This is, however, easily solved by using a static library for the executable in
-question.
 
 .. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
+.. _importlib-resources: https://importlib-resources.readthedocs.io/en/latest/index.html
+.. _delvewheel: https://github.com/adang1345/delvewheel
 
 .. |install_data| replace:: ``install_data``
