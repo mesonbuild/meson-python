@@ -22,32 +22,6 @@ If you really need the data to be installed where it was previously (eg.
 ``/usr/data``), you can do so at runtime.
 
 
-Parallel use of editable installs
-=================================
-
-Currently, using a package installed in editable mode in more than one
-interpreter instances at the same time is not supported.
-
-
-Using editable installs with IDEs
-=================================
-
-Currently, with editable installs, setting breakpoints via an IDE or similar
-tool will not work.
-
-We have work planned to fix this issue.
-
-
-License field on PyPI_
-======================
-
-``meson-python`` includes the license file in the metadata, instead of trying to
-match it to a classifier_ and omitting it, like some other backends do.
-Unfortunately, this results in the whole license text being shown on the
-*License* of PyPI_. You can read more about the issue and potential planned
-fixes in `#129`_.
-
-
 Platform-specific limitations
 =============================
 
@@ -69,8 +43,5 @@ question. Find how to do this in our
 
 
 .. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
-.. _PyPI: https://pypi.org/
-.. _classifier: https://pypi.org/classifiers/
-.. _#129: https://github.com/mesonbuild/meson-python/issues/129
 
 .. |install_data| replace:: ``install_data``
