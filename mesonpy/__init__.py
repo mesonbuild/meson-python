@@ -831,13 +831,10 @@ class Project():
             yield cls(source_dir, tmpdir, build_dir, meson_args, editable_verbose)
 
     @functools.lru_cache()
-    def _info(self, name: str) -> Dict[str, Any]:
+    def _info(self, name: str) -> Any:
         """Read info from meson-info directory."""
-        file = self._build_dir.joinpath('meson-info', f'{name}.json')
-        return typing.cast(
-            Dict[str, str],
-            json.loads(file.read_text())
-        )
+        info = self._build_dir.joinpath('meson-info', f'{name}.json')
+        return json.loads(info.read_text())
 
     @property
     def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
