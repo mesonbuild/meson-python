@@ -252,7 +252,7 @@ class _WheelBuilder():
     def __init__(
         self,
         project: Project,
-        metadata: Optional[Metadata],
+        metadata: Metadata,
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
@@ -349,9 +349,6 @@ class _WheelBuilder():
     @property
     def entrypoints_txt(self) -> bytes:
         """dist-info entry_points.txt."""
-        if not self._metadata:
-            return b''
-
         data = self._metadata.entrypoints.copy()
         data.update({
             'console_scripts': self._metadata.scripts,
@@ -902,10 +899,9 @@ class Project():
 
     @property
     def license_file(self) -> Optional[pathlib.Path]:
-        if self._metadata:
-            license_ = self._metadata.license
-            if license_ and license_.file:
-                return pathlib.Path(license_.file)
+        license_ = self._metadata.license
+        if license_ and license_.file:
+            return pathlib.Path(license_.file)
         return None
 
     @property
