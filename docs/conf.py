@@ -41,6 +41,7 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_design',
     'sphinxext.opengraph',
+    'sphinx.ext.intersphinx',
 ]
 
 
@@ -63,6 +64,8 @@ exclude_patterns = []
 default_role = 'any'
 
 todo_include_todos = True
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 # -- Options for HTML output -------------------------------------------------
 
