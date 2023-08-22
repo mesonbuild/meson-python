@@ -219,13 +219,36 @@ class MesonBuilderError(Error):
     """Error when building the Meson package."""
 
 
+class Metadata(pyproject_metadata.StandardMetadata):
+    # The class method from the pyproject_metadata base class is not
+    # typed in a subclassing friendly way, thus annotations to ignore
+    # typing are needed.
+
+    @classmethod
+    def from_pyproject(cls, data: Mapping[str, Any], project_dir: Path) -> Metadata:  # type: ignore[override]
+        metadata = super().from_pyproject(data, project_dir)
+
+        # Check for missing version field.
+        if not metadata.version and 'version' not in metadata.dynamic:
+            raise pyproject_metadata.ConfigurationError(
+                'Required "project.version" field is missing and not declared as dynamic')
+
+        return metadata  # type: ignore[return-value]
+
+    # Local fix for a bug in pyproject-metadata. See
+    # https://github.com/mesonbuild/meson-python/issues/454
+    def _update_dynamic(self, value: Any) -> None:
+        if value and 'version' in self.dynamic:
+            self.dynamic.remove('version')
+
+
 class _WheelBuilder():
     """Helper class to build wheels from projects."""
 
     def __init__(
         self,
         project: Project,
-        metadata: Optional[pyproject_metadata.StandardMetadata],
+        metadata: Optional[Metadata],
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
         sources: Dict[str, Dict[str, Any]],
@@ -621,7 +644,7 @@ class Project():
     _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
         'version',
     ]
-    _metadata: pyproject_metadata.StandardMetadata
+    _metadata: Metadata
 
     def __init__(  # noqa: C901
         self,
@@ -712,10 +735,9 @@ class Project():
 
         # package metadata
         if 'project' in pyproject:
-            self._metadata = pyproject_metadata.StandardMetadata.from_pyproject(pyproject, self._source_dir)
+            self._metadata = Metadata.from_pyproject(pyproject, self._source_dir)
         else:
-            self._metadata = pyproject_metadata.StandardMetadata(
-                name=self._meson_name, version=packaging.version.Version(self._meson_version))
+            self._metadata = Metadata(name=self._meson_name, version=packaging.version.Version(self._meson_version))
         self._validate_metadata()
 
         # set version from meson.build if dynamic
