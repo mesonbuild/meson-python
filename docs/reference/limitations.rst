@@ -9,13 +9,20 @@ Limitations
 ***********
 
 
-No data
-=======
+Non-package data files
+======================
 
-Data, as installed by |install_data|_, is not supported.  It is
-recommended to install data files alongside the Python modules that
-requires them, and use :py:mod:`importlib.resources` (or the
-:py:mod:`importlib_resources` backport) to access it.
+It is possible to encapsulate arbitrary data files into Python
+wheels. ``meson-python`` will add to the wheel any data file installed
+into the Meson's ``{datadir}`` location, for example via Meson's
+|install_data()|_ function. However, when the resulting wheel is
+installed, these files are unpacked into a platform-specific location
+and there is no supported facility to reliably find them at run time.
+
+It is recommended to include data files than need to be accessible at
+run-time inside the package alongside the Python code, and use
+:mod:`importlib.resources` (or the `importlib-resources`_ backport) to
+access them.
 
 
 Shared libraries on Windows
@@ -32,8 +39,8 @@ shared libraries and include the setup code to properly set the
 library search path.
 
 
-.. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
+.. _install_data(): https://mesonbuild.com/Reference-manual_functions.html#install_data
 .. _importlib-resources: https://importlib-resources.readthedocs.io/en/latest/index.html
 .. _delvewheel: https://github.com/adang1345/delvewheel
 
-.. |install_data| replace:: ``install_data``
+.. |install_data()| replace:: ``install_data()``
