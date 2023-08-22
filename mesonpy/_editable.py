@@ -22,7 +22,10 @@ if typing.TYPE_CHECKING:
     from collections.abc import Sequence, Set
     from types import ModuleType
     from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
-    NodeBase = Dict[str, Union[Node, str]]
+
+    from typing_extensions import Buffer
+
+    NodeBase = Dict[str, Union['Node', str]]
     PathStr = Union[str, os.PathLike[str]]
 else:
     NodeBase = dict
@@ -151,7 +154,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
         super().__init__(name, path)
         self._tree = tree
 
-    def set_data(self, path: Union[bytes, str], data: bytes, *, _mode: int = ...) -> None:
+    def set_data(self, path: Union[bytes, str], data: Buffer, *, _mode: int = ...) -> None:
         # disable saving bytecode
         pass
 
