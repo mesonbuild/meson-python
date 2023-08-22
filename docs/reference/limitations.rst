@@ -12,14 +12,10 @@ Limitations
 No data
 =======
 
-Data, as installed by |install_data|_, is not supported.
-
-We recommend you install your data inside a Python module and use
-:py:mod:`importlib.resources` (or the :py:mod:`importlib_resources` backport) to
-access it.
-
-If you really need the data to be installed where it was previously (eg.
-``/usr/data``), you can do so at runtime.
+Data, as installed by |install_data|_, is not supported.  It is
+recommended to install data files alongside the Python modules that
+requires them, and use :py:mod:`importlib.resources` (or the
+:py:mod:`importlib_resources` backport) to access it.
 
 
 Platform-specific limitations
