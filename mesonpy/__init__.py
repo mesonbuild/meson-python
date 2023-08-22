@@ -56,9 +56,7 @@ from mesonpy._compat import Collection, Mapping, cached_property, read_binary
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import (
-        Any, Callable, ClassVar, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
-    )
+    from typing import Any, Callable, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
     from mesonpy._compat import Iterator, ParamSpec, Path
 
@@ -232,6 +230,12 @@ class Metadata(pyproject_metadata.StandardMetadata):
         if not metadata.version and 'version' not in metadata.dynamic:
             raise pyproject_metadata.ConfigurationError(
                 'Required "project.version" field is missing and not declared as dynamic')
+
+        # Check for unsupported dynamic fields.
+        unsupported_dynamic = {key for key in metadata.dynamic if key not in {'version', }}
+        if unsupported_dynamic:
+            fields = ', '.join(f'"{x}"' for x in unsupported_dynamic)
+            raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
 
         return metadata  # type: ignore[return-value]
 
@@ -641,11 +645,6 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
-    _ALLOWED_DYNAMIC_FIELDS: ClassVar[List[str]] = [
-        'version',
-    ]
-    _metadata: Metadata
-
     def __init__(  # noqa: C901
         self,
         source_dir: Path,
@@ -736,13 +735,20 @@ class Project():
         # package metadata
         if 'project' in pyproject:
             self._metadata = Metadata.from_pyproject(pyproject, self._source_dir)
+            # set version from meson.build if version is declared as dynamic
+            if 'version' in self._metadata.dynamic:
+                self._metadata.version = packaging.version.Version(self._meson_version)
         else:
+            # if project section is missing, use minimal metdata from meson.build
             self._metadata = Metadata(name=self._meson_name, version=packaging.version.Version(self._meson_version))
-        self._validate_metadata()
 
-        # set version from meson.build if dynamic
-        if 'version' in self._metadata.dynamic:
-            self._metadata.version = packaging.version.Version(self._meson_version)
+        # verify that we are running on a supported interpreter
+        if self._metadata.requires_python:
+            self._metadata.requires_python.prereleases = True
+            if platform.python_version().rstrip('+') not in self._metadata.requires_python:
+                raise MesonBuilderError(
+                    f'Package requires Python version {self._metadata.requires_python}, '
+                    f'running on {platform.python_version()}')
 
         # limited API
         self._limited_api = pyproject_config.get('limited-api', False)
@@ -783,27 +789,6 @@ class Project():
             setup_args.insert(0, '--reconfigure')
 
         self._run(['meson', 'setup', *setup_args])
-
-    def _validate_metadata(self) -> None:
-        """Check the pyproject.toml metadata and see if there are any issues."""
-
-        # check for unsupported dynamic fields
-        unsupported_dynamic = {
-            key for key in self._metadata.dynamic
-            if key not in self._ALLOWED_DYNAMIC_FIELDS
-        }
-        if unsupported_dynamic:
-            s = ', '.join(f'"{x}"' for x in unsupported_dynamic)
-            raise MesonBuilderError(f'Unsupported dynamic fields: {s}')
-
-        # check if we are running on an unsupported interpreter
-        if self._metadata.requires_python:
-            self._metadata.requires_python.prereleases = True
-            if platform.python_version().rstrip('+') not in self._metadata.requires_python:
-                raise MesonBuilderError(
-                    f'Unsupported Python version {platform.python_version()}, '
-                    f'expected {self._metadata.requires_python}'
-                )
 
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
