@@ -16,7 +16,7 @@ Data, as installed by |install_data|_, is not supported.
 
 We recommend you install your data inside a Python module and use
 :py:mod:`importlib.resources` (or the :py:mod:`importlib_resources` backport) to
-access it. You can check our :ref:`tutorials-data` tutorial for how to do this.
+access it.
 
 If you really need the data to be installed where it was previously (eg.
 ``/usr/data``), you can do so at runtime.
@@ -38,9 +38,7 @@ The executable will be included in the *wheel*, but it
 will not be able to find the project libraries it links against.
 
 This is, however, easily solved by using a static library for the executable in
-question. Find how to do this in our
-:ref:`how-to-guides-executable-with-internal-dependencies` guide.
-
+question.
 
 .. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
 
