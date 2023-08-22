@@ -64,6 +64,19 @@ def test_missing_version(package_missing_version):
         with mesonpy.Project.with_temp_working_dir():
             pass
 
+
+def test_missing_meson_version(package_missing_meson_version):
+    with pytest.raises(pyproject_metadata.ConfigurationError, match='Section "project" missing in pyproject.toml'):
+        with mesonpy.Project.with_temp_working_dir():
+            pass
+
+
+def test_missing_dynamic_version(package_missing_dynamic_version):
+    with pytest.raises(pyproject_metadata.ConfigurationError, match='Field "version" declared as dynamic but'):
+        with mesonpy.Project.with_temp_working_dir():
+            pass
+
+
 def test_user_args(package_user_args, tmp_path, monkeypatch):
     project_run = mesonpy.Project._run
     cmds = []
