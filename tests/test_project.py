@@ -15,6 +15,7 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+import pyproject_metadata
 import pytest
 
 import mesonpy
@@ -59,6 +60,11 @@ def test_unsupported_python_version(package_unsupported_python_version):
         with mesonpy.Project.with_temp_working_dir():
             pass
 
+
+def test_missing_version(package_missing_version):
+    with pytest.raises(pyproject_metadata.ConfigurationError, match='Required "project.version" field is missing'):
+        with mesonpy.Project.with_temp_working_dir():
+            pass
 
 def test_user_args(package_user_args, tmp_path, monkeypatch):
     project_run = mesonpy.Project._run
