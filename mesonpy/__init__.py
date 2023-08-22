@@ -734,10 +734,18 @@ class Project():
             self._metadata = Metadata.from_pyproject(pyproject, self._source_dir)
             # set version from meson.build if version is declared as dynamic
             if 'version' in self._metadata.dynamic:
-                self._metadata.version = packaging.version.Version(self._meson_version)
+                version = self._meson_version
+                if version == 'undefined':
+                    raise pyproject_metadata.ConfigurationError(
+                        'Field "version" declared as dynamic but version is not defined in meson.build')
+                self._metadata.version = packaging.version.Version(version)
         else:
             # if project section is missing, use minimal metdata from meson.build
-            self._metadata = Metadata(name=self._meson_name, version=packaging.version.Version(self._meson_version))
+            name, version = self._meson_name, self._meson_version
+            if version == 'undefined':
+                raise pyproject_metadata.ConfigurationError(
+                    'Section "project" missing in pyproject.toml and version is not defined in meson.build')
+            self._metadata = Metadata(name=name, version=packaging.version.Version(version))
 
         # verify that we are running on a supported interpreter
         if self._metadata.requires_python:
