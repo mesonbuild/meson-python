@@ -111,7 +111,6 @@ for quick questions - one ``meson-python`` maintainer is active there.
 
    changelog
    about
-   security
    contributing/index
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
