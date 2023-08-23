@@ -85,22 +85,6 @@ def test_scipy_like(wheel_scipy_like):
     assert name.group('plat') == PLATFORM
 
 
-@pytest.mark.skipif(platform.system() != 'Linux', reason='Needs library vendoring, only implemented in POSIX')
-def test_contents(package_library, wheel_library):
-    artifact = wheel.wheelfile.WheelFile(wheel_library)
-
-    for name, regex in zip(sorted(wheel_contents(artifact)), [
-        re.escape('.library.mesonpy.libs/libexample.so'),
-        re.escape('library-1.0.0.data/headers/examplelib.h'),
-        re.escape('library-1.0.0.data/scripts/example'),
-        re.escape('library-1.0.0.dist-info/METADATA'),
-        re.escape('library-1.0.0.dist-info/RECORD'),
-        re.escape('library-1.0.0.dist-info/WHEEL'),
-        re.escape('library.libs/libexample.so'),
-    ]):
-        assert re.match(regex, name), f'{name!r} does not match {regex!r}'
-
-
 def test_purelib_and_platlib(wheel_purelib_and_platlib):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
 
@@ -144,19 +128,64 @@ def test_configure_data(wheel_configure_data):
     }
 
 
-@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
+def test_contents_license_file(wheel_license_file):
+    artifact = wheel.wheelfile.WheelFile(wheel_license_file)
+    assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
+
+
+@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+def test_contents(package_library, wheel_library):
+    artifact = wheel.wheelfile.WheelFile(wheel_library)
+
+    for name, regex in zip(sorted(wheel_contents(artifact)), [
+        re.escape('.library.mesonpy.libs/libexample.so'),
+        re.escape('library-1.0.0.data/headers/examplelib.h'),
+        re.escape('library-1.0.0.data/scripts/example'),
+        re.escape('library-1.0.0.dist-info/METADATA'),
+        re.escape('library-1.0.0.dist-info/RECORD'),
+        re.escape('library-1.0.0.dist-info/WHEEL'),
+        re.escape('library.libs/libexample.so'),
+    ]):
+        assert re.match(regex, name), f'{name!r} does not match {regex!r}'
+
+
+@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
 def test_local_lib(venv, wheel_link_against_local_lib):
     venv.pip('install', wheel_link_against_local_lib)
     output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
     assert int(output) == 3
 
 
-def test_contents_license_file(wheel_license_file):
-    artifact = wheel.wheelfile.WheelFile(wheel_license_file)
-    assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
+@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+def test_rpath(wheel_link_against_local_lib, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
+    artifact.extractall(tmp_path)
+
+    if platform.system() == 'Linux':
+        elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
+        assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
+    else:  # 'Darwin'
+        dylib = mesonpy._dylib.Dylib(tmp_path / f'example{EXT_SUFFIX}')
+        assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
 
 
-@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='Platform does not support executable bit')
+@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
+    artifact.extractall(tmp_path)
+
+    if platform.system() == 'Linux':
+        shared_lib = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
+    else:  # 'Darwin'
+        shared_lib = mesonpy._dylib.Dylib(tmp_path / f'plat{EXT_SUFFIX}')
+    if shared_lib.rpath:
+        # shared_lib.rpath is a frozenset, so iterate over it. An rpath may be
+        # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
+        for rpath in shared_lib.rpath:
+            assert 'mesonpy.libs' not in rpath
+
+
+@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
 
@@ -182,35 +211,6 @@ def test_detect_wheel_tag_script(wheel_executable):
     assert name.group('pyver') == 'py3'
     assert name.group('abi') == 'none'
     assert name.group('plat') == PLATFORM
-
-
-@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
-def test_rpath(wheel_link_against_local_lib, tmp_path):
-    artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
-    artifact.extractall(tmp_path)
-
-    if platform.system() == 'Linux':
-        elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
-        assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
-    else:  # 'Darwin'
-        dylib = mesonpy._dylib.Dylib(tmp_path / f'example{EXT_SUFFIX}')
-        assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
-
-
-@pytest.mark.skipif(platform.system() not in ['Linux', 'Darwin'], reason='Unsupported on this platform for now')
-def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
-    artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
-    artifact.extractall(tmp_path)
-
-    if platform.system() == 'Linux':
-        shared_lib = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
-    else:  # 'Darwin'
-        shared_lib = mesonpy._dylib.Dylib(tmp_path / f'plat{EXT_SUFFIX}')
-    if shared_lib.rpath:
-        # shared_lib.rpath is a frozenset, so iterate over it. An rpath may be
-        # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
-        for rpath in shared_lib.rpath:
-            assert 'mesonpy.libs' not in rpath
 
 
 def test_entrypoints(wheel_full_metadata):
