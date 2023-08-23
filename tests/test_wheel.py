@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
 import platform
 import re
 import shutil
@@ -246,10 +247,15 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
 @pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
 @pytest.mark.parametrize(('arch'), ['x86_64', 'arm64'])
 def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):
-    monkeypatch.setenv('ARCHFLAGS', f'-arch {arch}')
-    filename = mesonpy.build_wheel(tmp_path)
-    name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
-    assert name.group('plat').endswith(arch)
+    try:
+        monkeypatch.setenv('ARCHFLAGS', f'-arch {arch}')
+        filename = mesonpy.build_wheel(tmp_path)
+        name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
+        assert name.group('plat').endswith(arch)
+    finally:
+        # revert environment variable setting done by the in-process build
+        if '_PYTHON_HOST_PLATFORM' in os.environ:
+            del os.environ['_PYTHON_HOST_PLATFORM']
 
 
 def test_subprojects(package_subproject, tmp_path):
