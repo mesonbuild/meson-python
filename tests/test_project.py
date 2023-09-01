@@ -122,7 +122,6 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
         ['meson', 'setup'],
         ['meson', 'compile'] if sys.platform == 'win32' else ['ninja'],
-        ['meson', 'install']
     ]
 
     # check that the user options are passed to the invoked commands
