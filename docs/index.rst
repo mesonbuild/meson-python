@@ -77,6 +77,7 @@ for quick questions - one ``meson-python`` maintainer is active there.
    how-to-guides/editable-installs
    how-to-guides/config-settings
    how-to-guides/meson-args
+   how-to-guides/debug-builds
    projects-using-meson-python
 
 .. how-to-guides/build-directory
