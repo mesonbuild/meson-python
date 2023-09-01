@@ -494,32 +494,27 @@ class _WheelBuilder():
         # ensure project is built
         self._project.build()
 
-        # install project in temporary destination directory
-        with tempfile.TemporaryDirectory() as destdir:
-            self._project.install(destdir)
+        wheel_file = pathlib.Path(directory, f'{self.name}.whl')
+        with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
+            self._wheel_write_metadata(whl)
 
-            wheel_file = pathlib.Path(directory, f'{self.name}.whl')
+            with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
 
-            with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-                self._wheel_write_metadata(whl)
+                root = 'purelib' if self.is_pure else 'platlib'
 
-                with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
+                for path, entries in self._wheel_files.items():
+                    for dst, src in entries:
+                        counter.update(src)
 
-                    root = 'purelib' if self.is_pure else 'platlib'
+                        if path == root:
+                            pass
+                        elif path == 'mesonpy-libs':
+                            # custom installation path for bundled libraries
+                            dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
+                        else:
+                            dst = pathlib.Path(self.data_dir, path, dst)
 
-                    for path, entries in self._wheel_files.items():
-                        for dst, src in entries:
-                            counter.update(src)
-
-                            if path == root:
-                                pass
-                            elif path == 'mesonpy-libs':
-                                # custom installation path for bundled libraries
-                                dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
-                            else:
-                                dst = pathlib.Path(self.data_dir, path, dst)
-
-                            self._install_path(whl, src, dst)
+                        self._install_path(whl, src, dst)
 
         return wheel_file
 
@@ -811,11 +806,6 @@ class Project():
     def build(self) -> None:
         """Build the Meson project."""
         self._run(self._build_command)
-
-    def install(self, destdir: Path) -> None:
-        """Install the Meson project."""
-        destdir = os.fspath(destdir)
-        self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
 
     @functools.lru_cache()
     def _info(self, name: str) -> Any:
