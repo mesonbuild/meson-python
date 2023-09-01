@@ -316,3 +316,22 @@ def test_limited_api_disabled(package_limited_api, tmp_path):
     assert name.group('pyver') == INTERPRETER
     assert name.group('abi') == ABI
     assert name.group('plat') == PLATFORM
+
+
+def test_install_subdir(wheel_install_subdir):
+    artifact = wheel.wheelfile.WheelFile(wheel_install_subdir)
+    # Handling of the exclude_files and exclude_directories requires
+    # Meson 1.1.0, see https://github.com/mesonbuild/meson/pull/11432.
+    # Run the test anyway to ensure that meson-python can produce a
+    # wheel also for older versions of Meson.
+    if MESON_VERSION >= (1, 1, 99):
+        assert wheel_contents(artifact) == {
+            'install_subdir-1.0.0.dist-info/METADATA',
+            'install_subdir-1.0.0.dist-info/RECORD',
+            'install_subdir-1.0.0.dist-info/WHEEL',
+            'subdir/__init__.py',
+            'subdir/test.py',
+            'test/module.py',
+            'nested/deep/deep.py',
+            'nested/nested.py',
+        }
