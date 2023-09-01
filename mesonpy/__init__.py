@@ -820,7 +820,7 @@ class Project():
     def install(self, destdir: Path) -> Dict[str, str]:
         """Install the Meson project."""
         destdir = os.fspath(destdir)
-        self._run(['meson', 'install', '--quiet', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
+        self._run(['meson', 'install', '--no-rebuild', '--destdir', destdir, *self._meson_args['install']])
 
         # Build a dictionary mapping file paths from the install plan to
         # the concrete installation path in the destination directory.
