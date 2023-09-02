@@ -284,11 +284,8 @@ class _WheelBuilder():
 
     @property
     def basename(self) -> str:
-        """Normalized wheel name and version (eg. meson_python-1.0.0)."""
-        return '{distribution}-{version}'.format(
-            distribution=self.normalized_name,
-            version=self._project.version,
-        )
+        """Normalized wheel name and version."""
+        return f'{self.normalized_name}-{self._project.version}'
 
     @property
     def tag(self) -> mesonpy._tags.Tag:
@@ -306,10 +303,7 @@ class _WheelBuilder():
     @property
     def name(self) -> str:
         """Wheel name, this includes the basename and tag."""
-        return '{basename}-{tag}'.format(
-            basename=self.basename,
-            tag=self.tag,
-        )
+        return f'{self.basename}-{self.tag}'
 
     @property
     def distinfo_dir(self) -> str:
