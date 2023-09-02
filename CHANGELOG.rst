@@ -11,6 +11,33 @@
 Changelog
 +++++++++
 
+0.14.0
+======
+
+- Do not run ``meson install`` to build a wheel. This was unnecessary
+  as files are added to the wheel from the build and source
+  directories. This does not affect the handling of ``meson install``
+  options, which are interpreted by ``meson-python`` itself.
+- Obey the ``--skip-subprojects`` when specified for the ``meson
+  install`` command.
+- Implement support for the ``exclude_directories`` and
+  ``exclude_files`` arguments to Meson ``install_subdir()`` function
+  and similar installation functions. This requires Meson version
+  1.1.0 or later.
+- Implement support for building wheels targeting the Python limited
+  API. Extension modules targeting the Python limited API can be
+  easily built starting with the upcoming Meson 1.3.0 release.
+- when ``pyproject.toml`` does not contain a ``version`` field and
+  ``version`` is not declared dynamic, raise an error instead of
+  silently using the version declared in ``meson.build``.
+- Fix the mtime of source files in the sdist tarball.
+- Add ``objc`` and ``objcpp`` compilers to the cross file generated
+  when the ``$ARCHFLAGS`` is set.
+- Extensive documentation improvements.
+
+Charles Brunet, Daniele Nicolodi, Henry Schreiner, Michał Górny, Ralf
+Gommers --- xx-09-2023
+
 
 0.13.2
 ======
