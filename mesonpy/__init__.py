@@ -232,7 +232,7 @@ class Metadata(pyproject_metadata.StandardMetadata):
                 'Required "project.version" field is missing and not declared as dynamic')
 
         # Check for unsupported dynamic fields.
-        unsupported_dynamic = {key for key in metadata.dynamic if key not in {'version', }}
+        unsupported_dynamic = set(metadata.dynamic) - {'version', }
         if unsupported_dynamic:
             fields = ', '.join(f'"{x}"' for x in unsupported_dynamic)
             raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
