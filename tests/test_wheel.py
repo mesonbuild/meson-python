@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 import os
-import platform
 import re
 import shutil
 import stat
@@ -166,12 +165,13 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
-    if platform.system() == 'Linux':
-        elf = mesonpy._elf.ELF(tmp_path / f'example{EXT_SUFFIX}')
-        assert '$ORIGIN/.link_against_local_lib.mesonpy.libs' in elf.rpath
-    else:  # 'Darwin'
-        dylib = mesonpy._dylib.Dylib(tmp_path / f'example{EXT_SUFFIX}')
-        assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
+    origin = {'linux': '$ORIGIN', 'darwin': '@loader_path'}[sys.platform]
+    expected = {f'{origin}/.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / f'example{EXT_SUFFIX}'))
+    # Verify that rpath is a superset of the expected one: linking to
+    # the Python runtime may require additional rpath entries.
+    assert rpath >= expected
 
 
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
@@ -179,15 +179,11 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmp_path)
 
-    if platform.system() == 'Linux':
-        shared_lib = mesonpy._elf.ELF(tmp_path / f'plat{EXT_SUFFIX}')
-    else:  # 'Darwin'
-        shared_lib = mesonpy._dylib.Dylib(tmp_path / f'plat{EXT_SUFFIX}')
-    if shared_lib.rpath:
-        # shared_lib.rpath is a frozenset, so iterate over it. An rpath may be
-        # present, e.g. when conda is used (rpath will be <conda-prefix>/lib/)
-        for rpath in shared_lib.rpath:
-            assert 'mesonpy.libs' not in rpath
+    origin = {'linux': '$ORIGIN', 'darwin': '@loader_path'}[sys.platform]
+
+    rpath = mesonpy._rpath._get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
+    for path in rpath:
+        assert origin not in path
 
 
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
