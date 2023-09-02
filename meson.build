@@ -9,9 +9,8 @@ py = import('python').find_installation()
 py.install_sources(
     'mesonpy/__init__.py',
     'mesonpy/_compat.py',
-    'mesonpy/_dylib.py',
     'mesonpy/_editable.py',
-    'mesonpy/_elf.py',
+    'mesonpy/_rpath.py',
     'mesonpy/_tags.py',
     'mesonpy/_util.py',
     'mesonpy/_wheelfile.py',

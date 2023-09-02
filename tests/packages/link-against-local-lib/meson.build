@@ -16,5 +16,6 @@ py.extension_module(
     'example',
     'examplemod.c',
     link_with: example_lib,
+    link_args: ['-Wl,-rpath,custom-rpath'],
     install: true,
 )
