@@ -19,8 +19,11 @@ readme = 'README.rst'
 requires-python = '>= 3.7'
 license = { file = 'LICENSES/MIT.txt' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
-authors = [
-  { name = 'Filipe Laíns', email = 'lains@riseup.net' },
+maintainers = [
+  { name = 'Ralf Gommers ', email = 'ralf.gommers@gmail.com' },
+  { name = 'Daniele Nicolodi', email = 'daniele@grinta.net' },
+  { name = 'Henry Schreiner', email = 'HenrySchreinerIII@gmail.com' },
+  { name = 'Thomas Li'},
 ]
 classifiers = [
   'Development Status :: 4 - Beta',
