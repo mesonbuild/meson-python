@@ -45,7 +45,6 @@ test = [
   'pytest >= 6.0',
   'pytest-cov[toml]',
   'pytest-mock',
-  'auditwheel',
   'cython >= 0.29.34', # required for Python 3.12 support
   'wheel',
   'typing-extensions >= 3.7.4; python_version < "3.10"',
