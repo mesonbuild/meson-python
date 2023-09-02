@@ -5,7 +5,6 @@
 import importlib.machinery
 import os
 import pathlib
-import platform
 import sys
 import sysconfig
 
@@ -44,7 +43,7 @@ def test_wheel_tag():
     assert str(mesonpy._tags.Tag(abi='abi3')) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
 
-@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 def test_macos_platform_tag(monkeypatch):
     for minor in range(9, 16):
         monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'10.{minor}')
@@ -55,7 +54,7 @@ def test_macos_platform_tag(monkeypatch):
             assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
 
 
-@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 def test_python_host_platform(monkeypatch):
     monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-12.0-arm64')
     assert mesonpy._tags.get_platform_tag().endswith('arm64')
@@ -98,7 +97,7 @@ def test_tag_stable_abi(monkeypatch):
     assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8) and platform.system() == 'Windows',
+@pytest.mark.skipif(sys.version_info < (3, 8) and sys.platform == 'win32',
                     reason='Extension modules filename suffix without ABI tags')
 def test_tag_mixed_abi(monkeypatch):
     builder = wheel_builder_test_factory(monkeypatch, {

@@ -398,16 +398,16 @@ class _WheelBuilder():
         self._project.build()  # the project needs to be built for this :/
 
         with open(file, 'rb') as f:
-            if platform.system() == 'Linux':
+            if sys.platform == 'linux':
                 return f.read(4) == b'\x7fELF'  # ELF
-            elif platform.system() == 'Darwin':
+            elif sys.platform == 'darwin':
                 return f.read(4) in (
                     b'\xfe\xed\xfa\xce',  # 32-bit
                     b'\xfe\xed\xfa\xcf',  # 64-bit
                     b'\xcf\xfa\xed\xfe',  # arm64
                     b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
                 )
-            elif platform.system() == 'Windows':
+            elif sys.platform == 'win32':
                 return f.read(2) == b'MZ'
 
         # For unknown platforms, check for file extensions.
@@ -795,7 +795,7 @@ class Project():
     @property
     def _build_command(self) -> List[str]:
         assert self._ninja is not None  # help mypy out
-        if platform.system() == 'Windows':
+        if sys.platform == 'win32':
             # On Windows use 'meson compile' to setup the MSVC compiler
             # environment. Using the --ninja-args option allows to
             # provide the exact same semantics for the compile arguments

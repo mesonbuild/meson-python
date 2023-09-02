@@ -140,7 +140,7 @@ def test_contents_license_file(wheel_license_file):
     assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
 
 
-@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
@@ -154,14 +154,14 @@ def test_contents(package_library, wheel_library):
     }
 
 
-@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_local_lib(venv, wheel_link_against_local_lib):
     venv.pip('install', wheel_link_against_local_lib)
     output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
     assert int(output) == 3
 
 
-@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
@@ -174,7 +174,7 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
         assert '@loader_path/.link_against_local_lib.mesonpy.libs' in dylib.rpath
 
 
-@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmp_path)
@@ -190,7 +190,7 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
             assert 'mesonpy.libs' not in rpath
 
 
-@pytest.mark.skipif(platform.system() not in {'Linux', 'Darwin'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
 
@@ -249,7 +249,7 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
             project.wheel(tmp_path)
 
 
-@pytest.mark.skipif(platform.system() != 'Darwin', reason='macOS specific test')
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 @pytest.mark.parametrize(('arch'), ['x86_64', 'arm64'])
 def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):
     try:

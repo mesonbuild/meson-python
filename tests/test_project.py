@@ -4,7 +4,6 @@
 
 import ast
 import os
-import platform
 import shutil
 import sys
 import textwrap
@@ -122,7 +121,7 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         ['meson', 'dist'],
         # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
         ['meson', 'setup'],
-        ['meson', 'compile'] if platform.system() == 'Windows' else ['ninja'],
+        ['meson', 'compile'] if sys.platform == 'win32' else ['ninja'],
         ['meson', 'install']
     ]
 
@@ -239,7 +238,7 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     project.build()
 
 
-@pytest.mark.skipif(not os.getenv('CI') or platform.system() != 'Windows', reason='Requires MSVC')
+@pytest.mark.skipif(not os.getenv('CI') or sys.platform != 'win32', reason='Requires MSVC')
 def test_compiler(venv, package_detect_compiler, tmp_path):
     # Check that things are setup properly to use the MSVC compiler on
     # Windows. This effectively means running the compilation step
