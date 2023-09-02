@@ -650,6 +650,8 @@ class Project():
                         [binaries]
                         c = ['cc', '-arch', {arch!r}]
                         cpp = ['c++', '-arch', {arch!r}]
+                        objc = ['cc', '-arch', {arch!r}]
+                        objcpp = ['c++', '-arch', {arch!r}]
                         [host_machine]
                         system = 'darwin'
                         cpu = {arch!r}
