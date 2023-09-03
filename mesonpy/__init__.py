@@ -1099,3 +1099,25 @@ def get_requires_for_build_editable(
     config_settings: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     return get_requires_for_build_wheel()
+
+@_pyproject_hook
+def prepare_metadata_for_build_editable(
+    metadata_directory: str,
+    config_settings: Optional[Dict[str, str]] = None,
+) -> str:
+
+    with _project(config_settings) as project:
+        wheelbuilder = project._wheel_builder
+
+        dist_info_dir = pathlib.Path(metadata_directory, f'{wheelbuilder.basename}.dist-info')
+        dist_info_dir.mkdir(parents=True, exist_ok=True)
+
+        with dist_info_dir.joinpath('METADATA').open(mode='ab') as f:
+            f.write(project.metadata)
+        with dist_info_dir.joinpath('WHEEL').open(mode='ab') as f:
+            f.write(wheelbuilder.wheel)
+
+        if wheelbuilder.entrypoints_txt:
+            with dist_info_dir.joinpath('entry_points.txt').open(mode='ab') as f:
+                f.write(wheelbuilder.entrypoints_txt)
+        return str(dist_info_dir)
