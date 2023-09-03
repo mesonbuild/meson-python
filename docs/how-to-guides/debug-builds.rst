@@ -9,7 +9,7 @@ Using debug builds
 ******************
 
 For development work on native code in your Python package, you may want to use
-a debug build. To do so, we need to use the ``buildtype`` option, which is
+a debug build. To do so, we need to pass the ``-Dbuildtype=debug`` option, which is
 equivalent to ``-Ddebug=true -Doptimization=0``, to ``meson setup``. In addition,
 it is likely most useful to set up an editable build with a fixed build
 directory. That way, the shared libraries in the installed debug build will
@@ -21,7 +21,9 @@ We can do all that with the following ``pip`` invocation:
 
 .. code-block:: console
 
-    $ pip install -e . --no-build-isolation -Csetup-args=-Dbuildtype=debug -Cbuilddir=build-dbg
+    $ pip install -e . --no-build-isolation \
+        -Csetup-args=-Dbuildtype=debug \
+        -Cbuilddir=build-dbg
 
 This debug build of your package will work with either a regular or debug build
 of your Python interpreter. A debug Python interpreter isn't necessary, but may
