@@ -18,19 +18,26 @@ __ https://github.com/mesonbuild/meson/blob/master/COPYING
 Maintainers
 ===========
 
+The current maintainers of ``meson-python`` are:
+
 - `Ralf Gommers <https://github.com/rgommers>`_
 - `Daniele Nicolodi <https://github.com/dnicolodi>`_
 - `Henry Schreiner <https://github.com/henryiii>`_
 - `Thomas Li <https://github.com/lithomas1>`_
+
+Emeritus maintainers:
+
+- `Filipe Laíns <https://github.com/FFY00>`_
 
 
 Funding
 =======
 
 Ralf Gommers contributes to the development of ``meson-python`` as
-part of their job at `Quansight`__.
+part of their job at `Quansight`_.  Initial creation of
+``meson-python`` by Filipe Laíns was also funded by `Quansight`_.
 
-__ https://www.quansight.com/
+.. _Quansight: https://www.quansight.com/
 
 
 Packages
