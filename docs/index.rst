@@ -81,6 +81,7 @@ free to open an issue on our bugtracker_.
    reference/environment-variables
    explanations/default-options
    reference/limitations
+   reference/meson-compatibility
 
 .. reference/quirks
 
