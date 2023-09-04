@@ -476,14 +476,15 @@ class _WheelBuilder():
 
         return wheel_file
 
-    def build_editable(self, directory: Path, verbose: bool = False) -> pathlib.Path:
+    def build_editable(self, directory: Path, source_dir: pathlib.Path, build_dir: pathlib.Path,
+                       build_command: List[str], verbose: bool = False) -> pathlib.Path:
+
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
             whl.writestr(
                 f'{self.distinfo_dir}/direct_url.json',
-                self._source_dir.as_uri().encode('utf-8'),
-            )
+                source_dir.as_uri().encode('utf-8'))
 
             # install loader module
             loader_module_name = f'_{self.normalized_name.replace(".", "_")}_editable_loader'
@@ -492,8 +493,8 @@ class _WheelBuilder():
                 read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
                    install(
                        {self.top_level_modules!r},
-                       {os.fspath(self._build_dir)!r},
-                       {self._project._build_command!r},
+                       {os.fspath(build_dir)!r},
+                       {build_command!r},
                        {verbose!r},
                    )''').encode('utf-8'))
 
@@ -905,7 +906,7 @@ class Project():
 
     def editable(self, directory: Path) -> pathlib.Path:
         self.build()
-        file = self._wheel_builder.build_editable(directory, self._editable_verbose)
+        file = self._wheel_builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
         assert isinstance(file, pathlib.Path)
         return file
 
