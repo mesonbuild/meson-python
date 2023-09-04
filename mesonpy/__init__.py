@@ -278,17 +278,11 @@ class _WheelBuilder():
 
     def __init__(
         self,
-        project: Project,
         metadata: Metadata,
-        source_dir: pathlib.Path,
-        build_dir: pathlib.Path,
         manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
         limited_api: bool,
     ) -> None:
-        self._project = project
         self._metadata = metadata
-        self._source_dir = source_dir
-        self._build_dir = build_dir
         self._manifest = manifest
         self._limited_api = limited_api
 
@@ -749,10 +743,7 @@ class Project():
     @cached_property
     def _wheel_builder(self) -> _WheelBuilder:
         return _WheelBuilder(
-            self,
             self._metadata,
-            self._source_dir,
-            self._build_dir,
             self._manifest,
             self._limited_api,
         )
