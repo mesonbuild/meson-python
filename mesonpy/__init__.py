@@ -737,16 +737,7 @@ class Project():
         ]
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
-
         self._run(['meson', 'setup', *setup_args])
-
-    @cached_property
-    def _wheel_builder(self) -> _WheelBuilder:
-        return _WheelBuilder(
-            self._metadata,
-            self._manifest,
-            self._limited_api,
-        )
 
     @property
     def _build_command(self) -> List[str]:
@@ -891,13 +882,15 @@ class Project():
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory."""
         self.build()
-        file = self._wheel_builder.build(directory)
+        builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
+        file = builder.build(directory)
         assert isinstance(file, pathlib.Path)
         return file
 
     def editable(self, directory: Path) -> pathlib.Path:
         self.build()
-        file = self._wheel_builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
+        builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
+        file = builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
         assert isinstance(file, pathlib.Path)
         return file
 

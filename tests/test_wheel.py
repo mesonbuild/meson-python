@@ -232,12 +232,14 @@ def test_entrypoints(wheel_full_metadata):
 
 def test_top_level_modules(package_module_types):
     with mesonpy._project() as project:
-        assert set(project._wheel_builder.top_level_modules) == {
+        builder = mesonpy._WheelBuilder(project._metadata, project._manifest, project._is_pure, project._limited_api)
+        assert set(builder.top_level_modules) == {
             'file',
             'package',
             'namespace',
             'native',
         }
+
 
 def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
     with pytest.raises(mesonpy.BuildError, match='The purelib-platlib-split package is split'):
