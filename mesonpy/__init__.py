@@ -128,7 +128,7 @@ _INSTALLATION_PATH_MAP = {
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-    """Map files to the wheel, organized by wheel installation directrory."""
+    """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
 
@@ -259,26 +259,22 @@ class _WheelBuilder():
         metadata: Metadata,
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
-        sources: Dict[str, Dict[str, Any]],
+        manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
     ) -> None:
         self._project = project
         self._metadata = metadata
         self._source_dir = source_dir
         self._build_dir = build_dir
-        self._sources = sources
-
-    @cached_property
-    def _wheel_files(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
-        return _map_to_wheel(self._sources)
+        self._manifest = manifest
 
     @property
     def _has_internal_libs(self) -> bool:
-        return bool(self._wheel_files.get('mesonpy-libs'))
+        return bool(self._manifest.get('mesonpy-libs'))
 
     @property
     def _has_extension_modules(self) -> bool:
         # Assume that all code installed in {platlib} is Python ABI dependent.
-        return bool(self._wheel_files.get('platlib'))
+        return bool(self._manifest.get('platlib'))
 
     @property
     def normalized_name(self) -> str:
@@ -322,9 +318,9 @@ class _WheelBuilder():
         # non-pure, but I think it's better that we evaluate use-cases as they
         # arise and make sure allowing the user to override this is indeed the
         # best option for the use-case.
-        if self._wheel_files['platlib']:
+        if self._manifest['platlib']:
             return False
-        for _, file in self._wheel_files['scripts']:
+        for _, file in self._manifest['scripts']:
             if self._is_native(file):
                 return False
         return True
@@ -368,7 +364,7 @@ class _WheelBuilder():
             # in {platlib} that look like extension modules, and raise
             # an exception if any of them has a Python version
             # specific extension filename suffix ABI tag.
-            for path, _ in self._wheel_files['platlib']:
+            for path, _ in self._manifest['platlib']:
                 match = _EXTENSION_SUFFIX_REGEX.match(path.name)
                 if match:
                     abi = match.group('abi')
@@ -382,8 +378,8 @@ class _WheelBuilder():
     @property
     def top_level_modules(self) -> Collection[str]:
         modules = set()
-        for type_ in self._wheel_files:
-            for path, _ in self._wheel_files[type_]:
+        for type_ in self._manifest:
+            for path, _ in self._manifest[type_]:
                 name, dot, ext = path.parts[0].partition('.')
                 if dot:
                     # module
@@ -461,11 +457,11 @@ class _WheelBuilder():
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
 
-            with mesonpy._util.cli_counter(sum(len(x) for x in self._wheel_files.values())) as counter:
+            with mesonpy._util.cli_counter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self.is_pure else 'platlib'
 
-                for path, entries in self._wheel_files.items():
+                for path, entries in self._manifest.items():
                     for dst, src in entries:
                         counter.update(src)
 
@@ -761,7 +757,7 @@ class Project():
             self._metadata,
             self._source_dir,
             self._build_dir,
-            self._install_plan,
+            self._manifest,
         )
 
     @property
@@ -791,11 +787,13 @@ class Project():
         return json.loads(info.read_text())
 
     @property
-    def _install_plan(self) -> Dict[str, Dict[str, Dict[str, str]]]:
-        """Meson install_plan metadata."""
+    def _manifest(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+        """The files to be added to the wheel, organized by wheel path."""
+
+        # Obtain the list of files Meson would install.
         install_plan = self._info('intro-install_plan')
 
-        # parse install args to extract --tags and --skip-subprojects
+        # Parse the 'meson install' args to extract --tags and --skip-subprojects
         parser = argparse.ArgumentParser()
         parser.add_argument('--tags')
         parser.add_argument('--skip-subprojects', nargs='?', const='*', default='')
@@ -803,9 +801,8 @@ class Project():
         install_tags = {t.strip() for t in args.tags.split(',')} if args.tags else None
         skip_subprojects = {p for p in (p.strip() for p in args.skip_subprojects.split(',')) if p}
 
-        manifest: DefaultDict[str, Dict[str, Dict[str, str]]] = collections.defaultdict(dict)
-
-        # filter install_plan accordingly
+        # Filter the install plan accordingly.
+        sources: DefaultDict[str, Dict[str, Dict[str, str]]] = collections.defaultdict(dict)
         for key, targets in install_plan.items():
             for target, details in targets.items():
                 if install_tags is not None and details['tag'] not in install_tags:
@@ -813,9 +810,10 @@ class Project():
                 subproject = details.get('subproject')
                 if subproject is not None and (subproject in skip_subprojects or '*' in skip_subprojects):
                     continue
-                manifest[key][target] = details
+                sources[key][target] = details
 
-        return manifest
+        # Map Meson installation locations to wheel paths.
+        return _map_to_wheel(sources)
 
     @property
     def _meson_name(self) -> str:
