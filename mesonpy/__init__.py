@@ -397,22 +397,6 @@ class _WheelBuilder():
             return 'abi3'
         return None
 
-    @property
-    def top_level_modules(self) -> Collection[str]:
-        modules = set()
-        for type_ in self._manifest:
-            for path, _ in self._manifest[type_]:
-                name, dot, ext = path.parts[0].partition('.')
-                if dot:
-                    # module
-                    suffix = dot + ext
-                    if suffix in _SUFFIXES:
-                        modules.add(name)
-                else:
-                    # package
-                    modules.add(name)
-        return modules
-
     def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path) -> None:
         """Add a file to the wheel."""
 
@@ -470,8 +454,27 @@ class _WheelBuilder():
 
         return wheel_file
 
-    def build_editable(self, directory: Path, source_dir: pathlib.Path, build_dir: pathlib.Path,
-                       build_command: List[str], verbose: bool = False) -> pathlib.Path:
+
+class _EditableWheelBuilder(_WheelBuilder):
+
+    @property
+    def _top_level_modules(self) -> Collection[str]:
+        modules = set()
+        for type_ in self._manifest:
+            for path, _ in self._manifest[type_]:
+                name, dot, ext = path.parts[0].partition('.')
+                if dot:
+                    # module
+                    suffix = dot + ext
+                    if suffix in _SUFFIXES:
+                        modules.add(name)
+                else:
+                    # package
+                    modules.add(name)
+        return modules
+
+    def build(self, directory: Path, source_dir: pathlib.Path, build_dir: pathlib.Path,  # type: ignore[override]
+              build_command: List[str], verbose: bool = False) -> pathlib.Path:
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
@@ -486,7 +489,7 @@ class _WheelBuilder():
                 f'{loader_module_name}.py',
                 read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
                    install(
-                       {self.top_level_modules!r},
+                       {self._top_level_modules!r},
                        {os.fspath(build_dir)!r},
                        {build_command!r},
                        {verbose!r},
@@ -882,14 +885,14 @@ class Project():
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel in the specified directory."""
         self.build()
-        builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
+        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api)
         return builder.build(directory)
 
     def editable(self, directory: Path) -> pathlib.Path:
         """Generates an editable wheel in the specified directory."""
         self.build()
-        builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
-        return builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
+        builder = _EditableWheelBuilder(self._metadata, self._manifest, self._limited_api)
+        return builder.build(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
 
 
 @contextlib.contextmanager

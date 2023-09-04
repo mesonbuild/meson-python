@@ -232,8 +232,8 @@ def test_entrypoints(wheel_full_metadata):
 
 def test_top_level_modules(package_module_types):
     with mesonpy._project() as project:
-        builder = mesonpy._WheelBuilder(project._metadata, project._manifest, project._is_pure, project._limited_api)
-        assert set(builder.top_level_modules) == {
+        builder = mesonpy._EditableWheelBuilder(project._metadata, project._manifest, project._limited_api)
+        assert set(builder._top_level_modules) == {
             'file',
             'package',
             'namespace',
