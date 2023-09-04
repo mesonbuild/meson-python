@@ -62,7 +62,7 @@ def test_python_host_platform(monkeypatch):
     assert mesonpy._tags.get_platform_tag().endswith('x86_64')
 
 
-def wheel_builder_test_factory(monkeypatch, content, limited_api=False):
+def wheel_builder_test_factory(monkeypatch, content, pure=True, limited_api=False):
     files = defaultdict(list)
     files.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})
     class Project:
@@ -92,7 +92,7 @@ def test_tag_platlib_wheel(monkeypatch):
 def test_tag_stable_abi(monkeypatch):
     builder = wheel_builder_test_factory(monkeypatch, {
         'platlib': [f'extension{ABI3SUFFIX}'],
-    }, True)
+    }, limited_api=True)
     assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
 
@@ -101,6 +101,6 @@ def test_tag_stable_abi(monkeypatch):
 def test_tag_mixed_abi(monkeypatch):
     builder = wheel_builder_test_factory(monkeypatch, {
         'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
-    }, True)
+    }, pure=False, limited_api=True)
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
         assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'

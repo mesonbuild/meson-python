@@ -153,7 +153,7 @@ def test_install_tags(package_purelib_and_platlib, tmp_path_session):
             'install': ['--tags', 'purelib'],
         }
     )
-    assert project.is_pure
+    assert 'platlib' not in project._manifest
 
 
 def test_validate_pyproject_config_one():
