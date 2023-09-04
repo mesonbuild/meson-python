@@ -62,33 +62,33 @@ def test_python_host_platform(monkeypatch):
     assert mesonpy._tags.get_platform_tag().endswith('x86_64')
 
 
-def wheel_builder_test_factory(monkeypatch, content, pure=True, limited_api=False):
+def wheel_builder_test_factory(content, pure=True, limited_api=False):
     manifest = defaultdict(list)
     manifest.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})
     return mesonpy._WheelBuilder(None, manifest, limited_api)
 
 
-def test_tag_empty_wheel(monkeypatch):
-    builder = wheel_builder_test_factory(monkeypatch, {})
+def test_tag_empty_wheel():
+    builder = wheel_builder_test_factory({})
     assert str(builder.tag) == 'py3-none-any'
 
 
-def test_tag_purelib_wheel(monkeypatch):
-    builder = wheel_builder_test_factory(monkeypatch, {
+def test_tag_purelib_wheel():
+    builder = wheel_builder_test_factory({
         'purelib': ['pure.py'],
     })
     assert str(builder.tag) == 'py3-none-any'
 
 
-def test_tag_platlib_wheel(monkeypatch):
-    builder = wheel_builder_test_factory(monkeypatch, {
+def test_tag_platlib_wheel():
+    builder = wheel_builder_test_factory({
         'platlib': [f'extension{SUFFIX}'],
     })
     assert str(builder.tag) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
 
 
-def test_tag_stable_abi(monkeypatch):
-    builder = wheel_builder_test_factory(monkeypatch, {
+def test_tag_stable_abi():
+    builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}'],
     }, limited_api=True)
     assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
@@ -96,8 +96,8 @@ def test_tag_stable_abi(monkeypatch):
 
 @pytest.mark.skipif(sys.version_info < (3, 8) and sys.platform == 'win32',
                     reason='Extension modules filename suffix without ABI tags')
-def test_tag_mixed_abi(monkeypatch):
-    builder = wheel_builder_test_factory(monkeypatch, {
+def test_tag_mixed_abi():
+    builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
     }, pure=False, limited_api=True)
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
