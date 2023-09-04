@@ -283,7 +283,7 @@ class _WheelBuilder():
     @property
     def basename(self) -> str:
         """Normalized wheel name and version."""
-        return f'{self.normalized_name}-{self._project.version}'
+        return f'{self.normalized_name}-{self._metadata.version}'
 
     @property
     def tag(self) -> mesonpy._tags.Tag:
