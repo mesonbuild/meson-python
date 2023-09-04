@@ -278,7 +278,7 @@ class _WheelBuilder():
 
     @property
     def normalized_name(self) -> str:
-        return self._project.name.replace('-', '_')
+        return self._metadata.name.replace('-', '_')
 
     @property
     def basename(self) -> str:
@@ -425,7 +425,7 @@ class _WheelBuilder():
                 # directory, in the form of a relative RPATH entry. meson-python
                 # relocates the shared libraries to the $project.mesonpy.libs
                 # folder. Rewrite the RPATH to point to that folder instead.
-                libspath = os.path.relpath(f'.{self._project.name}.mesonpy.libs', destination.parent)
+                libspath = os.path.relpath(f'.{self.normalized_name}.mesonpy.libs', destination.parent)
                 mesonpy._rpath.fix_rpath(origin, libspath)
 
         try:
@@ -469,7 +469,7 @@ class _WheelBuilder():
                             pass
                         elif path == 'mesonpy-libs':
                             # custom installation path for bundled libraries
-                            dst = pathlib.Path(f'.{self._project.name}.mesonpy.libs', dst)
+                            dst = pathlib.Path(f'.{self.normalized_name}.mesonpy.libs', dst)
                         else:
                             dst = pathlib.Path(self.data_dir, path, dst)
 
