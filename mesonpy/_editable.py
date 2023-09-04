@@ -39,7 +39,20 @@ else:
     class Traversable:
         pass
     class TraversableResources:
-        pass
+        def files(self):
+            pass
+
+        def open_resource(self, resource):
+            return self.files().joinpath(resource).open('rb')
+
+        def resource_path(self, resource):
+            raise FileNotFoundError(resource)
+
+        def is_resource(self, path):
+            return self.files().joinpath(path).is_file()
+
+        def contents(self):
+            return (item.name for item in self.files().iterdir())
 
 
 MARKER = 'MESONPY_EDITABLE_SKIP'
