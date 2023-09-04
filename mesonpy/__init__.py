@@ -880,19 +880,16 @@ class Project():
         return sdist
 
     def wheel(self, directory: Path) -> pathlib.Path:
-        """Generates a wheel (binary distribution) in the specified directory."""
+        """Generates a wheel in the specified directory."""
         self.build()
         builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
-        file = builder.build(directory)
-        assert isinstance(file, pathlib.Path)
-        return file
+        return builder.build(directory)
 
     def editable(self, directory: Path) -> pathlib.Path:
+        """Generates an editable wheel in the specified directory."""
         self.build()
         builder = _WheelBuilder(self._metadata, self._manifest, self._is_pure, self._limited_api)
-        file = builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
-        assert isinstance(file, pathlib.Path)
-        return file
+        return builder.build_editable(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
 
 
 @contextlib.contextmanager
