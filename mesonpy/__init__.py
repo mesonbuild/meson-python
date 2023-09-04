@@ -437,7 +437,7 @@ class _WheelBuilder():
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
         # add metadata
-        whl.writestr(f'{self.distinfo_dir}/METADATA', self._project.metadata)
+        whl.writestr(f'{self.distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
         whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
         if self.entrypoints_txt:
             whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
@@ -839,11 +839,6 @@ class Project():
         """Project version."""
         return str(self._metadata.version)
 
-    @cached_property
-    def metadata(self) -> bytes:
-        """Project metadata as an RFC822 message."""
-        return bytes(self._metadata.as_rfc822())
-
     @property
     def license_file(self) -> Optional[pathlib.Path]:
         license_ = self._metadata.license
@@ -911,8 +906,9 @@ class Project():
             # add PKG-INFO to dist file to make it a sdist
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             pkginfo_info.mtime = time.time()  # type: ignore[assignment]
-            pkginfo_info.size = len(self.metadata)
-            tar.addfile(pkginfo_info, fileobj=io.BytesIO(self.metadata))
+            metadata = bytes(self._metadata.as_rfc822())
+            pkginfo_info.size = len(metadata)
+            tar.addfile(pkginfo_info, fileobj=io.BytesIO(metadata))
 
         return sdist
 
