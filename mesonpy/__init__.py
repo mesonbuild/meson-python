@@ -283,12 +283,14 @@ class _WheelBuilder():
         source_dir: pathlib.Path,
         build_dir: pathlib.Path,
         manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
+        limited_api: bool,
     ) -> None:
         self._project = project
         self._metadata = metadata
         self._source_dir = source_dir
         self._build_dir = build_dir
         self._manifest = manifest
+        self._limited_api = limited_api
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -385,7 +387,7 @@ class _WheelBuilder():
 
     @cached_property
     def _stable_abi(self) -> Optional[str]:
-        if self._project._limited_api:
+        if self._limited_api:
             # Verify stabe ABI compatibility: examine files installed
             # in {platlib} that look like extension modules, and raise
             # an exception if any of them has a Python version
@@ -758,6 +760,7 @@ class Project():
             self._source_dir,
             self._build_dir,
             self._manifest,
+            self._limited_api,
         )
 
     @property
