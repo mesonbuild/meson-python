@@ -165,7 +165,7 @@ def pep518_wheelhouse(tmp_path_factory):
     packages = [
         meson_python,
     ]
-    cmd = [sys.executable, '-m', 'pip', 'wheel', '--no-build-isolation', '--wheel-dir', wheelhouse, *packages]
+    cmd = [sys.executable, '-m', 'pip', 'wheel',  '--wheel-dir', wheelhouse, *packages]
     subprocess.run(cmd, check=True)
     return wheelhouse
 
