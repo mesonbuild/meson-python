@@ -452,9 +452,6 @@ class _WheelBuilder():
             whl.write(self._license_file, f'{self.distinfo_dir}/{os.path.basename(self._license_file)}')
 
     def build(self, directory: Path) -> pathlib.Path:
-        # ensure project is built
-        self._project.build()
-
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
@@ -480,11 +477,7 @@ class _WheelBuilder():
         return wheel_file
 
     def build_editable(self, directory: Path, verbose: bool = False) -> pathlib.Path:
-        # ensure project is built
-        self._project.build()
-
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
-
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
             whl.writestr(
@@ -905,11 +898,13 @@ class Project():
 
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel (binary distribution) in the specified directory."""
+        self.build()
         file = self._wheel_builder.build(directory)
         assert isinstance(file, pathlib.Path)
         return file
 
     def editable(self, directory: Path) -> pathlib.Path:
+        self.build()
         file = self._wheel_builder.build_editable(directory, self._editable_verbose)
         assert isinstance(file, pathlib.Path)
         return file
