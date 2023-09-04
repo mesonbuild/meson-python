@@ -106,18 +106,11 @@ jobs:
 
       - name: Run tests
         run: >-
-          python -m pytest --showlocals -vv --cov
-          --cov-report=xml:coverage-${{ matrix.python }}.xml
+          python -m pytest --showlocals -vv --cov --cov-report=xml
 
-      - name: Send coverage report
-        uses: codecov/codecov-action@v1
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
         if: ${{ always() }}
-        env:
-          PYTHON: ${{ matrix.python }}
-        with:
-          flags: tests
-          env_vars: PYTHON
-          name: ${{ matrix.python }}
 
   msvc:
     runs-on: windows-latest
@@ -230,19 +223,8 @@ jobs:
 
       - name: Run tests
         run: >-
-          python -m pytest --showlocals -vv --cov
-          --cov-report=xml:coverage-${{ matrix.python }}.xml
+          python -m pytest --showlocals -vv
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
-
-      - name: Send coverage report
-        uses: codecov/codecov-action@v1
-        if: ${{ always() }}
-        env:
-          PYTHON: cygwin-${{ matrix.python }}
-        with:
-          flags: tests
-          env_vars: PYTHON
-          name: cygwin-${{ matrix.python }}
 
   pyston:
     runs-on: ubuntu-20.04
@@ -275,18 +257,7 @@ jobs:
 
       - name: Run tests
         run: >-
-          pyston -m pytest --showlocals -vv --cov
-          --cov-report=xml:coverage-pyston.xml
-
-      - name: Send coverage report
-        uses: codecov/codecov-action@v1
-        if: ${{ always() }}
-        env:
-          PYTHON: pyston
-        with:
-          flags: tests
-          env_vars: PYTHON
-          name: pyston
+          pyston -m pytest --showlocals -vv
 
   homebrew:
     runs-on: macos-latest
@@ -324,18 +295,7 @@ jobs:
 
       - name: Run tests
         run: >-
-          python -m pytest --showlocals -vv --cov
-          --cov-report=xml:coverage-homebrew-${{ matrix.python }}.xml
-
-      - name: Send coverage report
-        uses: codecov/codecov-action@v1
-        if: ${{ always() }}
-        env:
-          PYTHON: homebrew-${{ matrix.python }}
-        with:
-          flags: tests
-          env_vars: PYTHON
-          name: homebrew-${{ matrix.python }}
+          python -m pytest --showlocals -vv
 
   mypy:
     runs-on: ubuntu-latest
@@ -356,9 +316,3 @@ jobs:
 
       - name: Run mypy
         run: mypy -p mesonpy
-
-  # tests-pass:
-  #   needs: [test, cygwin, pyston, homebrew, mypy]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - run: echo "All jobs passed"
