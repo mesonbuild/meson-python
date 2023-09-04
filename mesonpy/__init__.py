@@ -178,6 +178,29 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
     return wheel_files
 
 
+def _is_native(file: Path) -> bool:
+    """Check if file is a native file."""
+
+    with open(file, 'rb') as f:
+        if sys.platform == 'linux':
+            return f.read(4) == b'\x7fELF'  # ELF
+        elif sys.platform == 'darwin':
+            return f.read(4) in (
+                b'\xfe\xed\xfa\xce',  # 32-bit
+                b'\xfe\xed\xfa\xcf',  # 64-bit
+                b'\xcf\xfa\xed\xfe',  # arm64
+                b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
+            )
+        elif sys.platform == 'win32':
+            return f.read(2) == b'MZ'
+
+    # For unknown platforms, check for file extensions.
+    _, ext = os.path.splitext(file)
+    if ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd'):
+        return True
+    return False
+
+
 def _showwarning(
     message: Union[Warning, str],
     category: Type[Warning],
@@ -276,6 +299,16 @@ class _WheelBuilder():
         # Assume that all code installed in {platlib} is Python ABI dependent.
         return bool(self._manifest.get('platlib'))
 
+    @cached_property
+    def _pure(self) -> bool:
+        """Whether the wheel is architecture independent"""
+        if self._manifest['platlib']:
+            return False
+        for _, file in self._manifest['scripts']:
+            if _is_native(file):
+                return False
+        return True
+
     @property
     def normalized_name(self) -> str:
         return self._metadata.name.replace('-', '_')
@@ -288,7 +321,7 @@ class _WheelBuilder():
     @property
     def tag(self) -> mesonpy._tags.Tag:
         """Wheel tags."""
-        if self.is_pure:
+        if self._pure:
             return mesonpy._tags.Tag('py3', 'none', 'any')
         if not self._has_extension_modules:
             # The wheel has platform dependent code (is not pure) but
@@ -318,20 +351,6 @@ class _WheelBuilder():
             return license_.file
         return None
 
-    @cached_property
-    def is_pure(self) -> bool:
-        """Is the wheel "pure" (architecture independent)?"""
-        # XXX: I imagine some users might want to force the package to be
-        # non-pure, but I think it's better that we evaluate use-cases as they
-        # arise and make sure allowing the user to override this is indeed the
-        # best option for the use-case.
-        if self._manifest['platlib']:
-            return False
-        for _, file in self._manifest['scripts']:
-            if self._is_native(file):
-                return False
-        return True
-
     @property
     def wheel(self) -> bytes:
         """Return WHEEL file for dist-info."""
@@ -341,7 +360,7 @@ class _WheelBuilder():
             Root-Is-Purelib: {is_purelib}
             Tag: {tag}
         ''').strip().format(
-            is_purelib='true' if self.is_pure else 'false',
+            is_purelib='true' if self._pure else 'false',
             tag=self.tag,
         ).encode()
 
@@ -398,34 +417,11 @@ class _WheelBuilder():
                     modules.add(name)
         return modules
 
-    def _is_native(self, file: Union[str, pathlib.Path]) -> bool:
-        """Check if file is a native file."""
-        self._project.build()  # the project needs to be built for this :/
-
-        with open(file, 'rb') as f:
-            if sys.platform == 'linux':
-                return f.read(4) == b'\x7fELF'  # ELF
-            elif sys.platform == 'darwin':
-                return f.read(4) in (
-                    b'\xfe\xed\xfa\xce',  # 32-bit
-                    b'\xfe\xed\xfa\xcf',  # 64-bit
-                    b'\xcf\xfa\xed\xfe',  # arm64
-                    b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
-                )
-            elif sys.platform == 'win32':
-                return f.read(2) == b'MZ'
-
-        # For unknown platforms, check for file extensions.
-        _, ext = os.path.splitext(file)
-        if ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd'):
-            return True
-        return False
-
     def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path) -> None:
         """Add a file to the wheel."""
 
         if self._has_internal_libs:
-            if self._is_native(os.fspath(origin)):
+            if _is_native(origin):
                 # When an executable, libray, or Python extension module is
                 # dynamically linked to a library built as part of the project,
                 # Meson adds a library load path to it pointing to the build
@@ -463,7 +459,7 @@ class _WheelBuilder():
 
             with mesonpy._util.cli_counter(sum(len(x) for x in self._manifest.values())) as counter:
 
-                root = 'purelib' if self.is_pure else 'platlib'
+                root = 'purelib' if self._pure else 'platlib'
 
                 for path, entries in self._manifest.items():
                     for dst, src in entries:
@@ -842,11 +838,6 @@ class Project():
     def version(self) -> str:
         """Project version."""
         return str(self._metadata.version)
-
-    @property
-    def is_pure(self) -> bool:
-        """Is the wheel "pure" (architecture independent)?"""
-        return bool(self._wheel_builder.is_pure)
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
