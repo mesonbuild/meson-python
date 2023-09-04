@@ -311,6 +311,13 @@ class _WheelBuilder():
     def data_dir(self) -> str:
         return f'{self.basename}.data'
 
+    @property
+    def _license_file(self) -> Optional[pathlib.Path]:
+        license_ = self._metadata.license
+        if license_:
+            return license_.file
+        return None
+
     @cached_property
     def is_pure(self) -> bool:
         """Is the wheel "pure" (architecture independent)?"""
@@ -443,11 +450,8 @@ class _WheelBuilder():
             whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
         # add license (see https://github.com/mesonbuild/meson-python/issues/88)
-        if self._project.license_file:
-            whl.write(
-                self._source_dir / self._project.license_file,
-                f'{self.distinfo_dir}/{os.path.basename(self._project.license_file)}',
-            )
+        if self._license_file:
+            whl.write(self._license_file, f'{self.distinfo_dir}/{os.path.basename(self._license_file)}')
 
     def build(self, directory: Path) -> pathlib.Path:
         # ensure project is built
@@ -838,13 +842,6 @@ class Project():
     def version(self) -> str:
         """Project version."""
         return str(self._metadata.version)
-
-    @property
-    def license_file(self) -> Optional[pathlib.Path]:
-        license_ = self._metadata.license
-        if license_ and license_.file:
-            return pathlib.Path(license_.file)
-        return None
 
     @property
     def is_pure(self) -> bool:
