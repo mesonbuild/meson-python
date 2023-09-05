@@ -40,6 +40,7 @@ if sys.version_info < (3, 11):
 else:
     import tomllib
 
+import packaging.utils
 import packaging.version
 import pyproject_metadata
 
@@ -206,12 +207,26 @@ class MesonBuilderError(Error):
 
 
 class Metadata(pyproject_metadata.StandardMetadata):
-    # The class method from the pyproject_metadata base class is not
-    # typed in a subclassing friendly way, thus annotations to ignore
-    # typing are needed.
+    def __init__(self, name: str, *args: Any, **kwargs: Any):
+        super().__init__(name, *args, **kwargs)
+        # Local fix for https://github.com/FFY00/python-pyproject-metadata/issues/60
+        self.name = self._validate_name(name)
+
+    @staticmethod
+    def _validate_name(name: str) -> str:
+        # See https://packaging.python.org/en/latest/specifications/core-metadata/#name
+        if not re.match(r'^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$', name, re.IGNORECASE):
+            raise pyproject_metadata.ConfigurationError(
+                f'Invalid project name "{name}". A valid name consists only of ASCII letters and '
+                f'numbers, period, underscore and hyphen. It must start and end with a letter or number')
+        return name
 
     @classmethod
     def from_pyproject(cls, data: Mapping[str, Any], project_dir: Path) -> Metadata:  # type: ignore[override]
+        # The class method from the pyproject_metadata base class is not
+        # typed in a subclassing friendly way, thus annotations to ignore
+        # typing are needed.
+
         metadata = super().from_pyproject(data, project_dir)
 
         # Check for missing version field.
@@ -232,6 +247,16 @@ class Metadata(pyproject_metadata.StandardMetadata):
     def _update_dynamic(self, value: Any) -> None:
         if value and 'version' in self.dynamic:
             self.dynamic.remove('version')
+
+    @property
+    def canonical_name(self) -> str:
+        # See https://packaging.python.org/en/latest/specifications/name-normalization/#normalization
+        return packaging.utils.canonicalize_name(self.name)
+
+    @property
+    def distribution_name(self) -> str:
+        """Name to be used in wheel and sdist file names."""
+        return self.canonical_name.replace('-', '_')
 
 
 def _is_native(file: Path) -> bool:
@@ -288,15 +313,6 @@ class _WheelBuilder():
         return True
 
     @property
-    def normalized_name(self) -> str:
-        return self._metadata.name.replace('-', '_')
-
-    @property
-    def basename(self) -> str:
-        """Normalized wheel name and version."""
-        return f'{self.normalized_name}-{self._metadata.version}'
-
-    @property
     def tag(self) -> mesonpy._tags.Tag:
         """Wheel tags."""
         if self._pure:
@@ -312,15 +328,19 @@ class _WheelBuilder():
     @property
     def name(self) -> str:
         """Wheel name, this includes the basename and tag."""
-        return f'{self.basename}-{self.tag}'
+        return f'{self._metadata.distribution_name}-{self._metadata.version}-{self.tag}'
 
     @property
-    def distinfo_dir(self) -> str:
-        return f'{self.basename}.dist-info'
+    def _distinfo_dir(self) -> str:
+        return f'{self._metadata.distribution_name}-{self._metadata.version}.dist-info'
 
     @property
-    def data_dir(self) -> str:
-        return f'{self.basename}.data'
+    def _data_dir(self) -> str:
+        return f'{self._metadata.distribution_name}-{self._metadata.version}.data'
+
+    @property
+    def _libs_dir(self) -> str:
+        return f'.{self._metadata.distribution_name}.mesonpy.libs'
 
     @property
     def _license_file(self) -> Optional[pathlib.Path]:
@@ -393,7 +413,7 @@ class _WheelBuilder():
                 # directory, in the form of a relative RPATH entry. meson-python
                 # relocates the shared libraries to the $project.mesonpy.libs
                 # folder. Rewrite the RPATH to point to that folder instead.
-                libspath = os.path.relpath(f'.{self.normalized_name}.mesonpy.libs', destination.parent)
+                libspath = os.path.relpath(self._libs_dir, destination.parent)
                 mesonpy._rpath.fix_rpath(origin, libspath)
 
         try:
@@ -405,14 +425,14 @@ class _WheelBuilder():
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
         # add metadata
-        whl.writestr(f'{self.distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
-        whl.writestr(f'{self.distinfo_dir}/WHEEL', self.wheel)
+        whl.writestr(f'{self._distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
+        whl.writestr(f'{self._distinfo_dir}/WHEEL', self.wheel)
         if self.entrypoints_txt:
-            whl.writestr(f'{self.distinfo_dir}/entry_points.txt', self.entrypoints_txt)
+            whl.writestr(f'{self._distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
         # add license (see https://github.com/mesonbuild/meson-python/issues/88)
         if self._license_file:
-            whl.write(self._license_file, f'{self.distinfo_dir}/{os.path.basename(self._license_file)}')
+            whl.write(self._license_file, f'{self._distinfo_dir}/{os.path.basename(self._license_file)}')
 
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
@@ -431,9 +451,9 @@ class _WheelBuilder():
                             pass
                         elif path == 'mesonpy-libs':
                             # custom installation path for bundled libraries
-                            dst = pathlib.Path(f'.{self.normalized_name}.mesonpy.libs', dst)
+                            dst = pathlib.Path(self._libs_dir, dst)
                         else:
-                            dst = pathlib.Path(self.data_dir, path, dst)
+                            dst = pathlib.Path(self._data_dir, path, dst)
 
                         self._install_path(whl, src, dst)
 
@@ -465,11 +485,11 @@ class _EditableWheelBuilder(_WheelBuilder):
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
             whl.writestr(
-                f'{self.distinfo_dir}/direct_url.json',
+                f'{self._distinfo_dir}/direct_url.json',
                 source_dir.as_uri().encode('utf-8'))
 
             # install loader module
-            loader_module_name = f'_{self.normalized_name.replace(".", "_")}_editable_loader'
+            loader_module_name = f'_{self._metadata.distribution_name}_editable_loader'
             whl.writestr(
                 f'{loader_module_name}.py',
                 read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
@@ -482,7 +502,7 @@ class _EditableWheelBuilder(_WheelBuilder):
 
             # install .pth file
             whl.writestr(
-                f'{self.normalized_name}-editable.pth',
+                f'{self._metadata.canonical_name}-editable.pth',
                 f'import {loader_module_name}'.encode('utf-8'))
 
         return wheel_file
@@ -805,23 +825,13 @@ class Project():
         assert isinstance(name, str)
         return name
 
-    @property
-    def name(self) -> str:
-        """Project name."""
-        return str(self._metadata.name).replace('-', '_')
-
-    @property
-    def version(self) -> str:
-        """Project version."""
-        return str(self._metadata.version)
-
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
         self._run(self._meson + ['dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
 
         # move meson dist file to output path
-        dist_name = f'{self.name}-{self.version}'
+        dist_name = f'{self._metadata.distribution_name}-{self._metadata.version}'
         meson_dist_name = f'{self._meson_name}-{self._meson_version}'
         meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')

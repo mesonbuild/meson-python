@@ -31,7 +31,7 @@ from .conftest import chdir, in_git_repo_context, package_dir
 )
 def test_name(package):
     with chdir(package_dir / package), mesonpy._project() as project:
-        assert project.name == package.replace('-', '_')
+        assert project._metadata.distribution_name == package.replace('-', '_')
 
 
 @pytest.mark.parametrize(
@@ -43,7 +43,7 @@ def test_name(package):
 )
 def test_version(package):
     with chdir(package_dir / package), mesonpy._project() as project:
-        assert project.version == '1.0.0'
+        assert str(project._metadata.version) == '1.0.0'
 
 
 def test_unsupported_dynamic(package_unsupported_dynamic):
