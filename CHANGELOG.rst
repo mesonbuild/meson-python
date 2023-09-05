@@ -36,7 +36,7 @@ Changelog
 - Extensive documentation improvements.
 
 Charles Brunet, Daniele Nicolodi, Henry Schreiner, Michał Górny, Ralf
-Gommers --- xx-09-2023
+Gommers --- 05-09-2023
 
 
 0.13.2
