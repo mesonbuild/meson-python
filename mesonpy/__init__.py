@@ -34,8 +34,6 @@ import time
 import typing
 import warnings
 
-from typing import Dict
-
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
@@ -51,31 +49,24 @@ import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import Collection, Mapping, cached_property, read_binary
+from mesonpy._compat import cached_property, read_binary
 
+
+_MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Any, Callable, DefaultDict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
+    from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
-    from mesonpy._compat import Iterator, ParamSpec, Path
+    from mesonpy._compat import Collection, Iterator, Mapping, ParamSpec, Path
 
     P = ParamSpec('P')
     T = TypeVar('T')
 
-
-__version__ = '0.15.0.dev0'
-
-
-# XXX: Once Python 3.8 is our minimum supported version, get rid of
-#      meson_args_keys and use typing.get_args(MesonArgsKeys) instead.
-
-# Keep both definitions in sync!
-_MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
-if typing.TYPE_CHECKING:
     MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
-else:
-    MesonArgs = dict
+
+
+__version__ = '0.15.0.dev0'
 
 
 _COLORS = {
@@ -952,7 +943,7 @@ def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Proje
     """Create the project given the given config settings."""
 
     settings = _validate_config_settings(config_settings or {})
-    meson_args = typing.cast(MesonArgs, {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
+    meson_args = typing.cast('MesonArgs', {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
     source_dir = os.path.curdir
     build_dir = settings.get('build-dir')
     editable_verbose = bool(settings.get('editable-verbose'))
