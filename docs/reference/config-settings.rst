@@ -14,9 +14,9 @@ settings you can pass when building the project. Please refer to the
 :ref:`how-to-guides-meson-args` guides for information on how to use
 them.
 
-.. option:: builddir
+.. option:: build-dir
 
-   By default ``meson-python`` uses a temporary builds directory.
+   By default ``meson-python`` uses a temporary build directory.
    This settings allows to select the Meson build directory and
    prevents it to be deleted when ``meson-python`` terminates.  If the
    directory does not exists, it will be created.  If the directory
@@ -26,6 +26,9 @@ them.
    The same build directory can be used by subsequent invocations of
    ``meson-python``. This avoids having to rebuild the whole project
    when testing changes during development.
+
+   For backward comaptibility reasons, the alternative ``builddir``
+   spelling is also accepted.
 
 .. option:: dist-args
 
