@@ -105,7 +105,7 @@ to install the same project in editable mode for multiple interpreters
 with different ABIs.
 
 An alternative build directory can be specified using the
-:option:`builddir` config setting.
+:option:`build-dir` config setting.
 
 
 .. _how-to-guides-editable-installs-verbose:

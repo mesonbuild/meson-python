@@ -583,6 +583,7 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
 
     options = {
         'builddir': _string,
+        'build-dir': _string,
         'editable-verbose': _bool,
         'dist-args': _string_or_strings,
         'setup-args': _string_or_strings,
@@ -602,6 +603,17 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
             else:
                 raise ConfigError(f'Unknown option "{key}"')
         config[key] = parser(value, key)
+
+    # Check backward compatibility aliases.
+    aliases = {
+        'build-dir': 'builddir',
+    }
+    for key, alt in aliases.items():
+        if key in config and alt in config:
+            raise ConfigError(f'Option "{alt}" is a backward compatibility alias for "{key}". Only one can be used')
+        if alt in config:
+            config[key] = config[alt]
+
     return config
 
 
@@ -942,7 +954,7 @@ def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Proje
     settings = _validate_config_settings(config_settings or {})
     meson_args = typing.cast(MesonArgs, {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
     source_dir = os.path.curdir
-    build_dir = settings.get('builddir')
+    build_dir = settings.get('build-dir')
     editable_verbose = bool(settings.get('editable-verbose'))
 
     with contextlib.ExitStack() as ctx:
@@ -1081,15 +1093,15 @@ def build_editable(
 ) -> str:
     _setup_cli()
 
-    # force set a permanent builddir
+    # Force set a permanent build directory.
     if not config_settings:
         config_settings = {}
-    if 'builddir' not in config_settings:
-        builddir = pathlib.Path('build')
-        builddir.mkdir(exist_ok=True)
-        if not next(builddir.iterdir(), None):
-            _add_ignore_files(builddir)
-        config_settings['builddir'] = os.fspath(builddir / str(mesonpy._tags.get_abi_tag()))
+    if 'build-dir' not in config_settings and 'builddir' not in config_settings:
+        build_dir = pathlib.Path('build')
+        build_dir.mkdir(exist_ok=True)
+        if not next(build_dir.iterdir(), None):
+            _add_ignore_files(build_dir)
+        config_settings['build-dir'] = os.fspath(build_dir / str(mesonpy._tags.get_abi_tag()))
 
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:

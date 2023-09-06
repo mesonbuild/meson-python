@@ -23,7 +23,7 @@ We can do all that with the following ``pip`` invocation:
 
     $ pip install -e . --no-build-isolation \
         -Csetup-args=-Dbuildtype=debug \
-        -Cbuilddir=build-dbg
+        -Cbuild-dir=build-dbg
 
 This debug build of your package will work with either a regular or debug build
 of your Python interpreter. A debug Python interpreter isn't necessary, but may
