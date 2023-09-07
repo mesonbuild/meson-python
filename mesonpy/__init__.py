@@ -1038,27 +1038,14 @@ def build_sdist(
 
 
 @_pyproject_hook
-def get_requires_for_build_wheel(
-    config_settings: Optional[Dict[str, str]] = None,
-) -> List[str]:
+def get_requires_for_build_wheel(config_settings: Optional[Dict[str, str]] = None) -> List[str]:
     dependencies = []
 
     if os.environ.get('NINJA') is None and _env_ninja_command() is None:
         dependencies.append(_depstr.ninja)
 
-    if sys.platform.startswith('linux'):
-        # we may need patchelf
-        if not shutil.which('patchelf'):
-            # patchelf not already accessible on the system
-            if _env_ninja_command() is not None:
-                # we have ninja available, so we can run Meson and check if the project needs patchelf
-                with _project(config_settings) as project:
-                    if not project.is_pure:
-                        dependencies.append(_depstr.patchelf)
-            else:
-                # we can't check if the project needs patchelf, so always add it
-                # XXX: wait for https://github.com/mesonbuild/meson/pull/10779
-                dependencies.append(_depstr.patchelf)
+    if sys.platform.startswith('linux') and not shutil.which('patchelf'):
+        dependencies.append(_depstr.patchelf)
 
     return dependencies
 

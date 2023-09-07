@@ -12,15 +12,10 @@ import pytest
 
 import mesonpy
 
-from mesonpy._util import chdir
 
-from .conftest import package_dir
-
-
-@pytest.mark.parametrize('package', ['pure', 'library'])
 @pytest.mark.parametrize('system_patchelf', ['patchelf', None], ids=['patchelf', 'nopatchelf'])
 @pytest.mark.parametrize('ninja', [None, '1.8.1', '1.8.3'], ids=['noninja', 'oldninja', 'newninja'])
-def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, ninja):
+def test_get_requires_for_build_wheel(monkeypatch, package_pure, system_patchelf, ninja):
     # the NINJA environment variable affects the ninja executable lookup and breaks the test
     monkeypatch.delenv('NINJA', raising=False)
 
@@ -51,14 +46,10 @@ def test_get_requires_for_build_wheel(monkeypatch, package, system_patchelf, nin
     if not ninja_available:
         expected |= {mesonpy._depstr.ninja}
 
-    if (
-        system_patchelf is None and sys.platform.startswith('linux')
-        and (not ninja_available or (ninja_available and package != 'pure'))
-    ):
+    if system_patchelf is None and sys.platform.startswith('linux'):
         expected |= {mesonpy._depstr.patchelf}
 
-    with chdir(package_dir / package):
-        assert set(mesonpy.get_requires_for_build_wheel()) == expected
+    assert set(mesonpy.get_requires_for_build_wheel()) == expected
 
 
 def test_invalid_config_settings(capsys, package_pure, tmp_path_session):
