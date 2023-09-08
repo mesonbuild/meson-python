@@ -85,14 +85,6 @@ _NINJA_REQUIRED_VERSION = '1.8.2'
 _MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
 
 
-class _depstr:
-    """Namespace that holds the requirement strings for dependencies we *might*
-    need at runtime. Having them in one place makes it easier to update.
-    """
-    patchelf = 'patchelf >= 0.11.0'
-    ninja = f'ninja >= {_NINJA_REQUIRED_VERSION}'
-
-
 def _init_colors() -> Dict[str, str]:
     """Detect if we should be using colors in the output. We will enable colors
     if running in a TTY, and no environment variable overrides it. Setting the
@@ -1017,12 +1009,13 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
 
 
 @_pyproject_hook
-def get_requires_for_build_sdist(
-    config_settings: Optional[Dict[str, str]] = None,
-) -> List[str]:
+def get_requires_for_build_sdist(config_settings: Optional[Dict[str, str]] = None) -> List[str]:
+    dependencies = []
+
     if os.environ.get('NINJA') is None and _env_ninja_command() is None:
-        return [_depstr.ninja]
-    return []
+        dependencies.append(f'ninja >= {_NINJA_REQUIRED_VERSION}')
+
+    return dependencies
 
 
 @_pyproject_hook
@@ -1042,10 +1035,10 @@ def get_requires_for_build_wheel(config_settings: Optional[Dict[str, str]] = Non
     dependencies = []
 
     if os.environ.get('NINJA') is None and _env_ninja_command() is None:
-        dependencies.append(_depstr.ninja)
+        dependencies.append(f'ninja >= {_NINJA_REQUIRED_VERSION}')
 
     if sys.platform.startswith('linux') and not shutil.which('patchelf'):
-        dependencies.append(_depstr.patchelf)
+        dependencies.append('patchelf >= 0.11.0')
 
     return dependencies
 

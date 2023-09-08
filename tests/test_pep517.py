@@ -8,6 +8,7 @@ import sys
 
 from typing import List
 
+import packaging.requirements
 import pytest
 
 import mesonpy
@@ -41,15 +42,18 @@ def test_get_requires_for_build_wheel(monkeypatch, package_pure, system_patchelf
 
     expected = set()
 
-    ninja_available = ninja is not None and [int(x) for x in ninja.split('.')] >= [1, 8, 2]
-
-    if not ninja_available:
-        expected |= {mesonpy._depstr.ninja}
+    if ninja is None or mesonpy._parse_version_string(ninja) < (1, 8, 2):
+        expected.add('ninja')
 
     if system_patchelf is None and sys.platform.startswith('linux'):
-        expected |= {mesonpy._depstr.patchelf}
+        expected.add('patchelf')
 
-    assert set(mesonpy.get_requires_for_build_wheel()) == expected
+    requirements = mesonpy.get_requires_for_build_wheel()
+
+    # Check that the requirement strings are in the correct format.
+    names = {packaging.requirements.Requirement(x).name for x in requirements}
+
+    assert names == expected
 
 
 def test_invalid_config_settings(capsys, package_pure, tmp_path_session):
