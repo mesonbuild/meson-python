@@ -52,8 +52,6 @@ import mesonpy._wheelfile
 from mesonpy._compat import cached_property, read_binary
 
 
-_MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
-
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
@@ -69,48 +67,14 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 __version__ = '0.15.0.dev0'
 
 
-_COLORS = {
-    'red': '\33[31m',
-    'cyan': '\33[36m',
-    'yellow': '\33[93m',
-    'light_blue': '\33[94m',
-    'bold': '\33[1m',
-    'dim': '\33[2m',
-    'underline': '\33[4m',
-    'reset': '\33[0m',
-}
-_NO_COLORS = {color: '' for color in _COLORS}
-
 _NINJA_REQUIRED_VERSION = '1.8.2'
 _MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
 
-
-def _init_colors() -> Dict[str, str]:
-    """Detect if we should be using colors in the output. We will enable colors
-    if running in a TTY, and no environment variable overrides it. Setting the
-    NO_COLOR (https://no-color.org/) environment variable force-disables colors,
-    and FORCE_COLOR forces color to be used, which is useful for thing like
-    Github actions.
-    """
-    if 'NO_COLOR' in os.environ:
-        if 'FORCE_COLOR' in os.environ:
-            warnings.warn(
-                'Both NO_COLOR and FORCE_COLOR environment variables are set, disabling color',
-                stacklevel=1,
-            )
-        return _NO_COLORS
-    elif 'FORCE_COLOR' in os.environ or sys.stdout.isatty():
-        return _COLORS
-    return _NO_COLORS
-
-
-_STYLES = _init_colors()  # holds the color values, should be _COLORS or _NO_COLORS
-
+_MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
 
 _SUFFIXES = importlib.machinery.all_suffixes()
 _EXTENSION_SUFFIX_REGEX = re.compile(r'^[^.]+\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, f'foo{x}') for x in importlib.machinery.EXTENSION_SUFFIXES)
-
 
 # Map Meson installation path placeholders to wheel installation paths.
 # See https://docs.python.org/3/library/sysconfig.html#installation-paths
@@ -178,27 +142,38 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
     return wheel_files
 
 
-def _is_native(file: Path) -> bool:
-    """Check if file is a native file."""
+class style:
+    ERROR = '\33[31m',  # red
+    WARNING = '\33[93m'  # bright yellow
+    INFO = '\33[36m\33[1m'  # cyan, bold
+    RESET = '\33[0m'
 
-    with open(file, 'rb') as f:
-        if sys.platform == 'linux':
-            return f.read(4) == b'\x7fELF'  # ELF
-        elif sys.platform == 'darwin':
-            return f.read(4) in (
-                b'\xfe\xed\xfa\xce',  # 32-bit
-                b'\xfe\xed\xfa\xcf',  # 64-bit
-                b'\xcf\xfa\xed\xfe',  # arm64
-                b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
-            )
-        elif sys.platform == 'win32':
-            return f.read(2) == b'MZ'
+    @staticmethod
+    def strip(string: str) -> str:
+        """Strip ANSI escape sequences from string."""
+        return re.sub(r'\033\[[;?0-9]*[a-zA-Z]', '', string)
 
-    # For unknown platforms, check for file extensions.
-    _, ext = os.path.splitext(file)
-    if ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd'):
+
+@functools.lru_cache()
+def _use_ansi_colors() -> bool:
+    """Determine whether logging should use ANSI color escapes."""
+    if 'NO_COLOR' in os.environ:
+        return False
+    if 'FORCE_COLOR' in os.environ or sys.stdout.isatty() and os.environ.get('TERM') != 'dumb':
+        try:
+            import colorama
+        except ModuleNotFoundError:
+            pass
+        else:
+            colorama.init()
         return True
     return False
+
+
+def _log(string: str , **kwargs: Any) -> None:
+    if not _use_ansi_colors():
+        string = style.strip(string)
+    print(string, **kwargs)
 
 
 def _showwarning(
@@ -210,21 +185,7 @@ def _showwarning(
     line: Optional[str] = None,
 ) -> None:  # pragma: no cover
     """Callable to override the default warning handler, to have colored output."""
-    print('{yellow}meson-python: warning:{reset} {}'.format(message, **_STYLES))
-
-
-def _setup_cli() -> None:
-    """Setup CLI stuff (eg. handlers, hooks, etc.). Should only be called when
-    actually we are in control of the CLI, not on a normal import.
-    """
-    warnings.showwarning = _showwarning
-
-    try:  # pragma: no cover
-        import colorama
-    except ModuleNotFoundError:  # pragma: no cover
-        pass
-    else:  # pragma: no cover
-        colorama.init()  # fix colors on windows
+    _log(f'{style.WARNING}meson-python: warning:{style.RESET} {message}')
 
 
 class Error(RuntimeError):
@@ -271,6 +232,27 @@ class Metadata(pyproject_metadata.StandardMetadata):
     def _update_dynamic(self, value: Any) -> None:
         if value and 'version' in self.dynamic:
             self.dynamic.remove('version')
+
+
+def _is_native(file: Path) -> bool:
+    """Check if file is a native file."""
+
+    with open(file, 'rb') as f:
+        if sys.platform == 'linux':
+            return f.read(4) == b'\x7fELF'  # ELF
+        elif sys.platform == 'darwin':
+            return f.read(4) in (
+                b'\xfe\xed\xfa\xce',  # 32-bit
+                b'\xfe\xed\xfa\xcf',  # 64-bit
+                b'\xcf\xfa\xed\xfe',  # arm64
+                b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
+            )
+        elif sys.platform == 'win32':
+            return f.read(2) == b'MZ'
+
+    # For unknown platforms, check for file extensions.
+    _, ext = os.path.splitext(file)
+    return ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd')
 
 
 class _WheelBuilder():
@@ -717,7 +699,7 @@ class Project():
         # Flush the line to ensure that the log line with the executed
         # command line appears before the command output. Without it,
         # the lines appear in the wrong order in pip output.
-        print('{cyan}{bold}+ {}{reset}'.format(' '.join(cmd), **_STYLES), flush=True)
+        _log('{style.INFO}+ {cmd}{style.RESET}'.format(style=style, cmd=' '.join(cmd)), flush=True)
         r = subprocess.run(cmd, cwd=self._build_dir)
         if r.returncode != 0:
             raise SystemExit(r.returncode)
@@ -964,11 +946,12 @@ def _add_ignore_files(directory: pathlib.Path) -> None:
 def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
     @functools.wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        warnings.showwarning = _showwarning
         try:
             return func(*args, **kwargs)
         except (Error, pyproject_metadata.ConfigurationError) as exc:
-            prefix = '{red}meson-python: error:{reset} '.format(**_STYLES)
-            print('\n' + textwrap.indent(str(exc), prefix))
+            prefix = f'{style.ERROR}meson-python: error:{style.RESET} '
+            _log('\n' + textwrap.indent(str(exc), prefix))
             raise SystemExit(1) from exc
     return wrapper
 
@@ -984,18 +967,6 @@ def get_requires_for_build_sdist(config_settings: Optional[Dict[str, str]] = Non
 
 
 @_pyproject_hook
-def build_sdist(
-    sdist_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
-) -> str:
-    _setup_cli()
-
-    out = pathlib.Path(sdist_directory)
-    with _project(config_settings) as project:
-        return project.sdist(out).name
-
-
-@_pyproject_hook
 def get_requires_for_build_wheel(config_settings: Optional[Dict[str, str]] = None) -> List[str]:
     dependencies = []
 
@@ -1008,13 +979,26 @@ def get_requires_for_build_wheel(config_settings: Optional[Dict[str, str]] = Non
     return dependencies
 
 
+get_requires_for_build_editable = get_requires_for_build_wheel
+
+
+@_pyproject_hook
+def build_sdist(
+    sdist_directory: str,
+    config_settings: Optional[Dict[Any, Any]] = None,
+) -> str:
+
+    out = pathlib.Path(sdist_directory)
+    with _project(config_settings) as project:
+        return project.sdist(out).name
+
+
 @_pyproject_hook
 def build_wheel(
-    wheel_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
+    wheel_directory: str, config_settings:
+    Optional[Dict[Any, Any]] = None,
     metadata_directory: Optional[str] = None,
 ) -> str:
-    _setup_cli()
 
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:
@@ -1027,7 +1011,6 @@ def build_editable(
     config_settings: Optional[Dict[Any, Any]] = None,
     metadata_directory: Optional[str] = None,
 ) -> str:
-    _setup_cli()
 
     # Force set a permanent build directory.
     if not config_settings:
@@ -1042,10 +1025,3 @@ def build_editable(
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:
         return project.editable(out).name
-
-
-@_pyproject_hook
-def get_requires_for_build_editable(
-    config_settings: Optional[Dict[str, str]] = None,
-) -> List[str]:
-    return get_requires_for_build_wheel()
