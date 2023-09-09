@@ -299,6 +299,7 @@ def test_limited_api(wheel_limited_api):
 
 # Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
 @pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not use special modules suffix for stable ABI')
 def test_limited_api_bad(package_limited_api, tmp_path):
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
         with mesonpy._project({'setup-args': ['-Dextra=true']}) as project:
