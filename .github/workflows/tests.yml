@@ -42,7 +42,7 @@ jobs:
           - windows
         python:
           - '3.7'
-          - '3.11'
+          - '3.12'
         meson:
           -
         include:
@@ -56,9 +56,9 @@ jobs:
             python: '3.9'
           - os: ubuntu
             python: '3.10'
-          - os: ubuntu
-            python: '3.12-dev'
-          # Test with older supported Meson version.
+          # Test with older supported Meson version.  Meson up to
+          # version 1.2.3 requires distutils, which has been removed
+          # from the stdlib in Python 3.12, thus test with Pythn 3.11.
           - os: ubuntu
             python: '3.11'
             meson: '~=0.63.3'
@@ -73,10 +73,10 @@ jobs:
             meson: '~=1.1.0'
           # Test with Meson master branch.
           - os: ubuntu
-            python: '3.11'
+            python: '3.12'
             meson: '@git+https://github.com/mesonbuild/meson.git'
           - os: windows
-            python: '3.11'
+            python: '3.12'
             meson: '@git+https://github.com/mesonbuild/meson.git'
 
     steps:
