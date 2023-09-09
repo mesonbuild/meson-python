@@ -152,25 +152,3 @@ def disable_pip_version_check():
     mpatch = pytest.MonkeyPatch()
     yield mpatch.setenv('PIP_DISABLE_PIP_VERSION_CHECK', '1')
     mpatch.undo()
-
-
-@pytest.fixture(scope='session')
-def pep518_wheelhouse(tmp_path_factory):
-    wheelhouse = os.fspath(tmp_path_factory.mktemp('wheelhouse'))
-    meson_python = os.fspath(package_dir.parent.parent)
-    # Populate wheelhouse with wheel for the following packages and
-    # their dependencies.  Wheels are downloaded from PyPI or built
-    # from the source distribution as needed.  Sources or wheels in
-    # the pip cache are used when available.
-    packages = [
-        meson_python,
-    ]
-    cmd = [sys.executable, '-m', 'pip', 'wheel', '--no-build-isolation', '--wheel-dir', wheelhouse, *packages]
-    subprocess.run(cmd, check=True)
-    return wheelhouse
-
-
-@pytest.fixture
-def pep518(pep518_wheelhouse, monkeypatch):
-    monkeypatch.setenv('PIP_FIND_LINKS', pep518_wheelhouse)
-    monkeypatch.setenv('PIP_NO_INDEX', 'true')
