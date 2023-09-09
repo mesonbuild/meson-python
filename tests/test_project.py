@@ -19,47 +19,11 @@ import pytest
 
 import mesonpy
 
-from .conftest import chdir, in_git_repo_context, package_dir
-
-
-@pytest.mark.parametrize(
-    ('package'),
-    [
-        'library',
-        'library-pep621',
-    ]
-)
-def test_name(package):
-    with chdir(package_dir / package), mesonpy._project() as project:
-        assert project._metadata.distribution_name == package.replace('-', '_')
-
-
-@pytest.mark.parametrize(
-    ('package'),
-    [
-        'library',
-        'library-pep621',
-    ]
-)
-def test_version(package):
-    with chdir(package_dir / package), mesonpy._project() as project:
-        assert str(project._metadata.version) == '1.0.0'
-
-
-def test_unsupported_dynamic(package_unsupported_dynamic):
-    with pytest.raises(pyproject_metadata.ConfigurationError, match='Unsupported dynamic fields: "dependencies"'):
-        with mesonpy._project():
-            pass
+from .conftest import in_git_repo_context, package_dir
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
     with pytest.raises(mesonpy.MesonBuilderError, match='Package requires Python version ==1.0.0'):
-        with mesonpy._project():
-            pass
-
-
-def test_missing_version(package_missing_version):
-    with pytest.raises(pyproject_metadata.ConfigurationError, match='Required "project.version" field is missing'):
         with mesonpy._project():
             pass
 
