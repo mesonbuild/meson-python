@@ -26,6 +26,16 @@ versions.
    and similar installation functions. On older Meson versions, these
    arguments have no effect.
 
+.. option:: 1.2.3
+
+   Python 3.12 Meson 1.2.3 and later do not rely anymore on
+   ``distutils`` and is required to support support Python 3.12 and
+   later where the ``distutils`` modules has been removed from the
+   Python standard library. ``meson-python`` depends on this versions
+   of Meson, when installed on Python 3.12, thus packages using
+   ``meson-python`` do not need to add an explicit version
+   requirement.
+
 .. option:: 1.3.0
 
    Meson 1.3.0 or later is required for compiling extension modules
