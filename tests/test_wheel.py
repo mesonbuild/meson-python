@@ -334,3 +334,9 @@ def test_install_subdir(wheel_install_subdir):
             'nested/deep/deep.py',
             'nested/nested.py',
         }
+
+
+def test_vendored_meson(wheel_vendored_meson):
+    # This test will error if the vendored meson.py wrapper script in
+    # the test package isn't used.
+    pass
