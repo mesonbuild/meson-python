@@ -531,7 +531,15 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
             raise ConfigError(f'Configuration entry "{name}" must be a boolean')
         return value
 
+    def _string_or_path(value: Any, name: str) -> str:
+        if not isinstance(value, str):
+            raise ConfigError(f'Configuration entry "{name}" must be a string')
+        if os.path.isfile(value):
+            value = os.path.abspath(value)
+        return value
+
     scheme = _table({
+        'meson': _string_or_path,
         'limited-api': _bool,
         'args': _table({
             name: _strings for name in _MESON_ARGS_KEYS
@@ -610,7 +618,22 @@ class Project():
         self._meson_args: MesonArgs = collections.defaultdict(list)
         self._limited_api = False
 
-        _check_meson_version()
+        # load pyproject.toml
+        pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+
+        # load meson args from pyproject.toml
+        pyproject_config = _validate_pyproject_config(pyproject)
+        for key, value in pyproject_config.get('args', {}).items():
+            self._meson_args[key].extend(value)
+
+        # meson arguments from the command line take precedence over
+        # arguments from the configuration file thus are added later
+        if meson_args:
+            for key, value in meson_args.items():
+                self._meson_args[key].extend(value)
+
+        # determine command to invoke meson
+        self._meson = _get_meson_command(pyproject_config.get('meson'))
 
         self._ninja = _env_ninja_command()
         if self._ninja is None:
@@ -647,20 +670,6 @@ class Project():
                     ''')
                     self._meson_cross_file.write_text(cross_file_data)
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
-
-        # load pyproject.toml
-        pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
-
-        # load meson args from pyproject.toml
-        pyproject_config = _validate_pyproject_config(pyproject)
-        for key, value in pyproject_config.get('args', {}).items():
-            self._meson_args[key].extend(value)
-
-        # meson arguments from the command line take precedence over
-        # arguments from the configuration file thus are added later
-        if meson_args:
-            for key, value in meson_args.items():
-                self._meson_args[key].extend(value)
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
@@ -743,7 +752,7 @@ class Project():
         ]
         if reconfigure:
             setup_args.insert(0, '--reconfigure')
-        self._run(['meson', 'setup', *setup_args])
+        self._run(self._meson + ['setup', *setup_args])
 
     @property
     def _build_command(self) -> List[str]:
@@ -753,7 +762,7 @@ class Project():
             # environment. Using the --ninja-args option allows to
             # provide the exact same semantics for the compile arguments
             # provided by the users.
-            cmd = ['meson', 'compile']
+            cmd = self._meson + ['compile']
             args = list(self._meson_args['compile'])
             if args:
                 cmd.append(f'--ninja-args={args!r}')
@@ -827,7 +836,7 @@ class Project():
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
         # generate meson dist file
-        self._run(['meson', 'dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
+        self._run(self._meson + ['dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
 
         # move meson dist file to output path
         dist_name = f'{self.name}-{self.version}'
@@ -922,6 +931,37 @@ def _parse_version_string(string: str) -> Tuple[int, ...]:
         return (0, )
 
 
+def _get_meson_command(
+        meson: Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION
+    ) -> List[str]:
+    """Return the command to invoke meson."""
+
+    # The MESON env var, if set, overrides the config value from pyproject.toml.
+    # The config value, if given, is an absolute path or the name of an executable.
+    meson = os.environ.get('MESON', meson or 'meson')
+
+    # If the specified Meson string ends in `.py`, we run it with the current
+    # Python executable. This avoids problems for users on Windows, where
+    # making a script executable isn't enough to get it to run when invoked
+    # directly. For packages that vendor a forked Meson, the `meson.py` in the
+    # root of the Meson repo can be used this way.
+    if meson.endswith('.py'):
+        cmd = [sys.executable, meson]
+    else:
+        cmd = [meson]
+
+    # The meson Python package is a dependency of the meson-python Python
+    # package, however, it may occur that the meson Python package is installed
+    # but the corresponding meson command is not available in $PATH. Implement
+    # a runtime check to verify that the build environment is setup correcly.
+    required_version = _parse_version_string(version)
+    meson_version = subprocess.run(cmd + ['--version'], check=False, text=True, capture_output=True).stdout
+    if _parse_version_string(meson_version) < required_version:
+        raise ConfigError(f'Could not find meson version {version} or newer, found {meson_version}.')
+
+    return cmd
+
+
 def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[str]:
     """Returns the path to ninja, or None if no ninja found."""
     required_version = _parse_version_string(version)
@@ -934,22 +974,6 @@ def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[st
             if _parse_version_string(version) >= required_version:
                 return ninja_path
     return None
-
-
-def _check_meson_version(*, version: str = _MESON_REQUIRED_VERSION) -> None:
-    """Check that the meson executable in the path has an appropriate version.
-
-    The meson Python package is a dependency of the meson-python
-    Python package, however, it may occur that the meson Python
-    package is installed but the corresponding meson command is not
-    available in $PATH. Implement a runtime check to verify that the
-    build environment is setup correcly.
-
-    """
-    required_version = _parse_version_string(version)
-    meson_version = subprocess.run(['meson', '--version'], check=False, text=True, capture_output=True).stdout
-    if _parse_version_string(meson_version) < required_version:
-        raise ConfigError(f'Could not find meson version {version} or newer, found {meson_version}.')
 
 
 def _add_ignore_files(directory: pathlib.Path) -> None:
