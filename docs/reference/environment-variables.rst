@@ -59,6 +59,12 @@ Environment variables
    possible for ``meson-python`` to detect this, and it will not set the
    Python wheel platform tag accordingly.
 
+.. envvar:: MESON
+
+   Specifies the ``meson`` executable or script to use. It overrides
+   ``tool.meson-python.meson``. See :ref:`reference-pyproject-settings` for
+   more details.
+
 .. envvar:: MESONPY_EDITABLE_VERBOSE
 
    Setting this environment variable to any value enables directing to the
@@ -68,7 +74,7 @@ Environment variables
 
 .. envvar:: NINJA
 
-   Specify the ninja_ executable to use. It can also be used to select
+   Specifies the ninja_ executable to use. It can also be used to select
    ninja_ alternatives like samurai_.
 
 .. _ninja: https://ninja-build.org
