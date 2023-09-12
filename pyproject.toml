@@ -82,7 +82,6 @@ extend-ignore = [
 select = [
   'B',       # flake8-bugbear
   'C4',      # flake8-comprehensions
-  'C9',      # mccabe
   'E',       # pycodestyle
   'F',       # pyflakes
   'W',       # pycodestyle
@@ -91,10 +90,6 @@ select = [
 exclude = [
   'docs/conf.py',
 ]
-
-[tool.ruff.mccabe]
-max-complexity = 12
-
 
 [tool.isort]
 lines_between_types = 1
