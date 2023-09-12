@@ -600,7 +600,7 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
-    def __init__(  # noqa: C901
+    def __init__(
         self,
         source_dir: Path,
         build_dir: Path,
