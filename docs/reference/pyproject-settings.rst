@@ -26,6 +26,14 @@ use them and examples.
    ``-Dpython.allow_limited_api=false`` option is passed to ``meson
    setup``.
 
+.. option:: tool.meson-python.meson
+
+   A string specifying the ``meson`` executable or script to use. If it is a
+   path to an existing file with a name ending in ``.py``, it will be invoked
+   as a Python script using the same Python interpreter that is used to run
+   ``meson-python`` itself. It can be overrridden by the :envvar:`MESON`
+   environment variable.
+
 .. option:: tool.meson-python.args.dist
 
    Extra arguments to be passed to the ``meson dist`` command.
