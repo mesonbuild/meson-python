@@ -46,7 +46,7 @@ jobs:
           -
         include:
           - os: ubuntu
-            python: 'pypy-3.9'
+            python: 'pypy-3.10'
           - os: ubuntu
             python: '3.8'
           - os: ubuntu
@@ -54,7 +54,7 @@ jobs:
           - os: ubuntu
             python: '3.10'
           - os: ubuntu
-            python: '3.12-dev'
+            python: '3.12'
           # Test with older supported Meson version.
           - os: ubuntu
             python: '3.11'
@@ -78,12 +78,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up target Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Ninja
         run: sudo apt-get install ninja-build
@@ -124,7 +125,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up target Python
         uses: actions/setup-python@v4
@@ -162,10 +163,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Cygwin
-        uses: cygwin/cygwin-install-action@v2
+        uses: cygwin/cygwin-install-action@v4
         with:
           packages: >-
             python39
@@ -238,7 +239,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install pyston
         run: |
@@ -272,7 +273,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Homebrew Python
         run: |
@@ -301,7 +302,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v4
