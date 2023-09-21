@@ -101,5 +101,3 @@ The entry points are then specified in the ``pyproject.toml`` metadata specifica
     [build-system]
     requires = ["meson", "toml", "ninja", "meson-python"]
     build-backend = 'mesonpy'
-
-
