@@ -18,7 +18,7 @@ Introduction
 
 Entry points provide a mechanism to advertise components of an installed
 distribution to other code or users. Most notably, the ``console_scripts``
-entry points will create a command line wrapper. 
+entry points will create a command line wrapper.
 
 See the `PyPA documentation on entry points <https://packaging.python.org/en/latest/specifications/entry-points/>`_.
 
@@ -33,7 +33,7 @@ Console entry point
 -------------------
 
 To show the usage of console entry points we build a simple
-python script: 
+python script:
 
 .. code-block:: python
    :caption: src/simpleapp/console.py
@@ -41,8 +41,8 @@ python script:
     """
     Simple test application.
 
-    Usage: 
-        simpleapp --help 
+    Usage:
+        simpleapp --help
         simpleapp doc
         simpleapp run [<file>] [options]
 
