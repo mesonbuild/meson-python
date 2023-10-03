@@ -18,7 +18,9 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from mesonpy._compat import Iterator, Path
+    from typing import Any
+
+    from mesonpy._compat import Iterator, Path, Self
 
 
 @contextlib.contextmanager
@@ -51,10 +53,13 @@ def create_targz(path: Path) -> Iterator[tarfile.TarFile]:
         yield tar
 
 
-class CLICounter:
+class clicounter:
     def __init__(self, total: int) -> None:
         self._total = total
         self._count = itertools.count(start=1)
+
+    def __enter__(self) -> Self:
+        return self
 
     def update(self, description: str) -> None:
         line = f'[{next(self._count)}/{self._total}] {description}'
@@ -63,13 +68,6 @@ class CLICounter:
         else:
             print(line)
 
-    def finish(self) -> None:
+    def __exit__(self, exc_type: Any, exc_value: Any, exc_tb: Any) -> None:
         if sys.stdout.isatty():
             print()
-
-
-@contextlib.contextmanager
-def cli_counter(total: int) -> Iterator[CLICounter]:
-    counter = CLICounter(total)
-    yield counter
-    counter.finish()
