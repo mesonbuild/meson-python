@@ -53,8 +53,8 @@ def create_targz(path: Path) -> Iterator[tarfile.TarFile]:
 
 class CLICounter:
     def __init__(self, total: int) -> None:
-        self._total = total - 1
-        self._count = itertools.count()
+        self._total = total
+        self._count = itertools.count(start=1)
 
     def update(self, description: str) -> None:
         line = f'[{next(self._count)}/{self._total}] {description}'
