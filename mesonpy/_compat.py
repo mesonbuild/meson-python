@@ -40,6 +40,11 @@ if typing.TYPE_CHECKING:
     else:
         from typing_extensions import ParamSpec
 
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
+
     Path = Union[str, os.PathLike]
 
 
@@ -52,5 +57,6 @@ __all__ = [
     'Mapping',
     'Path',
     'ParamSpec',
+    'Self',
     'Sequence',
 ]

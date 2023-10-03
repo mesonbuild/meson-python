@@ -419,7 +419,7 @@ class _WheelBuilder():
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
 
-            with mesonpy._util.cli_counter(sum(len(x) for x in self._manifest.values())) as counter:
+            with mesonpy._util.clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self._pure else 'platlib'
 
