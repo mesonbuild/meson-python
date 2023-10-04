@@ -26,10 +26,14 @@ if sys.platform == 'linux':
         subprocess.run(['patchelf','--set-rpath', ':'.join(rpath), os.fspath(filepath)], check=True)
 
     def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        rpath = _get_rpath(filepath)
-        if '$ORIGIN/' in rpath:
-            rpath = [('$ORIGIN/' + libs_relative_path if path == '$ORIGIN/' else path) for path in rpath]
-            _set_rpath(filepath, rpath)
+        old_rpath = _get_rpath(filepath)
+        new_rpath = []
+        for path in old_rpath:
+            if path.startswith('$ORIGIN/'):
+                path = '$ORIGIN/' + libs_relative_path
+            new_rpath.append(path)
+        if new_rpath != old_rpath:
+            _set_rpath(filepath, new_rpath)
 
 
 elif sys.platform == 'darwin':
@@ -50,9 +54,9 @@ elif sys.platform == 'darwin':
         subprocess.run(['install_name_tool', '-rpath', old, new, os.fspath(filepath)], check=True)
 
     def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        rpath = _get_rpath(filepath)
-        if '@loader_path/' in rpath:
-            _replace_rpath(filepath, '@loader_path/', '@loader_path/' + libs_relative_path)
+        for path in _get_rpath(filepath):
+            if path.startswith('@loader_path/'):
+                _replace_rpath(filepath, path, '@loader_path/' + libs_relative_path)
 
 else:
 

@@ -4,7 +4,7 @@
 
 #include <Python.h>
 
-#include "examplelib.h"
+#include "lib/examplelib.h"
 
 static PyObject* example_sum(PyObject* self, PyObject *args)
 {

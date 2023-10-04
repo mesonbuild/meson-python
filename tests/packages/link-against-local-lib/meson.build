@@ -4,11 +4,7 @@
 
 project('link-against-local-lib', 'c', version: '1.0.0')
 
-example_lib = shared_library(
-    'example',
-    'examplelib.c',
-    install: true,
-)
+subdir('lib')
 
 py = import('python').find_installation()
 
