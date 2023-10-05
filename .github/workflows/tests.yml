@@ -24,6 +24,7 @@ on:
 
 env:
   FORCE_COLOR: 1
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -94,15 +95,15 @@ jobs:
         if: ${{ matrix.os == 'macos' }}
 
       - name: Install Ninja
-        run: python -m pip --disable-pip-version-check install ninja
+        run: python -m pip install ninja
         if: ${{ matrix.os == 'windows' }}
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
+        run: python -m pip install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: python -m pip --disable-pip-version-check install .[test]
+        run: python -m pip install .[test]
 
       - name: Run tests
         run: >-
@@ -132,7 +133,7 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Install Ninja
-        run: python -m pip --disable-pip-version-check install ninja
+        run: python -m pip install ninja
 
       - name: Setup MSVC
         uses: bus1/cabuild/action/msdevshell@e22aba57d6e74891d059d66501b6b5aed8123c4d  # v1
@@ -140,11 +141,11 @@ jobs:
           architecture: x64
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson==${{ matrix.meson }}"
+        run: python -m pip install "meson==${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: python -m pip --disable-pip-version-check install .[test]
+        run: python -m pip install .[test]
 
       - name: Run tests
         run: >-
@@ -204,7 +205,7 @@ jobs:
           restore-keys: cygwin-pip-
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
+        run: python -m pip install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
@@ -216,9 +217,9 @@ jobs:
         run: |
           mkdir /usr/share/python-wheels/
           pushd /usr/share/python-wheels/
-          python -m pip --disable-pip-version-check download setuptools pip
+          python -m pip download setuptools pip
           popd
-          python -m pip --disable-pip-version-check install .[test]
+          python -m pip install .[test]
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
       - name: Run tests
@@ -249,11 +250,11 @@ jobs:
         run: sudo apt-get install ninja-build
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
+        run: python -m pip install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: pyston -m pip --disable-pip-version-check install .[test]
+        run: pyston -m pip install .[test]
 
       - name: Run tests
         run: >-
@@ -284,14 +285,14 @@ jobs:
 
       - name: Update pip
         # pip >= 23.0 fixes https://github.com/pypa/pip/issues/11539
-        run: python -m pip --disable-pip-version-check install --upgrade "pip >= 23.0"
+        run: python -m pip install --upgrade "pip >= 23.0"
 
       - name: Install Meson
-        run: python -m pip --disable-pip-version-check install "meson ${{ matrix.meson }}"
+        run: python -m pip install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: python -m pip --disable-pip-version-check install .[test]
+        run: python -m pip install .[test]
 
       - name: Run tests
         run: >-
@@ -312,7 +313,7 @@ jobs:
         run: python -m pip install .
 
       - name: Install mypy
-        run: python -m pip --disable-pip-version-check install mypy==1.5.1
+        run: python -m pip install mypy==1.5.1
 
       - name: Run mypy
         run: mypy -p mesonpy
