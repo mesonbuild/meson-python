@@ -49,6 +49,8 @@ jobs:
           - os: ubuntu
             python: 'pypy-3.9'
           - os: ubuntu
+            python: 'pypy-3.10'
+          - os: ubuntu
             python: '3.8'
           - os: ubuntu
             python: '3.9'
