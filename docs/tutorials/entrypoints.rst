@@ -17,10 +17,12 @@ Introduction
 ============
 
 Entry points provide a mechanism to advertise components of an installed
-distribution to other code or users. Most notably, the ``console_scripts``
-entry points will create a command line wrapper.
+distribution to other code or users. There are three type of entry-points:
+those that provide commands to execute in a shell (``project.scripts``),
+commands to launch a GUI (``project.gui-scripts``), and discoverable (plugin
+style) entry-points (``project.entry-points.<name>``).
 
-See the `PyPA documentation on entry points <https://packaging.python.org/en/latest/specifications/entry-points/>`_.
+See the `PyPA documentation on entry points <https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#declaring-project-metadata>`_.
 
 Using entry points with meson-python
 ====================================
@@ -32,8 +34,8 @@ No further configuration is required when using ``meson-python``.
 Console entry point
 -------------------
 
-To show the usage of console entry points we build a simple
-python script:
+To show the usage of console entry points we build a simple python script that
+simply prints the arguments it was called with:
 
 .. code-block:: python
    :caption: src/simpleapp/console.py
@@ -44,21 +46,26 @@ python script:
     Usage:
         simpleapp --help
         simpleapp doc
-        simpleapp run [<file>] [options]
 
     Options:
-        -h --help                                   display this help message
-        --workdir-path=<workdir-path>               directory in which to run [default: none]
+        -h --help          display this help message
 
     """
-    import docopt
+    
 
+    import argparse
 
 
     def main():
-        args = docopt.docopt(__doc__)
+        parser = argparse.ArgumentParser(prog='simpleapp', description=__doc__)
+        parser.add_argument('-h', '--help', action='store_true')
+        parser.add_argument('doc', action='store_true')
+
+        args = parser.parse_args()
+
         # Just print the arguments for now.
         print(args)
+
 
     if __name__ == "__main__":
         main()
@@ -92,12 +99,11 @@ The entry points are then specified in the ``pyproject.toml`` metadata specifica
     name = "simpleapp"
     description = "simple app"
     requires-python = ">=3.6"
-    dependencies = ["docopt"]
     version = "0.0.1"
-
-    [project.scripts]
-    simpleapp = "simpleapp.console:main"
 
     [build-system]
     requires = ["meson", "toml", "ninja", "meson-python"]
     build-backend = 'mesonpy'
+
+    [project.scripts]
+    simpleapp = "simpleapp.console:main"
