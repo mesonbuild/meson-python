@@ -41,15 +41,7 @@ simply prints the arguments it was called with:
    :caption: src/simpleapp/console.py
 
     """
-    Simple test application.
-
-    Usage:
-        simpleapp --help
-        simpleapp doc
-
-    Options:
-        -h --help          display this help message
-
+    Simple test application. Just prints the arguments.
     """
     
 
@@ -58,7 +50,6 @@ simply prints the arguments it was called with:
 
     def main():
         parser = argparse.ArgumentParser(prog='simpleapp', description=__doc__)
-        parser.add_argument('-h', '--help', action='store_true')
         parser.add_argument('doc', action='store_true')
 
         args = parser.parse_args()
@@ -79,13 +70,11 @@ The meson build file is very simple and only installs the python sources.
     project('simpleapp', version:'0.0.1')
 
 
-    pymod = import('python')
-    python = pymod.find_installation('python3')
-    pydep = python.dependency()
+    py = import('python').find_installation('python3')
+    py_dep = py.dependency()
 
-    python.install_sources(
-      'src/simpleapp/__init__.py', 'src/simpleapp/console.py'
-      , pure: true
+    py.install_sources(
+      ['src/simpleapp/__init__.py', 'src/simpleapp/console.py']
       , subdir: 'simpleapp'
     )
 
@@ -102,8 +91,8 @@ The entry points are then specified in the ``pyproject.toml`` metadata specifica
     version = "0.0.1"
 
     [build-system]
-    requires = ["meson", "toml", "ninja", "meson-python"]
     build-backend = 'mesonpy'
+    requires = ["meson-python"]
 
     [project.scripts]
     simpleapp = "simpleapp.console:main"
