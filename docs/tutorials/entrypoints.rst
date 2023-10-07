@@ -131,4 +131,3 @@ Then, the entry point can be defined in the project metadata:
     # Example for a PyInstaller entry point
     [project.entry-points.pyinstaller40]
     hook-dirs = 'simpleapp:_pyinstaller_hooks_dir'
-
