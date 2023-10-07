@@ -96,3 +96,39 @@ The entry points are then specified in the ``pyproject.toml`` metadata specifica
 
     [project.scripts]
     simpleapp = "simpleapp.console:main"
+
+PyInstaller Entry Point
+-----------------------
+
+To provide a PyInstaller entry point, add a pyinstaller hook directory
+containing at least a hook file:
+
+.. code:: python
+   :caption: src/simpleapp/_pyinstaller/hook-simpleapp.py
+
+    """
+    This is a stub for a PyInstaller hook.
+    """
+
+    print("You discovered the PyInstaller plugin for simpleapp")
+
+This sub-package must be added to the main package:
+
+.. code:: meson
+   :caption: meson.build
+
+    ...
+    py.install_sources(
+      ['src/simpleapp/_pyinstaller/__init__.py', 'src/simpleapp/_pyinstaller/hook-simpleapp.py']
+      , subdir: 'simpleapp/_pyinstaller'
+    )
+
+Then, the entry point can be defined in the project metadata:
+
+.. code::toml
+   :caption: pyproject.toml
+
+    # Example for a PyInstaller entry point
+    [project.entry-points.pyinstaller40]
+    hook-dirs = 'simpleapp:_pyinstaller_hooks_dir'
+
