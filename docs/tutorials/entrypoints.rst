@@ -43,7 +43,7 @@ simply prints the arguments it was called with:
     """
     Simple test application. Just prints the arguments.
     """
-    
+
 
     import argparse
 
