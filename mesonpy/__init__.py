@@ -263,21 +263,18 @@ def _is_native(file: Path) -> bool:
     """Check if file is a native file."""
 
     with open(file, 'rb') as f:
-        if sys.platform == 'linux':
-            return f.read(4) == b'\x7fELF'  # ELF
-        elif sys.platform == 'darwin':
+        if sys.platform == 'darwin':
             return f.read(4) in (
                 b'\xfe\xed\xfa\xce',  # 32-bit
                 b'\xfe\xed\xfa\xcf',  # 64-bit
                 b'\xcf\xfa\xed\xfe',  # arm64
                 b'\xca\xfe\xba\xbe',  # universal / fat (same as java class so beware!)
             )
-        elif sys.platform == 'win32':
+        elif sys.platform == 'win32' or sys.platform == 'cygwin':
             return f.read(2) == b'MZ'
-
-    # For unknown platforms, check for file extensions.
-    _, ext = os.path.splitext(file)
-    return ext in ('.so', '.a', '.out', '.exe', '.dll', '.dylib', '.pyd')
+        else:
+            # Assume that any other platform uses ELF binaries.
+            return f.read(4) == b'\x7fELF'  # ELF
 
 
 class _WheelBuilder():
