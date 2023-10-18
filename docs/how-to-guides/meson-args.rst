@@ -90,7 +90,7 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-           $ python -m pip wheel . --config-settings=setup-args="--default-library=static" .
+           $ python -m pip wheel --config-settings=setup-args="--default-library=static" .
 
 
 Select the build targets to include in the wheel
@@ -132,7 +132,7 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-	   $ python -m pip wheel . --config-settings=install-args="--tags=runtime,python-runtime" .
+	   $ python -m pip wheel --config-settings=install-args="--tags=runtime,python-runtime" .
 
 
 Set the build optimization level
@@ -165,7 +165,7 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-	   $ python -m pip wheel . --config-settings=setup-args="-Doptimization=3" .
+	   $ python -m pip wheel --config-settings=setup-args="-Doptimization=3" .
 
 
 .. _vsenv-example:
@@ -206,4 +206,4 @@ To set this option temporarily at build-time:
 
         .. code-block:: console
 
-	   $ python -m pip wheel . --config-settings=setup-args="--vsenv" .
+	   $ python -m pip wheel --config-settings=setup-args="--vsenv" .
