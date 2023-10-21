@@ -4,6 +4,7 @@
 
 import contextlib
 import time
+import zipfile
 
 import wheel.wheelfile
 
@@ -41,3 +42,16 @@ def test_source_date_epoch(tmp_path, monkeypatch):
     with wheel.wheelfile.WheelFile(path, 'r') as w:
         for entry in w.infolist():
             assert entry.date_time == time.gmtime(epoch)[:6]
+
+
+def test_compression(tmp_path):
+    # create a wheel and test that everything is compressed
+    path = tmp_path / 'test-1.0-py3-any-none.whl'
+    bar = tmp_path / 'bar'
+    bar.write_bytes(b'bar')
+    with mesonpy._wheelfile.WheelFile(path, 'w') as w:
+        w.writestr('foo', b'test')
+        w.write(bar, 'bar')
+    with zipfile.ZipFile(path, 'r') as w:
+        for entry in w.infolist():
+            assert entry.compress_type == zipfile.ZIP_DEFLATED
