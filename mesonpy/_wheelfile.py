@@ -87,7 +87,10 @@ class WheelFileWriter(WheelFile):
         else:
             zinfo = zipfile.ZipInfo(zinfo_or_arcname, date_time=self.timestamp())
             zinfo.external_attr = 0o664 << 16
-        self.archive.writestr(zinfo, data)
+        self.archive.writestr(
+            zinfo, data,
+            compress_type=self.archive.compression,
+            compresslevel=self.archive.compresslevel)
         self.entries.append((zinfo.filename, self.hash(data), len(data)))
 
     def write(self, filename: Path, arcname: Optional[str] = None) -> None:
@@ -106,5 +109,8 @@ class WheelFileWriter(WheelFile):
         writer.writerow((record, '', ''))
         zi = zipfile.ZipInfo(record, date_time=self.timestamp())
         zi.external_attr = 0o664 << 16
-        self.archive.writestr(zi, data.getvalue())
+        self.archive.writestr(
+            zi, data.getvalue(),
+            compress_type=self.archive.compression,
+            compresslevel=self.archive.compresslevel)
         self.archive.close()
