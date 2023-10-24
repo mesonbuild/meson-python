@@ -27,7 +27,7 @@ them.
    ``meson-python``. This avoids having to rebuild the whole project
    when testing changes during development.
 
-   For backward comaptibility reasons, the alternative ``builddir``
+   For backward compatibility reasons, the alternative ``builddir``
    spelling is also accepted.
 
 .. option:: dist-args

@@ -11,6 +11,38 @@
 Changelog
 +++++++++
 
+0.15.0
+======
+
+- Enable compression for wheel files. The may result in several times
+  smaller wheels.
+- Require Meson 1.2.3 or later on Python 3.12 or later. Meson 1.2.3
+  does not require anymore ``distutils``, allowing to remove the
+  dependency on ``setuptools`` on Python 3.12 or later.
+- Unconditionally require ``patchelf`` on Linux.  The ``patchelf``
+  package is added to the build dependencies if a suitable
+  ``patchelf`` executable is not find on the ``$PATH``. This avoids
+  cases where ``meson setup`` was run twice during the build process
+  to determine whether ``patchelf`` is required.
+- Allow to configure the ``meson`` executable to use for the build
+  process through the ``$MESON`` environment variable or the ``meson``
+  key under ``[tool.meson-python]`` in ``pyproject.toml``.
+- Fix wheel platform tag generation on FreeBSD.
+- Extend support to other UNIX-like systems and make the tests pass on
+  FreeBSD.
+- Fix package name normalization in package metadata and improve
+  package name validation.
+- Fix ``RPATH`` handling when the build ``RPATH`` points to
+  subdirectories of the build directory.
+- Fix support for the Python limited C API when compiling for PyPy.
+- Rename the ``builddir`` config-setting to ``build-dir``. For
+  backwards compatibility, the ``buildir`` config-setting remains
+  supported as an alias.
+
+Christoph Reiter, Daniele Nicolodi, Elliott Sales de Andrade, Ralf Gommers,
+Yue Yang --- 26-10-2023
+
+
 0.14.0
 ======
 
