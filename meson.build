@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project('meson-python', version: '0.15.0.dev0')
+project('meson-python', version: '0.15.0')
 
 py = import('python').find_installation()
 
