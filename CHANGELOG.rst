@@ -27,7 +27,7 @@ Changelog
 - Implement support for building wheels targeting the Python limited
   API. Extension modules targeting the Python limited API can be
   easily built starting with the upcoming Meson 1.3.0 release.
-- when ``pyproject.toml`` does not contain a ``version`` field and
+- When ``pyproject.toml`` does not contain a ``version`` field and
   ``version`` is not declared dynamic, raise an error instead of
   silently using the version declared in ``meson.build``.
 - Fix the mtime of source files in the sdist tarball.
