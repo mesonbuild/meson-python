@@ -53,9 +53,9 @@ free to open an issue on our bugtracker_.
    :hidden:
 
    tutorials/introduction
+   tutorials/entrypoints
 
-.. tutorials/entrypoints
-   tutorials/executable
+.. tutorials/executable
 
 
 .. toctree::
