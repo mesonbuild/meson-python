@@ -302,7 +302,7 @@ class _WheelBuilder():
     @cached_property
     def _pure(self) -> bool:
         """Whether the wheel is architecture independent"""
-        if self._manifest['platlib']:
+        if self._manifest['platlib'] or self._manifest['mesonpy-libs']:
             return False
         for _, file in self._manifest['scripts']:
             if _is_native(file):
