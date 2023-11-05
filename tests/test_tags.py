@@ -5,6 +5,7 @@
 import importlib.machinery
 import os
 import pathlib
+import platform
 import sys
 import sysconfig
 
@@ -47,11 +48,22 @@ def test_wheel_tag():
 def test_macos_platform_tag(monkeypatch):
     for minor in range(9, 16):
         monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'10.{minor}')
-        assert next(packaging.tags.mac_platforms((10, minor))) == mesonpy._tags.get_platform_tag()
+        version = (10, minor) if platform.mac_ver()[2] != 'arm64' else (11, 0)
+        assert next(packaging.tags.mac_platforms(version)) == mesonpy._tags.get_platform_tag()
     for major in range(11, 20):
         for minor in range(3):
             monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.{minor}')
             assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
+def test_macos_platform_tag_arm64(monkeypatch):
+    monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-12.0-arm64')
+    # Verify that the minimum platform ABI version on arm64 is 11.0.
+    monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', '10.12')
+    assert mesonpy._tags.get_platform_tag() == 'macosx_11_0_arm64'
+    monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', '12.34')
+    assert mesonpy._tags.get_platform_tag() == 'macosx_12_0_arm64'
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
