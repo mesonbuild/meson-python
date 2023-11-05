@@ -23,7 +23,7 @@ maintainers = [
   { name = 'Ralf Gommers ', email = 'ralf.gommers@gmail.com' },
   { name = 'Daniele Nicolodi', email = 'daniele@grinta.net' },
   { name = 'Henry Schreiner', email = 'HenrySchreinerIII@gmail.com' },
-  { name = 'Thomas Li'},
+  { name = 'Thomas Li', email = '47963215+lithomas1@users.noreply.github.com' },
 ]
 classifiers = [
   'Development Status :: 5 - Production/Stable',
