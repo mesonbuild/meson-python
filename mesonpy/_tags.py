@@ -129,6 +129,16 @@ def _get_macosx_platform_tag() -> str:
     # can therefore ignore the issue and generate the slightly
     # incorrect tag.
 
+    # The minimum macOS ABI version on arm64 is 11.0.  The macOS SDK
+    # on arm64 silently bumps any compatibility version specified via
+    # the MACOSX_DEPLOYMENT_TARGET environment variable to 11.0.
+    # Despite the platform ABI tag being intended to be a minimum
+    # compatibility version, pip refuses to install wheels with a
+    # platform tag specifying an ABI version lower than 11.0.  Use
+    # 11.0 as minimum ABI version on arm64.
+    if arch == 'arm64' and version < (11, 0):
+        version = (11, 0)
+
     major, minor = version
 
     if major >= 11:
