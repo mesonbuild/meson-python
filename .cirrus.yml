@@ -80,3 +80,9 @@ freebsd_task:
     image_family: freebsd-13-2
   install_script: pkg install -y git ninja
   << : *test
+
+macos-arm64_task:
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-xcode
+  install_script: brew install git ninja python@3.11
+  << : *test
