@@ -13,10 +13,6 @@ meson-python
    build-system. It enables you to use Meson for your Python packages.
 
 
-Want to look at examples in real projects? Check out our curated list of
-``meson-python`` projects :ref:`here <projects-using-meson-python>`.
-
-
 Where to start?
 ===============
 
