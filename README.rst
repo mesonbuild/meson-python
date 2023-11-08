@@ -19,6 +19,6 @@ discussions__ space on GitHub. Bug reports and feature requests can be
 filed as GitHub issues__.
 
 __ https://mesonbuild.com/
-__ https://meson-python.readthedocs.io/en/latest/
+__ https://mesonbuild.com/meson-python/
 __ https://github.com/mesonbuild/meson-python/discussions/
 __ https://github.com/mesonbuild/meson-python/issues/

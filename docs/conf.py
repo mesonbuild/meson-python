@@ -92,7 +92,7 @@ html_theme_options = {
 
 # Open Graph
 
-ogp_site_url = 'https://meson-python.readthedocs.io'
+ogp_site_url = 'https://mesonbuild.com/meson-python/'
 ogp_site_name = 'meson-python documentation'
 
 
