@@ -10,8 +10,9 @@ import subprocess
 import sys
 import sysconfig
 import textwrap
-from pathlib import Path
+
 from contextlib import contextmanager
+from pathlib import Path
 
 import packaging.tags
 import pytest
