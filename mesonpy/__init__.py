@@ -647,7 +647,7 @@ class Project():
             archflags = os.environ.get('ARCHFLAGS', '').strip()
             if archflags:
                 arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
-                if other:
+                if [a for a in other if a != arch]:
                     raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
                 macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:

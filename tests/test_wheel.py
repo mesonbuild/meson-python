@@ -10,6 +10,8 @@ import subprocess
 import sys
 import sysconfig
 import textwrap
+from pathlib import Path
+from contextlib import contextmanager
 
 import packaging.tags
 import pytest
@@ -246,18 +248,45 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
             project.wheel(tmp_path)
 
 
+@contextmanager
+def _archflags(monkeypatch, archs):
+    if isinstance(archs, str):
+        archs = [archs]
+    monkeypatch.setenv('ARCHFLAGS',
+                       ' '.join(f'-arch {arch}' for arch in archs))
+    yield
+    # revert environment variable setting done by the in-process build
+    if '_PYTHON_HOST_PLATFORM' in os.environ:
+        del os.environ['_PYTHON_HOST_PLATFORM']
+
+
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
-@pytest.mark.parametrize(('arch'), ['x86_64', 'arm64'])
+@pytest.mark.parametrize(('arch'),
+                         [['x86_64'], ['arm64'],
+                          ['x86_64', 'x86_64'],  # duplicate arch allowed
+                          ['arm64', 'arm64']])
 def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):
-    try:
-        monkeypatch.setenv('ARCHFLAGS', f'-arch {arch}')
+    # Single or identical archflags work.
+    with _archflags(monkeypatch, arch):
         filename = mesonpy.build_wheel(tmp_path)
         name = wheel.wheelfile.WheelFile(tmp_path / filename).parsed_filename
-        assert name.group('plat').endswith(arch)
-    finally:
-        # revert environment variable setting done by the in-process build
-        if '_PYTHON_HOST_PLATFORM' in os.environ:
-            del os.environ['_PYTHON_HOST_PLATFORM']
+        assert name.group('plat').endswith(arch[0])
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
+@pytest.mark.parametrize(('arch'),
+                          [['x86_64', 'arm64'],
+                           ['arm64', 'x86_64'],
+                           ['x86_64', 'x86_64', 'arm64'],
+                           ['arm64', 'arm64', 'x86_64']])
+def test_multi_archflags(package_purelib_and_platlib,
+                         monkeypatch,
+                         tmp_path,
+                         arch):
+    # Incompatible archflags raise multi arch error.
+    with _archflags(monkeypatch, arch):
+        with pytest.raises(mesonpy.ConfigError):
+            mesonpy.Project(Path(), Path(tmp_path) / 'build')
 
 
 def test_subprojects(package_subproject, tmp_path):
