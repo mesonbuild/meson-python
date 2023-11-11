@@ -646,9 +646,17 @@ class Project():
         if sysconfig.get_platform().startswith('macosx-'):
             archflags = os.environ.get('ARCHFLAGS', '').strip()
             if archflags:
-                arch, *other = filter(None, (x.strip() for x in archflags.split('-arch')))
+
+                # parse the ARCHFLAGS environment variable
+                parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+                parser.add_argument('-arch', action='append')
+                args, unknown = parser.parse_known_args(archflags.split())
+                if unknown:
+                    raise ConfigError(f'Unknown flag specified in $ARCHFLAGS={archflags!r}')
+                arch, *other = set(args.arch)
                 if other:
                     raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
+
                 macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:
                     x = os.environ.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
