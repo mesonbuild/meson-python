@@ -211,3 +211,36 @@ def test_compiler(venv, package_detect_compiler, tmp_path):
     venv.pip('install', os.fspath(tmp_path / wheel))
     compiler = venv.python('-c', 'import detect_compiler; print(detect_compiler.compiler())').strip()
     assert compiler == 'msvc'
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
+@pytest.mark.parametrize('archflags', [
+    '-arch x86_64',
+    '-arch arm64',
+    '-arch arm64 -arch arm64',
+])
+def test_archflags_envvar_parsing(package_purelib_and_platlib, monkeypatch, archflags):
+    try:
+        monkeypatch.setenv('ARCHFLAGS', archflags)
+        arch = archflags.split()[-1]
+        with mesonpy._project():
+            assert mesonpy._tags.Tag().platform.endswith(arch)
+    finally:
+        # revert environment variable setting done by the in-process build
+        os.environ.pop('_PYTHON_HOST_PLATFORM', None)
+
+
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
+@pytest.mark.parametrize('archflags', [
+    '-arch arm64 -arch x86_64',
+    '-arch arm64 -DFOO=1',
+])
+def test_archflags_envvar_parsing_invalid(package_purelib_and_platlib, monkeypatch, archflags):
+    try:
+        monkeypatch.setenv('ARCHFLAGS', archflags)
+        with pytest.raises(mesonpy.ConfigError):
+            with mesonpy._project():
+                pass
+    finally:
+        # revert environment variable setting done by the in-process build
+        os.environ.pop('_PYTHON_HOST_PLATFORM', None)
