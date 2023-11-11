@@ -787,7 +787,7 @@ class Project():
         install_plan = self._info('intro-install_plan')
 
         # Parse the 'meson install' args to extract --tags and --skip-subprojects
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('--tags')
         parser.add_argument('--skip-subprojects', nargs='?', const='*', default='')
         args, _ = parser.parse_known_args(self._meson_args['install'])
