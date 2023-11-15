@@ -2,11 +2,11 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-.. _tutorial-introduction:
+.. _tutorial:
 
-******************************************************
-Introduction to Python packaging with ``meson-python``
-******************************************************
+********
+Tutorial
+********
 
 If you are new to Python packaging, don't worry!
 
