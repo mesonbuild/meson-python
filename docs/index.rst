@@ -2,6 +2,7 @@
 ..
 .. SPDX-License-Identifier: MIT
 
+:hide-toc:
 
 ************
 meson-python
@@ -9,52 +10,73 @@ meson-python
 
 .. highlights::
 
-   ``meson-python`` is a Python build backend built on top of the Meson
-   build-system. It enables you to use Meson for your Python packages.
+  A Python package build back-end leveraging the Meson build system.
+
+``meson-python`` implement the Python build system hooks, enabling Python build
+front-ends such as ``pip`` and ``build`` to build and install Python packages
+based on a Meson_ build definition.
+
+Meson is characterized by build definitions written in a very readable
+domain-specific language and extremely fast builds.  Meson support for Windows,
+macOS, Linux, and other UNIX-like operative systems, and for all the major
+compiler tool-chains. It allows to compile and link together code written in
+many programming languages, including C, C++, Cython, D, Fortran, Objective C,
+and Rust. It has built-in multi-platform dependency provider that works well
+with distribution packages, and the capability to build dependencies as
+sub-projects.  If you are not familiar with Meson, we recommend checking the
+`Meson tutorial`_.
+
+``meson-python`` inherits the strengths of Meson and is thus best suited for
+Python packages building extension modules in compiled languages.
+``meson-python`` is suitable for small packages as well as very complex ones,
+see our :ref:`projects-using-meson-python` directory.
+
+To enable ``pip`` or ``build`` to build a Python source distribution (*sdist*)
+or a binary Python package (*wheel*) for a Meson project, it is sufficient to
+add to the root of the source tree next to the top-level ``meson.build`` a
+``pyproject.toml`` file specifying ``meson-python`` as the Python build
+back-end:
+
+.. code-block:: toml
+
+   [build-system]
+   build-backend = 'mesonpy'
+   requires = ['meson-python']
+
+The package name and version are extracted from the metadata provided to Meson
+via the ``project()`` function in the ``meson.build`` file.  Package metadata
+can be overridden and extended using the standard package metadata format in the
+``project`` section of ``pyproject.toml``:
+
+.. code-block:: toml
+
+   [project]
+   name = 'example'
+   version = '1.0.0'
+   description = 'Example package using the meson-python build backend'
+   readme = 'README.rst'
+   license = {file = 'LICENSE.txt'}
+   authors = [
+     {name = 'Au Thor', email = 'author@example.com'},
+   ]
+
+   [project.scripts]
+   example = 'example.cli:main'
+
+Please refer to the `PyPA documentation`_ for detailed documentation about the
+``pyproject.toml`` file.  Please refer to our :ref:`tutorial` for guidance about
+the use of ``meson-python`` and Meson for Python packaging.
 
 
-Where to start?
-===============
-
-If you are new to Python packaging, we recommend you check our
-:ref:`tutorial-introduction` tutorial, which walks you through creating and
-releasing your first Python package.
-
-
-If you are already familiar with Python packaging, we recommend you check
-our :ref:`how-to-guides-first-project` guide, which shows you how to quickly
-setup a ``meson-python`` project.
-
-
-How to reach us?
-================
-
-``meson-python`` is an open source project, so all support is at a best-effort
-capacity, but we are happy to help where we can.
-
-If you have a general question feel free to `start a discussion`_ on Github. If
-you want to report a bug, request a feature, or propose an improvement, feel
-free to open an issue on our bugtracker_.
-
-
-.. admonition:: Search first!
-   :class: tip
-
-   Before starting a discussion, please try searching our bugtracker_ and
-   `discussion page`_ first.
+.. _Meson: https://mesonbuild.com/
+.. _PyPA documentation: https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+.. _Meson tutorial: https://mesonbuild.com/Tutorial.html
 
 
 .. toctree::
-   :caption: Tutorials
    :hidden:
 
    tutorials/introduction
-
-.. toctree::
-   :caption: How to guides
-   :hidden:
-
-   how-to-guides/first-project
    how-to-guides/editable-installs
    how-to-guides/config-settings
    how-to-guides/meson-args
@@ -79,10 +101,6 @@ free to open an issue on our bugtracker_.
    changelog
    about
    contributing/index
+   Discussions <https://github.com/mesonbuild/meson-python/discussions>
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
-
-
-.. _start a discussion: https://github.com/mesonbuild/meson-python/discussions/new/choose
-.. _bugtracker: https://github.com/mesonbuild/meson-python/issues
-.. _discussion page: https://github.com/mesonbuild/meson-python/discussions
