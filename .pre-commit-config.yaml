@@ -20,10 +20,6 @@ repos:
   - id: double-quote-string-fixer
   - id: end-of-file-fixer
   - id: trailing-whitespace
-- repo: https://github.com/PyCQA/isort
-  rev: 5.12.0
-  hooks:
-  - id: isort
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.1.5
   hooks:
