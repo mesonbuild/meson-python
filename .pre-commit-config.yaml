@@ -24,7 +24,7 @@ repos:
   rev: v0.1.5
   hooks:
   - id: ruff
-    args: [--fix, --show-fixes, --format, grouped]
+    args: [--fix, --show-fixes, --output-format, grouped]
 - repo: https://github.com/fsfe/reuse-tool
   rev: v2.1.0
   hooks:
