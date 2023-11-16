@@ -71,3 +71,23 @@ class clicounter:
     def __exit__(self, exc_type: Any, exc_value: Any, exc_tb: Any) -> None:
         if sys.stdout.isatty():
             print()
+
+
+def setup_windows_console() -> bool:
+    from ctypes import byref, windll  # type: ignore
+    from ctypes.wintypes import DWORD
+
+    STD_OUTPUT_HANDLE = -11
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x04
+
+    kernel = windll.kernel32
+    stdout = kernel.GetStdHandle(STD_OUTPUT_HANDLE)
+    mode = DWORD()
+
+    if not kernel.GetConsoleMode(stdout, byref(mode)):
+        return False
+
+    if not kernel.SetConsoleMode(stdout, mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING):
+        return False
+
+    return True
