@@ -158,6 +158,13 @@ class style:
 @functools.lru_cache()
 def _use_ansi_colors() -> bool:
     """Determine whether logging should use ANSI color escapes."""
+
+    # We print log messages and error messages that may contain file
+    # names containing characters that cannot be represented in the
+    # stdout encoding. Use replacement markers for those instead than
+    # raising UnicodeEncodeError.
+    sys.stdout.reconfigure(errors='replace')  # type: ignore[attr-defined]
+
     if 'NO_COLOR' in os.environ:
         return False
     if 'FORCE_COLOR' in os.environ or sys.stdout.isatty() and os.environ.get('TERM') != 'dumb':
