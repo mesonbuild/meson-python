@@ -156,8 +156,8 @@ class style:
 
 
 @functools.lru_cache()
-def _use_ansi_colors() -> bool:
-    """Determine whether logging should use ANSI color escapes."""
+def _use_ansi_escapes() -> bool:
+    """Determine whether logging should use ANSI escapes."""
 
     # We print log messages and error messages that may contain file
     # names containing characters that cannot be represented in the
@@ -167,19 +167,17 @@ def _use_ansi_colors() -> bool:
 
     if 'NO_COLOR' in os.environ:
         return False
+
     if 'FORCE_COLOR' in os.environ or sys.stdout.isatty() and os.environ.get('TERM') != 'dumb':
-        try:
-            import colorama
-        except ModuleNotFoundError:
-            pass
-        else:
-            colorama.init()
+        if sys.platform == 'win32' and not os.environ.get('ANSICON'):
+            return mesonpy._util.setup_windows_console()
         return True
+
     return False
 
 
 def _log(string: str , **kwargs: Any) -> None:
-    if not _use_ansi_colors():
+    if not _use_ansi_escapes():
         string = style.strip(string)
     print(string, **kwargs)
 
