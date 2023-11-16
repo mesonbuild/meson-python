@@ -338,3 +338,15 @@ def test_vendored_meson(wheel_vendored_meson):
     # This test will error if the vendored meson.py wrapper script in
     # the test package isn't used.
     pass
+
+
+def test_encoding(package_encoding, tmp_path):
+    with mesonpy._project() as project:
+        wheelname = project.wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / wheelname)
+    assert wheel_contents(artifact) == {
+        'encoding-1.0.0.dist-info/METADATA',
+        'encoding-1.0.0.dist-info/RECORD',
+        'encoding-1.0.0.dist-info/WHEEL',
+        'テスト.py',
+    }
