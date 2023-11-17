@@ -81,6 +81,7 @@ the use of ``meson-python`` and Meson for Python packaging.
    how-to-guides/config-settings
    how-to-guides/meson-args
    how-to-guides/debug-builds
+   reference/limitations
    projects-using-meson-python
 
 .. toctree::
@@ -91,7 +92,6 @@ the use of ``meson-python`` and Meson for Python packaging.
    reference/pyproject-settings
    reference/environment-variables
    explanations/default-options
-   reference/limitations
    reference/meson-compatibility
 
 .. toctree::
