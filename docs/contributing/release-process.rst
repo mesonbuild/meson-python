@@ -14,7 +14,7 @@ All releases are PGP signed with one of the keys listed in the
 there, and preferably signed by one of the other key holders.
 
 If your key is not signed by one of the other key holders, please make sure the
-PR that added your key to the :ref:`security` page was approved by at least one
+PR that added your key to the :doc:`../about` page was approved by at least one
 other maintainer.
 
 After that is done, you may release the project by following these steps:
