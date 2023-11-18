@@ -50,10 +50,6 @@ free to open an issue on our bugtracker_.
 
    tutorials/introduction
 
-.. tutorials/entrypoints
-   tutorials/executable
-
-
 .. toctree::
    :caption: How to guides
    :hidden:
@@ -64,9 +60,6 @@ free to open an issue on our bugtracker_.
    how-to-guides/meson-args
    how-to-guides/debug-builds
    projects-using-meson-python
-
-.. how-to-guides/build-directory
-
 
 .. toctree::
    :caption: Reference
@@ -79,19 +72,6 @@ free to open an issue on our bugtracker_.
    reference/limitations
    reference/meson-compatibility
 
-.. reference/quirks
-
-
-..
-   toctree::
-   :caption: Explanations
-   :hidden:
-
-   explanations/design
-   explanations/internal-dependencies
-   explanations/editable-installs
-
-
 .. toctree::
    :caption: Project
    :hidden:
@@ -103,15 +83,6 @@ free to open an issue on our bugtracker_.
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>
 
 
-.. _getting started: usage/start.html
-.. _pip: https://github.com/pypa/pip
-.. _pypa/build: https://github.com/pypa/build
-.. _build options page: usage/build-options.html
-.. _install_data: https://mesonbuild.com/Reference-manual_functions.html#install_data
 .. _start a discussion: https://github.com/mesonbuild/meson-python/discussions/new/choose
 .. _bugtracker: https://github.com/mesonbuild/meson-python/issues
 .. _discussion page: https://github.com/mesonbuild/meson-python/discussions
-.. _#meson-python: https://discord.com/channels/803025117553754132/1040322863930024057
-.. _PyPA Discord: https://discord.gg/pypa
-
-.. |install_data| replace:: ``install_data``
