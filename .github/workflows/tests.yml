@@ -22,6 +22,7 @@ on:
       - '!LICENSE'
       - '!LICENSES/**'
       - '!README.rst'
+      - '!.github/workflows/docs.yml'
   workflow_dispatch:
     # Allow to run manually
 
