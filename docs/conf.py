@@ -14,6 +14,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import datetime
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
@@ -23,7 +24,7 @@ import mesonpy
 # -- Project information -----------------------------------------------------
 
 project = 'meson-python'
-copyright = '2021, The meson-python developers'
+copyright = f'2021\N{EN DASH}{datetime.date.today().year} The meson-python developers'
 
 # The short X.Y version
 version = mesonpy.__version__
