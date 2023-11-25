@@ -10,7 +10,7 @@ meson-python
 
 .. highlights::
 
-  A Python package build back-end leveraging the Meson build system.
+  A Python package build backend leveraging the Meson build system.
 
 ``meson-python`` implement the Python build system hooks, enabling Python build
 front-ends such as ``pip`` and ``build`` to build and install Python packages
@@ -35,7 +35,7 @@ To enable ``pip`` or ``build`` to build a Python source distribution (*sdist*)
 or a binary Python package (*wheel*) for a Meson project, it is sufficient to
 add to the root of the source tree next to the top-level ``meson.build`` a
 ``pyproject.toml`` file specifying ``meson-python`` as the Python build
-back-end:
+backend:
 
 .. code-block:: toml
 
