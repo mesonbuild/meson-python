@@ -30,6 +30,13 @@ Here's a curated list of projects using ``meson-python``.
        an example of how to use `cibuildwheel`_ to produce Python wheels for
        several platforms.
 
+   * - `werpy <https://github.com/analyticsinmotion/werpy>`_
+     - This project provides a straightforward example for utilizing
+       meson-python to package a Python project with compiled extensions. 
+       It shows a practical use case of integrating optimized native code 
+       written in Cython_ into a Python package through seamless 
+       cross-platform compilation.
+
 
 .. _CPython extension: https://docs.python.org/3/extending/extending.html
 .. _CPython extensions: https://docs.python.org/3/extending/extending.html
