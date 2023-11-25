@@ -18,7 +18,7 @@ import mesonpy
     (True, {'TERM': ''}, True),
     (True, {'TERM': 'dumb'}, False),
 ])
-def test_use_ansi_colors(mocker, monkeypatch, tty, env, colors):
+def test_use_ansi_escapes(mocker, monkeypatch, tty, env, colors):
     mocker.patch('sys.stdout.isatty', return_value=tty)
     mocker.patch('mesonpy._util.setup_windows_console', return_value=True)
     monkeypatch.delenv('NO_COLOR', raising=False)
@@ -27,6 +27,6 @@ def test_use_ansi_colors(mocker, monkeypatch, tty, env, colors):
         monkeypatch.setenv(key, value)
 
     # Clear caching by functools.lru_cache().
-    mesonpy._use_ansi_colors.cache_clear()
+    mesonpy._use_ansi_escapes.cache_clear()
 
-    assert mesonpy._use_ansi_colors() == colors
+    assert mesonpy._use_ansi_escapes() == colors
