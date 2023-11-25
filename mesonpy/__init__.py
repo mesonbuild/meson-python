@@ -18,6 +18,7 @@ import difflib
 import functools
 import importlib.machinery
 import io
+import itertools
 import json
 import os
 import pathlib
@@ -56,7 +57,7 @@ from mesonpy._compat import cached_property, read_binary
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
-    from mesonpy._compat import Collection, Iterator, Mapping, ParamSpec, Path
+    from mesonpy._compat import Collection, Iterator, Mapping, ParamSpec, Path, Self
 
     P = ParamSpec('P')
     T = TypeVar('T')
@@ -192,6 +193,26 @@ def _showwarning(
 ) -> None:  # pragma: no cover
     """Callable to override the default warning handler, to have colored output."""
     _log(f'{style.WARNING}meson-python: warning:{style.RESET} {message}')
+
+
+class _clicounter:
+    def __init__(self, total: int) -> None:
+        self._total = total
+        self._count = itertools.count(start=1)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def update(self, description: str) -> None:
+        line = f'[{next(self._count)}/{self._total}] {description}'
+        if _use_ansi_escapes():
+            print('\r', line, sep='', end='\33[0K', flush=True)
+        else:
+            print(line)
+
+    def __exit__(self, exc_type: Any, exc_value: Any, exc_tb: Any) -> None:
+        if _use_ansi_escapes():
+            print()
 
 
 class Error(RuntimeError):
@@ -441,7 +462,7 @@ class _WheelBuilder():
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
 
-            with mesonpy._util.clicounter(sum(len(x) for x in self._manifest.values())) as counter:
+            with _clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self._pure else 'platlib'
 

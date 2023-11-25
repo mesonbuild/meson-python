@@ -8,9 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import gzip
-import itertools
 import os
-import sys
 import tarfile
 import typing
 
@@ -18,9 +16,7 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Any
-
-    from mesonpy._compat import Iterator, Path, Self
+    from mesonpy._compat import Iterator, Path
 
 
 @contextlib.contextmanager
@@ -51,26 +47,6 @@ def create_targz(path: Path) -> Iterator[tarfile.TarFile]:
 
     with contextlib.closing(file), tar:
         yield tar
-
-
-class clicounter:
-    def __init__(self, total: int) -> None:
-        self._total = total
-        self._count = itertools.count(start=1)
-
-    def __enter__(self) -> Self:
-        return self
-
-    def update(self, description: str) -> None:
-        line = f'[{next(self._count)}/{self._total}] {description}'
-        if sys.stdout.isatty():
-            print('\r', line, sep='', end='\33[0K', flush=True)
-        else:
-            print(line)
-
-    def __exit__(self, exc_type: Any, exc_value: Any, exc_tb: Any) -> None:
-        if sys.stdout.isatty():
-            print()
 
 
 def setup_windows_console() -> bool:
