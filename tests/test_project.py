@@ -330,7 +330,7 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     project.build()
 
 
-@pytest.mark.skipif(not os.getenv('CI') or sys.platform != 'win32', reason='Requires MSVC')
+@pytest.mark.skipif(not os.getenv('CI') or sys.platform != 'win32', reason='requires MSVC')
 def test_compiler(venv, package_detect_compiler, tmp_path):
     # Check that things are setup properly to use the MSVC compiler on
     # Windows. This effectively means running the compilation step
