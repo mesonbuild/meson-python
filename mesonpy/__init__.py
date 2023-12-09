@@ -145,7 +145,7 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
 
 
 class style:
-    ERROR = '\33[31m',  # red
+    ERROR = '\33[31m'  # red
     WARNING = '\33[93m'  # bright yellow
     INFO = '\33[36m\33[1m'  # cyan, bold
     RESET = '\33[0m'
