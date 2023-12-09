@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
 if sys.platform == 'win32' or sys.platform == 'cygwin':
 
     def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        raise NotImplementedError(f'Bundling libraries in wheel is not supported on {sys.platform}')
+        pass
 
 elif sys.platform == 'darwin':
 

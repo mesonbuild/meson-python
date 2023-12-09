@@ -24,22 +24,22 @@ this ``libdir`` in this guide) or to a location in ``site-packages`` within the
 Python package install tree. All these scenarios are (or will be) supported,
 with some caveats:
 
-+-----------------------+------------------+---------+-------+-------+
-| shared library source | install location | Windows | macOS | Linux |
-+=======================+==================+=========+=======+=======+
-| internal              | libdir           | no (1)  | ✓     | ✓     |
-+-----------------------+------------------+---------+-------+-------+
-| internal              | site-packages    | ✓       | ✓     | ✓     |
-+-----------------------+------------------+---------+-------+-------+
-| external              | n/a              | ✓ (2)   | ✓     | ✓     |
-+-----------------------+------------------+---------+-------+-------+
++-----------------------+------------------+------------+-------+-------+
+| shared library source | install location | Windows    | macOS | Linux |
++=======================+==================+============+=======+=======+
+| internal              | libdir           | ✓ :sup:`1` | ✓     | ✓     |
++-----------------------+------------------+------------+-------+-------+
+| internal              | site-packages    | ✓          | ✓     | ✓     |
++-----------------------+------------------+------------+-------+-------+
+| external              | ---              | ✓ :sup:`2` | ✓     | ✓     |
++-----------------------+------------------+------------+-------+-------+
 
 .. TODO: add subproject as a source
 
-1. Internal shared libraries on Windows cannot be automatically handled
-   correctly, and currently ``meson-python`` therefore raises an error for them.
-   `PR meson-python#551 <https://github.com/mesonbuild/meson-python/pull/551>`__
-   may improve that situation in the near future.
+1. Support for internal shared libraries on Windows is enabled with the
+   :option:`tool.meson-python.allow-windows-internal-shared-libs` option and
+   requires cooperation from the package to extend the DLL search path or
+   preload the required libraries. See below for more details.
 
 2. External shared libraries require ``delvewheel`` usage on Windows (or some
    equivalent way, like amending the DLL search path to include the directory
@@ -91,23 +91,26 @@ the lack of RPATH support:
    :start-after: start-literalinclude
    :end-before: end-literalinclude
 
-If an internal shared library is not only used as part of a Python package, but
-for example also as a regular shared library in a C/C++ project or as a
-standalone library, then the method shown above won't work. The library is
-then marked for installation into the system default ``libdir`` location.
-Actually installing into ``libdir`` isn't possible with wheels, hence
-``meson-python`` will instead do the following *on platforms other than
-Windows*:
+If an internal shared library is not only used as part of a Python package,
+but for example also as a regular shared library then the method shown above
+won't work. The library is then marked for installation into the system
+default ``libdir`` location.  Actually installing into ``libdir`` isn't
+possible with wheels, hence ``meson-python`` will instead do the following:
 
-1. Install the shared library to ``<project-name>.mesonpy.libs`` (i.e., a
+1. Install the shared library to the ``.<project-name>.mesonpy.libs``
    top-level directory in the wheel, which on install will end up in
-   ``site-packages``).
-2. Rewrite RPATH entries for install targets that depend on the shared library
-   to point to that new install location instead.
+   ``site-packages``.
+2. On platforms other than Windows, rewrite RPATH entries for install targets
+   that depend on the shared library to point to that new install location
+   instead.
 
-This will make the shared library work automatically, with no other action needed
-from the package author. *However*, currently an error is raised for this situation
-on Windows. This is documented also in :ref:`reference-limitations`.
+On platforms other than Windows, this will make the shared library work
+automatically, with no other action needed from the package author. On
+Windows, due to the lack of RPATH support, the ``.<project-name>.mesonpy.libs``
+location search path needs to be added to the DLL search path, with code
+similar to the one presented above. For this reason, handling of internal
+shared libraries on Windows is conditional to setting the
+:option:`tool.meson-python.allow-windows-internal-shared-libs` option.
 
 
 External shared libraries
@@ -245,7 +248,7 @@ this will look something like:
     foo_dep = foo_subproj.get_variable('foo_dep')
 
 Now we can use ``foo_dep`` like a normal dependency, ``meson-python`` will
-include it into the wheel in ``<project-name>.mesonpy.libs`` just like an
+include it into the wheel in ``.<project-name>.mesonpy.libs`` just like an
 internal shared library that targets ``libdir`` (see
 :ref:`internal-shared-libraries`).
 *Remember: this method doesn't support Windows (yet)!*
