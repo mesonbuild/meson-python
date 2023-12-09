@@ -309,10 +309,12 @@ class _WheelBuilder():
         metadata: Metadata,
         manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
         limited_api: bool,
+        allow_windows_shared_libs: bool,
     ) -> None:
         self._metadata = metadata
         self._manifest = manifest
         self._limited_api = limited_api
+        self._allow_windows_shared_libs = allow_windows_shared_libs
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -422,6 +424,12 @@ class _WheelBuilder():
 
         if self._has_internal_libs:
             if _is_native(origin):
+                if sys.platform == 'win32' and not self._allow_windows_shared_libs:
+                    raise NotImplementedError(
+                        'Loading shared libraries bundled in the Python wheel on Windows requires '
+                        'setting the DLL load path or preloading. See the documentation for '
+                        'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
+
                 # When an executable, libray, or Python extension module is
                 # dynamically linked to a library built as part of the project,
                 # Meson adds a library load path to it pointing to the build
@@ -567,6 +575,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
     scheme = _table({
         'meson': _string_or_path,
         'limited-api': _bool,
+        'allow-windows-internal-shared-libs': _bool,
         'args': _table({
             name: _strings for name in _MESON_ARGS_KEYS
         }),
@@ -784,6 +793,10 @@ class Project():
                 'The package targets Python\'s Limited API, which is not supported by free-threaded CPython. '
                 'The "python.allow_limited_api" Meson build option may be used to override the package default.')
 
+        # Shared library support on Windows requires collaboration
+        # from the package, make sure the developers acknowledge this.
+        self._allow_windows_shared_libs = pyproject_config.get('allow-windows-internal-shared-libs', False)
+
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
         # Flush the line to ensure that the log line with the executed
@@ -988,13 +1001,13 @@ class Project():
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel in the specified directory."""
         self.build()
-        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api)
+        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
         return builder.build(directory)
 
     def editable(self, directory: Path) -> pathlib.Path:
         """Generates an editable wheel in the specified directory."""
         self.build()
-        builder = _EditableWheelBuilder(self._metadata, self._manifest, self._limited_api)
+        builder = _EditableWheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
         return builder.build(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
 
 

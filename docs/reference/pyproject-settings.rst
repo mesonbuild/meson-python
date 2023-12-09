@@ -13,6 +13,19 @@ This page lists the configuration settings supported by
 :ref:`how-to-guides-meson-args` guide for for information on how to
 use them and examples.
 
+.. option:: tool.meson-python.allow-windows-internal-shared-libs
+
+   Enable support for relocating internal shared libraries that would be
+   installed into the system shared library location to the
+   ``.<package-name>.mesonpy.libs`` folder also on Windows. The relocation can
+   be done transparently on UNIX platforms and on macOS, where the shared
+   library load path can be adjusted via RPATH or equivalent mechanisms.
+   Windows lacks a similar facility, thus the Python package is responsible to
+   extend the DLL load path to include this directory or to preload the
+   shared libraries. See :ref:`here <internal-shared-libraries>` for detailed
+   documentation. This option ensures that the package authors are aware of
+   this requirement.
+
 .. option:: tool.meson-python.limited-api
 
    A boolean indicating whether the extension modules contained in the
