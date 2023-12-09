@@ -158,7 +158,7 @@ def test_license_pep639(wheel_license_pep639):
     '''))
 
 
-@pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
@@ -194,12 +194,12 @@ def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
     assert int(output) == 9
 
 
-@pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
-    origin = {'linux': '$ORIGIN', 'darwin': '@loader_path', 'sunos5': '$ORIGIN'}[sys.platform]
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     expected = {f'{origin}/.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
 
     rpath = set(mesonpy._rpath._get_rpath(tmp_path / f'example{EXT_SUFFIX}'))
@@ -208,19 +208,18 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
     assert rpath >= expected
 
 
-@pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmp_path)
 
-    origin = {'linux': '$ORIGIN', 'darwin': '@loader_path', 'sunos5': '$ORIGIN'}[sys.platform]
-
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     rpath = mesonpy._rpath._get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
     for path in rpath:
         assert origin not in path
 
 
-@pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires executable bit support')
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
 
