@@ -940,16 +940,18 @@ def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Proje
     build_dir = settings.get('build-dir')
     editable_verbose = bool(settings.get('editable-verbose'))
 
-    ignore_cleanup_errors = False
+    temp_dir_kwargs = {
+        'prefix': '.mesonpy-',
+        'dir': source_dir
+    }
     # Files failing to delete on Windows is a known issue
-    # (https://bugs.python.org/issue29982)
-    if os.name == 'nt':
-        ignore_cleanup_errors = True
+    # (https://bugs.python.org/issue29982). `ignore_cleanup_errors`
+    # was added to `TemporaryDirectory` in Python 3.10
+    if sys.version_info[0] == 3 and sys.version_info[1] >= 10 and os.name == 'nt':
+        temp_dir_kwargs['ignore_cleanup_errors'] = True
     with contextlib.ExitStack() as ctx:
         if build_dir is None:
-            build_dir = ctx.enter_context(tempfile.TemporaryDirectory(
-                prefix='.mesonpy-', dir=source_dir,
-                ignore_cleanup_errors=ignore_cleanup_errors))
+            build_dir = ctx.enter_context(tempfile.TemporaryDirectory(**temp_dir_kwargs))
         yield Project(source_dir, build_dir, meson_args, editable_verbose)
 
 
