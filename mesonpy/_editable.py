@@ -183,7 +183,7 @@ def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> 
     spec = importlib.machinery.ModuleSpec(name, loader, origin=path)
     spec.has_location = True
     if loader.is_package(name):
-        spec.submodule_search_locations = []
+        spec.submodule_search_locations = [os.path.dirname(path)]
     return spec
 
 
