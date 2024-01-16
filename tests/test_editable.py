@@ -86,10 +86,17 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         # verify that we can import the modules
         import complex
         assert complex.__spec__.origin == os.fspath(package_complex / 'complex/__init__.py')
-        assert complex.__file__ == os.fspath(package_complex / 'complex/__init__.py')
+        assert complex.__spec__.submodule_search_locations == [os.fspath(package_complex / 'complex')]
+        assert complex.__file__ == complex.__spec__.origin
+        assert complex.__path__ == complex.__spec__.submodule_search_locations
         import complex.test
         assert complex.test.__spec__.origin == os.fspath(tmp_path / f'test{EXT_SUFFIX}')
         assert complex.test.answer() == 42
+        import complex.more
+        assert complex.more.__spec__.origin == os.fspath(package_complex / 'complex/more/__init__.py')
+        assert complex.more.__spec__.submodule_search_locations == [os.fspath(package_complex / 'complex/more')]
+        assert complex.more.__file__ == complex.more.__spec__.origin
+        assert complex.more.__path__ == complex.more.__spec__.submodule_search_locations
         import complex.namespace.foo
         assert complex.namespace.foo.__spec__.origin == os.fspath(package_complex / 'complex/namespace/foo.py')
         assert complex.namespace.foo.foo() == 'foo'
