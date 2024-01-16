@@ -91,6 +91,9 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         assert complex.__path__ == complex.__spec__.submodule_search_locations
         import complex.test
         assert complex.test.__spec__.origin == os.fspath(tmp_path / f'test{EXT_SUFFIX}')
+        assert complex.test.__file__ == complex.test.__spec__.origin
+        assert complex.test.__spec__.submodule_search_locations is None
+        assert not hasattr(complex.test, "__path__")
         assert complex.test.answer() == 42
         import complex.more
         assert complex.more.__spec__.origin == os.fspath(package_complex / 'complex/more/__init__.py')
