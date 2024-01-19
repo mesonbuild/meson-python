@@ -184,6 +184,12 @@ def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> 
     spec.has_location = True
     if loader.is_package(name):
         spec.submodule_search_locations = [os.path.dirname(path)]
+        if tree is not None:
+            for submodule_node in tree.values():
+                if isinstance(submodule_node, str):
+                    parent_folder = os.path.dirname(submodule_node)
+                    if parent_folder not in spec.submodule_search_locations:
+                        spec.submodule_search_locations.append(parent_folder)
     return spec
 
 

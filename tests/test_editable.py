@@ -5,6 +5,7 @@
 import os
 import pathlib
 import sys
+import pkgutil
 
 import pytest
 
@@ -86,7 +87,10 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         # verify that we can import the modules
         import complex
         assert complex.__spec__.origin == os.fspath(package_complex / 'complex/__init__.py')
-        assert complex.__spec__.submodule_search_locations == [os.fspath(package_complex / 'complex')]
+        assert complex.__spec__.submodule_search_locations == [
+            os.fspath(package_complex / 'complex'),
+            str(tmp_path),
+        ]
         assert complex.__file__ == complex.__spec__.origin
         assert complex.__path__ == complex.__spec__.submodule_search_locations
         import complex.test
@@ -103,6 +107,34 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         import complex.namespace.foo
         assert complex.namespace.foo.__spec__.origin == os.fspath(package_complex / 'complex/namespace/foo.py')
         assert complex.namespace.foo.foo() == 'foo'
+    finally:
+        # remove finder from the meta path
+        del sys.meta_path[0]
+
+
+def test_walk_packages(package_complex, tmp_path):
+    # build a package in a temporary directory
+    mesonpy.Project(package_complex, tmp_path)
+
+    # point the meta finder to the build directory
+    finder = _editable.MesonpyMetaFinder({"complex"}, os.fspath(tmp_path), ["ninja"])
+
+    try:
+        # install the finder in the meta path
+        sys.meta_path.insert(0, finder)
+
+        import complex
+
+        module_names = sorted(
+            module_info.name
+            for module_info in pkgutil.walk_packages(complex.__path__, prefix="complex.")
+        )
+        assert module_names == [
+            "complex.more",
+            "complex.test",
+            # XXX: should namespace packages be discovered by walk_packages?
+        ]
+
     finally:
         # remove finder from the meta path
         del sys.meta_path[0]
