@@ -265,7 +265,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
                 return None
             namespace = False
-            tree = self.rebuild()
+            tree = self._rebuild()
             parts = fullname.split('.')
 
             # look for a package
@@ -293,7 +293,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         return None
 
     @functools.lru_cache(maxsize=1)
-    def rebuild(self) -> Node:
+    def _rebuild(self) -> Node:
         # skip editable wheel lookup during rebuild: during the build
         # the module we are rebuilding might be imported causing a
         # rebuild loop.
