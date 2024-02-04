@@ -171,11 +171,10 @@ class SourcelessFileLoader(importlib.machinery.SourcelessFileLoader):
         return MesonpyReader(name, self._tree)
 
 
-LOADERS = [
-    (ExtensionFileLoader, tuple(importlib.machinery.EXTENSION_SUFFIXES)),
-    (SourceFileLoader, tuple(importlib.machinery.SOURCE_SUFFIXES)),
-    (SourcelessFileLoader, tuple(importlib.machinery.BYTECODE_SUFFIXES)),
-]
+LOADERS = \
+    [(ExtensionFileLoader, s) for s in importlib.machinery.EXTENSION_SUFFIXES] + \
+    [(SourceFileLoader, s) for s in importlib.machinery.SOURCE_SUFFIXES] + \
+    [(SourcelessFileLoader, s) for s in importlib.machinery.BYTECODE_SUFFIXES]
 
 
 def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> importlib.machinery.ModuleSpec:
@@ -252,8 +251,6 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         self._build_cmd = cmd
         self._verbose = verbose
         self._loaders: List[Tuple[type, str]] = []
-        for loader, suffixes in LOADERS:
-            self._loaders.extend((loader, suffix) for suffix in suffixes)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._build_path!r})'
@@ -274,7 +271,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             # look for a package
             package = tree.get(tuple(parts))
             if isinstance(package, Node):
-                for loader, suffix in self._loaders:
+                for loader, suffix in LOADERS:
                     src = package.get('__init__' + suffix)
                     if isinstance(src, str):
                         return build_module_spec(loader, fullname, src, package)
@@ -282,7 +279,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
                     namespace = True
 
             # look for a module
-            for loader, suffix in self._loaders:
+            for loader, suffix in LOADERS:
                 src = tree.get((*parts[:-1], parts[-1] + suffix))
                 if isinstance(src, str):
                     return build_module_spec(loader, fullname, src, None)
