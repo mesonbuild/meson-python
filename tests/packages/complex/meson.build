@@ -15,6 +15,36 @@ endif
 
 py = import('python').find_installation()
 
-install_subdir('complex', install_dir: py.get_install_dir(pure: false))
+py.install_sources(
+    'move.py',
+    subdir: 'complex/more',
+    pure: false,
+)
 
-py.extension_module('test', 'test.pyx', install: true, subdir: 'complex')
+install_data(
+    'foo.py',
+    rename: 'bar.py',
+    install_dir: py.get_install_dir(pure: false) / 'complex',
+)
+
+install_subdir(
+    'complex',
+    install_dir: py.get_install_dir(pure: false),
+    exclude_files: ['more/meson.build', 'more/baz.pyx'],
+)
+
+py.extension_module(
+    'test',
+    'test.pyx',
+    install: true,
+    subdir: 'complex',
+)
+
+py.extension_module(
+    'baz',
+    'complex/more/baz.pyx',
+    install: true,
+    subdir: 'complex/more',
+)
+
+subdir('complex/more')
