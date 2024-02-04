@@ -221,13 +221,21 @@ class Node(NodeBase):
         return dict.get(node, key)
 
 
-def walk(root: str, path: str = '') -> Iterator[pathlib.Path]:
-    with os.scandir(os.path.join(root, path)) as entries:
-        for entry in entries:
-            if entry.is_dir():
-                yield from walk(root, os.path.join(path, entry.name))
-            else:
-                yield pathlib.Path(path, entry.name)
+def walk(src: str, exclude_files: Set[str], exclude_dirs: Set[str]) -> Iterator[str]:
+    for root, dirnames, filenames in os.walk(src):
+        for name in dirnames.copy():
+            dirsrc = os.path.join(root, name)
+            relpath = os.path.relpath(dirsrc, src)
+            if relpath in exclude_dirs:
+                dirnames.remove(name)
+            # sort to process directories determninistically
+            dirnames.sort()
+        for name in sorted(filenames):
+            filesrc = os.path.join(root, name)
+            relpath = os.path.relpath(filesrc, src)
+            if relpath in exclude_files:
+                continue
+            yield relpath
 
 
 def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
@@ -237,8 +245,10 @@ def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
             path = pathlib.Path(target['destination'])
             if path.parts[0] in {'{py_platlib}', '{py_purelib}'}:
                 if key == 'install_subdirs' and os.path.isdir(src):
-                    for entry in walk(src):
-                        tree[(*path.parts[1:], *entry.parts)] = os.path.join(src, *entry.parts)
+                    exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
+                    exclude_dirs = {os.path.normpath(x) for x in target.get('exclude_dirs', [])}
+                    for entry in walk(src, exclude_files, exclude_dirs):
+                        tree[(*path.parts[1:], *entry.split(os.sep))] = os.path.join(src, entry)
                 else:
                     tree[path.parts[1:]] = src
     return tree

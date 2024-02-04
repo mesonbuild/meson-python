@@ -16,12 +16,14 @@ from .test_wheel import EXT_SUFFIX
 
 
 def test_walk(package_complex):
-    entries = set(_editable.walk(os.fspath(package_complex / 'complex')))
-    assert entries == {
+    entries = _editable.walk(
+        os.fspath(package_complex / 'complex'),
+        [os.path.normpath('more/meson.build'), os.path.normpath('more/baz.pyx')],
+        [os.path.normpath('namespace')],
+    )
+    assert {pathlib.Path(x) for x in entries} == {
         pathlib.Path('__init__.py'),
         pathlib.Path('more/__init__.py'),
-        pathlib.Path('namespace/bar.py'),
-        pathlib.Path('namespace/foo.py')
     }
 
 
