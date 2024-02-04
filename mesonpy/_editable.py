@@ -261,34 +261,38 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             path: Optional[Sequence[Union[bytes, str]]] = None,
             target: Optional[ModuleType] = None
     ) -> Optional[importlib.machinery.ModuleSpec]:
-        if fullname.split('.', maxsplit=1)[0] in self._top_level_modules:
-            if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
-                return None
-            namespace = False
-            tree = self._rebuild()
-            parts = fullname.split('.')
 
-            # look for a package
-            package = tree.get(tuple(parts))
-            if isinstance(package, Node):
-                for loader, suffix in LOADERS:
-                    src = package.get('__init__' + suffix)
-                    if isinstance(src, str):
-                        return build_module_spec(loader, fullname, src, package)
-                else:
-                    namespace = True
+        if fullname.split('.', maxsplit=1)[0] not in self._top_level_modules:
+            return None
 
-            # look for a module
+        if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
+            return None
+
+        namespace = False
+        tree = self._rebuild()
+        parts = fullname.split('.')
+
+        # look for a package
+        package = tree.get(tuple(parts))
+        if isinstance(package, Node):
             for loader, suffix in LOADERS:
-                src = tree.get((*parts[:-1], parts[-1] + suffix))
+                src = package.get('__init__' + suffix)
                 if isinstance(src, str):
-                    return build_module_spec(loader, fullname, src, None)
+                    return build_module_spec(loader, fullname, src, package)
+            else:
+                namespace = True
 
-            # namespace
-            if namespace:
-                spec = importlib.machinery.ModuleSpec(fullname, None)
-                spec.submodule_search_locations = []
-                return spec
+        # look for a module
+        for loader, suffix in LOADERS:
+            src = tree.get((*parts[:-1], parts[-1] + suffix))
+            if isinstance(src, str):
+                return build_module_spec(loader, fullname, src, None)
+
+        # namespace
+        if namespace:
+            spec = importlib.machinery.ModuleSpec(fullname, None)
+            spec.submodule_search_locations = []
+            return spec
 
         return None
 
