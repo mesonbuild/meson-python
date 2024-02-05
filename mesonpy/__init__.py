@@ -425,7 +425,7 @@ class _WheelBuilder():
             return 'abi3'
         return None
 
-    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path) -> None:
+    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: pathlib.Path, destination: pathlib.Path) -> None:
         """Add a file to the wheel."""
 
         if self._has_internal_libs:
@@ -440,7 +440,14 @@ class _WheelBuilder():
                 mesonpy._rpath.fix_rpath(origin, libspath)
 
         try:
-            wheel_file.write(origin, destination.as_posix())
+            # handle directories recursively
+            if origin.is_dir():
+                children = [(src, destination / src.name) for src in list(origin.glob('*'))]
+                for src, dest in children:
+                    self._install_path(wheel_file, src, dest)
+            else:
+                wheel_file.write(origin, destination.as_posix())
+
         except FileNotFoundError:
             # work around for Meson bug, see https://github.com/mesonbuild/meson/pull/11655
             if not os.fspath(origin).endswith('.pdb'):
@@ -478,7 +485,7 @@ class _WheelBuilder():
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
-                        self._install_path(whl, src, dst)
+                        self._install_path(whl, pathlib.Path(src), dst)
 
         return wheel_file
 
