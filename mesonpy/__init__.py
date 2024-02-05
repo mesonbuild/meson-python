@@ -439,19 +439,19 @@ class _WheelBuilder():
                 libspath = os.path.relpath(self._libs_dir, destination.parent)
                 mesonpy._rpath.fix_rpath(origin, libspath)
 
-        try:
-            # handle directories recursively
-            if origin.is_dir():
-                children = [(src, destination / src.name) for src in list(origin.glob('*'))]
-                for src, dest in children:
-                    self._install_path(wheel_file, src, dest)
-            else:
+        # handle directories recursively
+        if origin.is_dir():
+            children = [(src, destination / src.name) for src in list(origin.glob('*'))]
+            for src, dest in children:
+                self._install_path(wheel_file, src, dest)
+        else:
+            try:
                 wheel_file.write(origin, destination.as_posix())
 
-        except FileNotFoundError:
-            # work around for Meson bug, see https://github.com/mesonbuild/meson/pull/11655
-            if not os.fspath(origin).endswith('.pdb'):
-                raise
+            except FileNotFoundError:
+                # work around for Meson bug, see https://github.com/mesonbuild/meson/pull/11655
+                if not os.fspath(origin).endswith('.pdb'):
+                    raise
 
     def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
         # add metadata
