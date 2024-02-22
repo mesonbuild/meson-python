@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 
+import io
 import os
 import pathlib
 import pkgutil
 import sys
+
+from contextlib import redirect_stdout
 
 import pytest
 
@@ -66,10 +69,10 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
     mesonpy.Project(package_complex, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), ['ninja'])
 
     # check repr
-    assert repr(finder) == f'MesonpyMetaFinder({str(tmp_path)!r})'
+    assert repr(finder) == f'MesonpyMetaFinder(\'complex\', {str(tmp_path)!r})'
 
     # verify that we can look up a pure module in the source directory
     spec = finder.find_spec('complex')
@@ -130,7 +133,7 @@ def test_resources(tmp_path):
     mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), ['ninja'])
 
     # verify that we can look up resources
     spec = finder.find_spec('simple')
@@ -149,7 +152,7 @@ def test_importlib_resources(tmp_path):
     mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'simple'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), ['ninja'])
 
     try:
         # install the finder in the meta path
@@ -198,7 +201,7 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
     # build a package in a temporary directory
     mesonpy.Project(package_complex, tmp_path)
 
-    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), ['ninja'])
 
     try:
         # install editable hooks
@@ -230,10 +233,64 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
 
 def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
     mesonpy.Project(package_custom_target_dir, tmp_path)
-    finder = _editable.MesonpyMetaFinder({'package'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('package', {'package'}, os.fspath(tmp_path), ['ninja'])
     try:
         sys.meta_path.insert(0, finder)
         import package.generated.one
         import package.generated.two  # noqa: F401
     finally:
         del sys.meta_path[0]
+
+
+@pytest.mark.parametrize('verbose', [False, True], ids=('', 'verbose'))
+@pytest.mark.parametrize('args', [[], ['-j1']], ids=('', '-Ccompile-args=-j1'))
+def test_editable_rebuild(package_purelib_and_platlib, tmp_path, verbose, args):
+    with mesonpy._project({'builddir': os.fspath(tmp_path), 'compile-args': args}) as project:
+
+        finder = _editable.MesonpyMetaFinder(
+            project._metadata.name, {'plat', 'pure'},
+            os.fspath(tmp_path), project._build_command,
+            verbose=verbose,
+        )
+
+        try:
+            # Install editable hooks
+            sys.meta_path.insert(0, finder)
+
+            # Import module and trigger rebuild. Importing any module in the
+            # Python package triggers the build. Use the the pure Python one as
+            # Cygwin is not happy when reloading an extension module.
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                import pure
+            assert not verbose or stdout.getvalue().startswith('meson-python: building ')
+
+            # Reset state.
+            del sys.modules['pure']
+            finder._rebuild.cache_clear()
+
+            # Importing again should result in no output.
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                import pure  # noqa: F401, F811
+            assert stdout.getvalue() == ''
+
+        finally:
+            del sys.meta_path[0]
+            sys.modules.pop('pure', None)
+
+
+def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
+    monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
+    venv.pip('install', os.fspath(editable_complex))
+
+    # Importing the module should not result in any output since the project has already been built
+    assert venv.python('-c', 'import complex').strip() == ''
+
+    # Touch a compiled source file and make sure that the build info is output on import
+    package_complex.joinpath('test.pyx').touch()
+    output = venv.python('-c', 'import complex').strip()
+    assert output.startswith('meson-python: building complex: ')
+
+    # Another import without file changes should not show any output
+    assert venv.python('-c', 'import complex') == ''
