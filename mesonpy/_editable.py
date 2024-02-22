@@ -304,12 +304,14 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
         if self._verbose or bool(env.get(VERBOSE, '')):
-            print('+ ' + ' '.join(self._build_cmd))
-            stdout = None
+            dry_run_build_cmd = self._build_cmd + ['-n']
+            # We do not want any output if there is no work to do
+            p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True)
+            if b'no work to do' not in p.stdout:
+                print('+ ' + ' '.join(self._build_cmd))
+                subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
         else:
-            stdout = subprocess.DEVNULL
-
-        subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=stdout, check=True)
+            subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL)
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
