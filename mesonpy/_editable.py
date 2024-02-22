@@ -304,10 +304,11 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
         if self._verbose or bool(env.get(VERBOSE, '')):
+            # We do not want any output if there is no work to do. Code is adapted from:
+            # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
             dry_run_build_cmd = self._build_cmd + ['-n']
-            # We do not want any output if there is no work to do
             p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True)
-            if b'no work to do' not in p.stdout:
+            if b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout:
                 print('+ ' + ' '.join(self._build_cmd))
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
         else:
