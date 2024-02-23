@@ -4,6 +4,7 @@
 
 import os
 import pathlib
+import re
 import sys
 
 import pytest
@@ -199,17 +200,24 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     assert venv.python('-c', 'import complex').strip() == ''
 
     # Add empty line a pyx, make sure that the Compiling lines are seen
-    complex_package_dir = venv.python('-c', 'import os; import complex; print(os.path.dirname(complex.__file__))').strip()
+    complex_package_dir = venv.python(
+        '-c', 'import os; import complex; print(os.path.dirname(complex.__file__))').strip()
     cython_path = pathlib.Path(complex_package_dir).parent / 'test.pyx'
     cython_content = cython_path.read_text()
     try:
         cython_path.write_text(cython_content + '\n')
         output = venv.python('-c', 'import complex').strip()
         output_lines = output.splitlines()
-        expected_text_list =  ['ninja', 'Compiling Cython source', 'Compiling C object', 'Linking target']
-        assert len(output_lines) == len(expected_text_list)
-        for expected_text, output_line in zip(expected_text_list, output_lines):
-            assert expected_text in output_line
+        expected_pattern_list =  [
+            'meson-python: building complex',
+            'meson-python build command:.+(ninja|samu)',
+            'Compiling Cython source',
+            'Compiling C object',
+            'Linking target'
+        ]
+        assert len(output_lines) == len(expected_pattern_list)
+        for expected_pattern, output_line in zip(expected_pattern_list, output_lines):
+            assert re.search(expected_pattern, output_line), f"{expected_pattern} was not found in {output_line}"
 
         # New import without file changes should not show any output
         assert venv.python('-c', 'import complex') == ''
