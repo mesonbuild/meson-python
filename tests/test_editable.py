@@ -13,7 +13,7 @@ import mesonpy
 
 from mesonpy import _editable
 
-from .test_wheel import EXT_SUFFIX, PLATFORM
+from .test_wheel import EXT_SUFFIX, tag
 
 
 def test_walk(package_complex):
@@ -192,7 +192,7 @@ def test_editble_reentrant(venv, editable_imports_itself_during_build):
         path.write_text(code)
 
 
-@pytest.mark.skipif(PLATFORM.startswith('muslinux'), reason='ninja -n segfaults on Alpine container')
+@pytest.mark.skipif(tag.platform.startswith('musllinux'), reason='ninja -n segfaults on Alpine container')
 def test_editable_verbose(venv, editable_complex, monkeypatch):
     monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
     venv.pip('install', os.fspath(editable_complex))
