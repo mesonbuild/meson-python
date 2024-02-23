@@ -211,13 +211,12 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
         cython_path.write_text(cython_content + '\n')
         output = venv.python('-c', 'import complex').strip()
         output_lines = output.splitlines()
-        assert len(output_lines) > 2
-        # Only checking the first two output lines which meson-python controls.
+        assert len(output_lines) > 1
+        # Only checking the first output line which meson-python controls.
         # The rest of the output varies across platforms.
-        checked_output_lines = output_lines[:2]
+        checked_output_lines = output_lines[:1]
         expected_pattern_list =  [
-            'meson-python: building complex',
-            'meson-python: executing',
+            'meson-python: building complex with',
         ]
         assert len(checked_output_lines) == len(expected_pattern_list)
         for expected_pattern, output_line in zip(expected_pattern_list, checked_output_lines):

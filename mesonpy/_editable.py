@@ -312,8 +312,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
                 module_names = ' '.join(sorted(self._top_level_modules))
                 build_command = ' '.join(self._build_cmd)
                 info_msg = (
-                    f'+ meson-python: building {module_names}\n'
-                    f'+ meson-python: executing {build_command}'
+                    f'meson-python: building {module_names} with {build_command}'
                 )
                 print(info_msg, flush=True)
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
