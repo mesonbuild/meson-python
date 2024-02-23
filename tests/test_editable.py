@@ -202,28 +202,24 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     # Second import should have no output since the project has already been built
     assert venv.python('-c', 'import complex').strip() == ''
 
-    # Add empty line a pyx, make sure that the Compiling lines are seen
+    # Touch the pyx and make sure that the Compiling lines are seen
     complex_package_dir = venv.python(
         '-c', 'import os; import complex; print(os.path.dirname(complex.__file__))').strip()
     cython_path = pathlib.Path(complex_package_dir).parent / 'test.pyx'
     cython_content = cython_path.read_text()
-    try:
-        cython_path.write_text(cython_content + '\n')
-        output = venv.python('-c', 'import complex').strip()
-        output_lines = output.splitlines()
-        assert len(output_lines) > 1
-        # Only checking the first output line which meson-python controls.
-        # The rest of the output varies across platforms.
-        checked_output_lines = output_lines[:1]
-        expected_pattern_list =  [
-            'meson-python: building complex with',
-        ]
-        assert len(checked_output_lines) == len(expected_pattern_list)
-        for expected_pattern, output_line in zip(expected_pattern_list, checked_output_lines):
-            assert re.search(expected_pattern, output_line), f'{expected_pattern} was not found in {output_line}'
+    cython_path.write_text(cython_content)
+    output = venv.python('-c', 'import complex').strip()
+    output_lines = output.splitlines()
+    assert len(output_lines) > 1
+    # Only checking the first output line which meson-python controls.
+    # The rest of the output varies across platforms.
+    checked_output_lines = output_lines[:1]
+    expected_pattern_list =  [
+        'meson-python: building complex with',
+    ]
+    assert len(checked_output_lines) == len(expected_pattern_list)
+    for expected_pattern, output_line in zip(expected_pattern_list, checked_output_lines):
+        assert re.search(expected_pattern, output_line), f'{expected_pattern} was not found in {output_line}'
 
-        # Another import without file changes should not show any output
-        assert venv.python('-c', 'import complex') == ''
-    finally:
-        # Make sure cython file changes are reverted if some assertions fail
-        cython_path.write_text(cython_content)
+    # Another import without file changes should not show any output
+    assert venv.python('-c', 'import complex') == ''
