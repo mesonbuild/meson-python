@@ -196,7 +196,10 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
     venv.pip('install', os.fspath(editable_complex))
 
-    # First import should have no output since wheel has already been built
+    # First import to make sure that the project is built
+    venv.python('-c', 'import complex')
+
+    # Second import should have no output since the project has already been built
     assert venv.python('-c', 'import complex').strip() == ''
 
     # Add empty line a pyx, make sure that the Compiling lines are seen
@@ -207,21 +210,20 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     try:
         cython_path.write_text(cython_content + '\n')
         output = venv.python('-c', 'import complex').strip()
-        # Need to filter some warning on OSX like
-        # 'ld: warning: -undefined dynamic_lookup may not work with chained fixups'
-        output_lines = [line for line in output.splitlines() if 'warning' not in line]
+        output_lines = output.splitlines()
+        assert len(output_lines) > 2
+        # Only checking the first two output lines which meson-python controls.
+        # The rest of the output varies across platforms.
+        checked_output_lines = output_lines[:2]
         expected_pattern_list =  [
             'meson-python: building complex',
-            'meson-python build command:.+(ninja|samu)',
-            'Compiling Cython source',
-            'Compiling C object',
-            'Linking target'
+            'meson-python: executing',
         ]
-        assert len(output_lines) == len(expected_pattern_list)
-        for expected_pattern, output_line in zip(expected_pattern_list, output_lines):
+        assert len(checked_output_lines) == len(expected_pattern_list)
+        for expected_pattern, output_line in zip(expected_pattern_list, checked_output_lines):
             assert re.search(expected_pattern, output_line), f'{expected_pattern} was not found in {output_line}'
 
-        # New import without file changes should not show any output
+        # Another import without file changes should not show any output
         assert venv.python('-c', 'import complex') == ''
     finally:
         # Make sure cython file changes are reverted if some assertions fail
