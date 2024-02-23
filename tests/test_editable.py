@@ -207,7 +207,9 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     try:
         cython_path.write_text(cython_content + '\n')
         output = venv.python('-c', 'import complex').strip()
-        output_lines = output.splitlines()
+        # Need to filter some warning on OSX like
+        # 'ld: warning: -undefined dynamic_lookup may not work with chained fixups'
+        output_lines = [line for line in output.splitlines() if 'warning' not in line]
         expected_pattern_list =  [
             'meson-python: building complex',
             'meson-python build command:.+(ninja|samu)',
