@@ -309,7 +309,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             dry_run_build_cmd = self._build_cmd + ['-n']
             p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True)
             if b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout:
-                print('+ ' + ' '.join(self._build_cmd))
+                print('+ ' + ' '.join(self._build_cmd), flush=True)
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
         else:
             subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL)
