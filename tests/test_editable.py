@@ -219,7 +219,7 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
         ]
         assert len(output_lines) == len(expected_pattern_list)
         for expected_pattern, output_line in zip(expected_pattern_list, output_lines):
-            assert re.search(expected_pattern, output_line), f"{expected_pattern} was not found in {output_line}"
+            assert re.search(expected_pattern, output_line), f'{expected_pattern} was not found in {output_line}'
 
         # New import without file changes should not show any output
         assert venv.python('-c', 'import complex') == ''
