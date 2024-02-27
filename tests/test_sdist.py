@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
+import pathlib
 import stat
 import sys
 import tarfile
@@ -117,37 +118,35 @@ def test_contents_subdirs(sdist_subdirs):
 
 
 def test_contents_unstaged(package_pure, tmp_path):
-    new_data = textwrap.dedent('''
-    def bar():
+    new = textwrap.dedent('''
+      def bar():
         return 'foo'
     ''').strip()
 
-    with open('pure.py', 'r') as f:
-        old_data = f.read()
+    old = pathlib.Path('pure.py').read_text()
 
-    try:
-        with in_git_repo_context():
-            with open('pure.py', 'w') as f, open('crap', 'x'):
-                f.write(new_data)
-
+    with in_git_repo_context():
+        try:
+            pathlib.Path('pure.py').write_text(new)
+            pathlib.Path('other.py').touch()
             sdist_path = mesonpy.build_sdist(os.fspath(tmp_path))
-    finally:
-        with open('pure.py', 'w') as f:
-            f.write(old_data)
-        os.unlink('crap')
+        finally:
+            pathlib.Path('pure.py').write_text(old)
+            pathlib.Path('other.py').unlink()
 
     with tarfile.open(tmp_path / sdist_path, 'r:gz') as sdist:
         names = {member.name for member in sdist.getmembers()}
         mtimes = {member.mtime for member in sdist.getmembers()}
-        read_data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
+        data = sdist.extractfile('pure-1.0.0/pure.py').read().replace(b'\r\n', b'\n')
 
+    # Verify that uncommitted changes are not included in the sdist.
     assert names == {
         'pure-1.0.0/PKG-INFO',
         'pure-1.0.0/meson.build',
         'pure-1.0.0/pure.py',
         'pure-1.0.0/pyproject.toml',
     }
-    assert read_data == new_data.encode()
+    assert data == old.encode()
 
     # All the archive members have a valid mtime.
     assert 0 not in mtimes

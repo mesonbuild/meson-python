@@ -869,44 +869,12 @@ class Project():
 
         with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as tar:
             for member in meson_dist.getmembers():
-                # calculate the file path in the source directory
-                assert member.name, member.name
-                member_parts = member.name.split('/')
-                if len(member_parts) <= 1:
-                    continue
-                path = self._source_dir.joinpath(*member_parts[1:])
-
-                if not path.exists() and member.isfile():
-                    # File doesn't exists on the source directory but exists on
-                    # the Meson dist, so it is generated file, which we need to
-                    # include.
-                    # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
-
-                    # MESON_DIST_ROOT could have a different base name
-                    # than the actual sdist basename, so we need to rename here
+                if member.isfile():
                     file = meson_dist.extractfile(member.name)
-                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]).as_posix())
+                    # rewrite the path to match the sdist distribution name
+                    member.name = '/'.join((dist_name, *member.name.split('/')[1:]))
                     tar.addfile(member, file)
                     continue
-
-                if not path.is_file():
-                    continue
-
-                info = tarfile.TarInfo(member.name)
-                file_stat = os.stat(path)
-                info.mtime = member.mtime
-                info.size = file_stat.st_size
-                info.mode = int(oct(file_stat.st_mode)[-3:], 8)
-
-                # rewrite the path if necessary, to match the sdist distribution name
-                if dist_name != meson_dist_name:
-                    info.name = pathlib.Path(
-                        dist_name,
-                        path.relative_to(self._source_dir)
-                    ).as_posix()
-
-                with path.open('rb') as f:
-                    tar.addfile(info, fileobj=f)
 
             # add PKG-INFO to dist file to make it a sdist
             pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
