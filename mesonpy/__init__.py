@@ -865,64 +865,57 @@ class Project():
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
-        # generate meson dist file
+        # Generate meson dist file.
         self._run(self._meson + ['dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
 
-        # move meson dist file to output path
         dist_name = f'{self._metadata.distribution_name}-{self._metadata.version}'
         meson_dist_name = f'{self._meson_name}-{self._meson_version}'
         meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
-        sdist = pathlib.Path(directory, f'{dist_name}.tar.gz')
+        sdist_path = pathlib.Path(directory, f'{dist_name}.tar.gz')
 
-        with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist) as tar:
+        with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist_path) as sdist:
             for member in meson_dist.getmembers():
-                # calculate the file path in the source directory
-                assert member.name, member.name
-                member_parts = member.name.split('/')
-                if len(member_parts) <= 1:
-                    continue
-                path = self._source_dir.joinpath(*member_parts[1:])
-
-                if not path.exists() and member.isfile():
-                    # File doesn't exists on the source directory but exists on
-                    # the Meson dist, so it is generated file, which we need to
-                    # include.
-                    # See https://mesonbuild.com/Reference-manual_builtin_meson.html#mesonadd_dist_script
-
-                    # MESON_DIST_ROOT could have a different base name
-                    # than the actual sdist basename, so we need to rename here
+                if member.isfile():
                     file = meson_dist.extractfile(member.name)
-                    member.name = str(pathlib.Path(dist_name, *member_parts[1:]).as_posix())
-                    tar.addfile(member, file)
-                    continue
 
-                if not path.is_file():
-                    continue
+                    # Reset pax extended header.  The tar archive member may be
+                    # using pax headers to store some file metadata.  The pax
+                    # headers are not reset when the metadata is modified and
+                    # they take precedence when the member is deserialized.
+                    # This is relevant because when rewriting the member name,
+                    # the length of the path may shrink from being more than
+                    # 100 characters (requiring the path to be stored in the
+                    # pax headers) to being less than 100 characters. When this
+                    # happens, the tar archive member is serialized with the
+                    # shorter name in the regular header and the longer one in
+                    # the extended pax header.  The archives handled here are
+                    # not expected to use extended pax headers other than for
+                    # the ones required to encode file metadata.  The easiest
+                    # solution is to reset the pax extended headers.
+                    member.pax_headers = {}
 
-                info = tarfile.TarInfo(member.name)
-                file_stat = os.stat(path)
-                info.mtime = member.mtime
-                info.size = file_stat.st_size
-                info.mode = int(oct(file_stat.st_mode)[-3:], 8)
+                    # Rewrite the path to match the sdist distribution name.
+                    stem = member.name.split('/', 1)[1]
+                    member.name = '/'.join((dist_name, stem))
 
-                # rewrite the path if necessary, to match the sdist distribution name
-                if dist_name != meson_dist_name:
-                    info.name = pathlib.Path(
-                        dist_name,
-                        path.relative_to(self._source_dir)
-                    ).as_posix()
+                    # Reset owner and group to root:root.  This mimics what
+                    # 'git archive' does and makes the sdist reproducible upon
+                    # being built by different users.
+                    member.uname = member.gname = 'root'
+                    member.uid = member.gid = 0
 
-                with path.open('rb') as f:
-                    tar.addfile(info, fileobj=f)
+                    sdist.addfile(member, file)
 
-            # add PKG-INFO to dist file to make it a sdist
-            pkginfo_info = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
-            pkginfo_info.mtime = time.time()  # type: ignore[assignment]
+            # Add 'PKG-INFO'.
+            member = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
+            member.uid = member.gid = 0
+            member.uname = member.gname = 'root'
+            member.mtime = time.time()
             metadata = bytes(self._metadata.as_rfc822())
-            pkginfo_info.size = len(metadata)
-            tar.addfile(pkginfo_info, fileobj=io.BytesIO(metadata))
+            member.size = len(metadata)
+            sdist.addfile(member, io.BytesIO(metadata))
 
-        return sdist
+        return sdist_path
 
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel in the specified directory."""
