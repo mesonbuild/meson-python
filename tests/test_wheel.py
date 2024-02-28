@@ -350,3 +350,15 @@ def test_encoding(package_encoding, tmp_path):
         'encoding-1.0.0.dist-info/WHEEL',
         'テスト.py',
     }
+
+
+def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        'custom_target_dir-1.0.0.dist-info/METADATA',
+        'custom_target_dir-1.0.0.dist-info/RECORD',
+        'custom_target_dir-1.0.0.dist-info/WHEEL',
+        'package/generated/one.py',
+        'package/generated/two.py',
+    }

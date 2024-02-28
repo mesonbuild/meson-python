@@ -245,7 +245,7 @@ def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
         for src, target in data.items():
             path = pathlib.Path(target['destination'])
             if path.parts[0] in {'{py_platlib}', '{py_purelib}'}:
-                if key == 'install_subdirs' and os.path.isdir(src):
+                if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
                     exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
                     exclude_dirs = {os.path.normpath(x) for x in target.get('exclude_dirs', [])}
                     for entry in walk(src, exclude_files, exclude_dirs):
