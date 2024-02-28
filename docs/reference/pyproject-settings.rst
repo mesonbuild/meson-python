@@ -31,7 +31,7 @@ use them and examples.
    A string specifying the ``meson`` executable or script to use. If it is a
    path to an existing file with a name ending in ``.py``, it will be invoked
    as a Python script using the same Python interpreter that is used to run
-   ``meson-python`` itself. It can be overrridden by the :envvar:`MESON`
+   ``meson-python`` itself. It can be overridden by the :envvar:`MESON`
    environment variable.
 
 .. option:: tool.meson-python.args.dist
