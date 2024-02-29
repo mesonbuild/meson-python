@@ -4,6 +4,7 @@
 
 import os
 import pathlib
+import pkgutil
 import sys
 
 import pytest
@@ -16,12 +17,14 @@ from .test_wheel import EXT_SUFFIX, tag
 
 
 def test_walk(package_complex):
-    entries = set(_editable.walk(os.fspath(package_complex / 'complex')))
-    assert entries == {
+    entries = _editable.walk(
+        os.fspath(package_complex / 'complex'),
+        [os.path.normpath('more/meson.build'), os.path.normpath('more/baz.pyx')],
+        [os.path.normpath('namespace')],
+    )
+    assert {pathlib.Path(x) for x in entries} == {
         pathlib.Path('__init__.py'),
         pathlib.Path('more/__init__.py'),
-        pathlib.Path('namespace/bar.py'),
-        pathlib.Path('namespace/foo.py')
     }
 
 
@@ -213,3 +216,37 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
 
     # Another import without file changes should not show any output
     assert venv.python('-c', 'import complex') == ''
+
+
+def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
+    # build a package in a temporary directory
+    mesonpy.Project(package_complex, tmp_path)
+
+    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(tmp_path), ['ninja'])
+
+    try:
+        # install editable hooks
+        sys.meta_path.insert(0, finder)
+        sys.path_hooks.insert(0, finder._path_hook)
+
+        import complex
+        packages = {m.name for m in pkgutil.walk_packages(complex.__path__, complex.__name__ + '.')}
+        assert packages == {
+            'complex.bar',
+            'complex.more',
+            'complex.more.baz',
+            'complex.more.move',
+            'complex.test',
+        }
+
+        from complex import namespace
+        packages = {m.name for m in pkgutil.walk_packages(namespace.__path__, namespace.__name__ + '.')}
+        assert packages == {
+            'complex.namespace.bar',
+            'complex.namespace.foo',
+        }
+
+    finally:
+        # remove hooks
+        del sys.meta_path[0]
+        del sys.path_hooks[0]

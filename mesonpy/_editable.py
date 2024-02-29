@@ -10,6 +10,7 @@ import functools
 import importlib.abc
 import importlib.machinery
 import importlib.util
+import inspect
 import json
 import os
 import pathlib
@@ -171,11 +172,10 @@ class SourcelessFileLoader(importlib.machinery.SourcelessFileLoader):
         return MesonpyReader(name, self._tree)
 
 
-LOADERS = [
-    (ExtensionFileLoader, tuple(importlib.machinery.EXTENSION_SUFFIXES)),
-    (SourceFileLoader, tuple(importlib.machinery.SOURCE_SUFFIXES)),
-    (SourcelessFileLoader, tuple(importlib.machinery.BYTECODE_SUFFIXES)),
-]
+LOADERS = \
+    [(ExtensionFileLoader, s) for s in importlib.machinery.EXTENSION_SUFFIXES] + \
+    [(SourceFileLoader, s) for s in importlib.machinery.SOURCE_SUFFIXES] + \
+    [(SourcelessFileLoader, s) for s in importlib.machinery.BYTECODE_SUFFIXES]
 
 
 def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> importlib.machinery.ModuleSpec:
@@ -183,7 +183,7 @@ def build_module_spec(cls: type, name: str, path: str, tree: Optional[Node]) -> 
     spec = importlib.machinery.ModuleSpec(name, loader, origin=path)
     spec.has_location = True
     if loader.is_package(name):
-        spec.submodule_search_locations = []
+        spec.submodule_search_locations = [os.path.join(__file__, name)]
     return spec
 
 
@@ -222,13 +222,21 @@ class Node(NodeBase):
         return dict.get(node, key)
 
 
-def walk(root: str, path: str = '') -> Iterator[pathlib.Path]:
-    with os.scandir(os.path.join(root, path)) as entries:
-        for entry in entries:
-            if entry.is_dir():
-                yield from walk(root, os.path.join(path, entry.name))
-            else:
-                yield pathlib.Path(path, entry.name)
+def walk(src: str, exclude_files: Set[str], exclude_dirs: Set[str]) -> Iterator[str]:
+    for root, dirnames, filenames in os.walk(src):
+        for name in dirnames.copy():
+            dirsrc = os.path.join(root, name)
+            relpath = os.path.relpath(dirsrc, src)
+            if relpath in exclude_dirs:
+                dirnames.remove(name)
+            # sort to process directories determninistically
+            dirnames.sort()
+        for name in sorted(filenames):
+            filesrc = os.path.join(root, name)
+            relpath = os.path.relpath(filesrc, src)
+            if relpath in exclude_files:
+                continue
+            yield relpath
 
 
 def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
@@ -238,11 +246,42 @@ def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
             path = pathlib.Path(target['destination'])
             if path.parts[0] in {'{py_platlib}', '{py_purelib}'}:
                 if key == 'install_subdirs' and os.path.isdir(src):
-                    for entry in walk(src):
-                        tree[(*path.parts[1:], *entry.parts)] = os.path.join(src, *entry.parts)
+                    exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
+                    exclude_dirs = {os.path.normpath(x) for x in target.get('exclude_dirs', [])}
+                    for entry in walk(src, exclude_files, exclude_dirs):
+                        tree[(*path.parts[1:], *entry.split(os.sep))] = os.path.join(src, entry)
                 else:
                     tree[path.parts[1:]] = src
     return tree
+
+def find_spec(fullname: str, tree: Node) -> Optional[importlib.machinery.ModuleSpec]:
+    namespace = False
+    parts = fullname.split('.')
+
+    # look for a package
+    package = tree.get(tuple(parts))
+    if isinstance(package, Node):
+        for loader, suffix in LOADERS:
+            src = package.get('__init__' + suffix)
+            if isinstance(src, str):
+                return build_module_spec(loader, fullname, src, package)
+        else:
+            namespace = True
+
+    # look for a module
+    for loader, suffix in LOADERS:
+        src = tree.get((*parts[:-1], parts[-1] + suffix))
+        if isinstance(src, str):
+            return build_module_spec(loader, fullname, src, None)
+
+    # namespace
+    if namespace:
+        spec = importlib.machinery.ModuleSpec(fullname, None, is_package=True)
+        assert isinstance(spec.submodule_search_locations, list)  # make mypy happy
+        spec.submodule_search_locations.append(os.path.join(__file__, fullname))
+        return spec
+
+    return None
 
 
 class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
@@ -252,8 +291,6 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         self._build_cmd = cmd
         self._verbose = verbose
         self._loaders: List[Tuple[type, str]] = []
-        for loader, suffixes in LOADERS:
-            self._loaders.extend((loader, suffix) for suffix in suffixes)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._build_path!r})'
@@ -264,39 +301,15 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             path: Optional[Sequence[Union[bytes, str]]] = None,
             target: Optional[ModuleType] = None
     ) -> Optional[importlib.machinery.ModuleSpec]:
-        if fullname.split('.', maxsplit=1)[0] in self._top_level_modules:
-            if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
-                return None
-            namespace = False
-            tree = self.rebuild()
-            parts = fullname.split('.')
-
-            # look for a package
-            package = tree.get(tuple(parts))
-            if isinstance(package, Node):
-                for loader, suffix in self._loaders:
-                    src = package.get('__init__' + suffix)
-                    if isinstance(src, str):
-                        return build_module_spec(loader, fullname, src, package)
-                else:
-                    namespace = True
-
-            # look for a module
-            for loader, suffix in self._loaders:
-                src = tree.get((*parts[:-1], parts[-1] + suffix))
-                if isinstance(src, str):
-                    return build_module_spec(loader, fullname, src, None)
-
-            # namespace
-            if namespace:
-                spec = importlib.machinery.ModuleSpec(fullname, None)
-                spec.submodule_search_locations = []
-                return spec
-
-        return None
+        if fullname.split('.', 1)[0] not in self._top_level_modules:
+            return None
+        if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):
+            return None
+        tree = self._rebuild()
+        return find_spec(fullname, tree)
 
     @functools.lru_cache(maxsize=1)
-    def rebuild(self) -> Node:
+    def _rebuild(self) -> Node:
         # skip editable wheel lookup during rebuild: during the build
         # the module we are rebuilding might be imported causing a
         # rebuild loop.
@@ -327,6 +340,44 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             install_plan = json.load(f)
         return collect(install_plan)
 
+    def _path_hook(self, path: str) -> MesonpyPathFinder:
+        if os.altsep:
+            path.replace(os.altsep, os.sep)
+        path, _, key = path.rpartition(os.sep)
+        if path == __file__:
+            tree = self._rebuild()
+            node = tree.get(tuple(key.split('.')))
+            if isinstance(node, Node):
+                return MesonpyPathFinder(node)
+        raise ImportError
+
+
+class MesonpyPathFinder(importlib.abc.PathEntryFinder):
+    def __init__(self, tree: Node):
+        self._tree = tree
+
+    def find_spec(self, fullname: str, target: Optional[ModuleType] = None) -> Optional[importlib.machinery.ModuleSpec]:
+        return find_spec(fullname, self._tree)
+
+    def iter_modules(self, prefix: str) -> Iterator[Tuple[str, bool]]:
+        yielded = set()
+        for name, node in self._tree.items():
+            modname = inspect.getmodulename(name)
+            if modname == '__init__' or modname in yielded:
+                continue
+            if isinstance(node, Node):
+                modname = name
+                for _, suffix in LOADERS:
+                    src = node.get('__init__' + suffix)
+                    if isinstance(src, str):
+                        yielded.add(modname)
+                        yield prefix + modname, True
+            elif modname and '.' not in modname:
+                yielded.add(modname)
+                yield prefix + modname, False
+
 
 def install(names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
-    sys.meta_path.insert(0, MesonpyMetaFinder(names, path, cmd, verbose))
+    finder = MesonpyMetaFinder(names, path, cmd, verbose)
+    sys.meta_path.insert(0, finder)
+    sys.path_hooks.insert(0, finder._path_hook)
