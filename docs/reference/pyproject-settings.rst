@@ -4,9 +4,9 @@
 
 .. _reference-pyproject-settings:
 
-***************************
-``pyproject.toml`` settings
-***************************
+****************
+Project settings
+****************
 
 This page lists the configuration settings supported by
 ``meson-python`` in the ``pyproject.toml`` file. Please refer to the
