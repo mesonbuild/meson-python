@@ -31,21 +31,6 @@ Python tool (pip_, `pypa/build`_, etc.) to build and install the project.
 ``meson-python`` will build a Python sdist (source distribution) or
 wheel (binary distribution) from Meson_ project.
 
-Source distribution (sdist)
----------------------------
-
-The source distribution is based on ``meson dist``, so make sure all your files
-are included there. In git projects, Meson_ will not include files that are not
-checked into git, keep that in mind when developing. By default, all files
-under version control will be included in the sdist. In order to exclude files,
-use ``export-ignore`` or ``export-subst`` attributes in ``.gitattributes`` (see
-the ``git-archive`` documentation for details; ``meson dist`` uses
-``git-archive`` under the hood).
-
-Local (uncommitted) changes to files that are under version control will be
-included. This is often needed when applying patches, e.g. for build issues
-found during packaging, to work around test failures, to amend the license for
-vendored components in wheels, etc.
 
 Binary distribution (wheels)
 ----------------------------

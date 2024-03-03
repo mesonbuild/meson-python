@@ -77,6 +77,7 @@ the use of ``meson-python`` and Meson for Python packaging.
    :hidden:
 
    tutorials/introduction
+   how-to-guides/sdist
    how-to-guides/editable-installs
    how-to-guides/config-settings
    how-to-guides/meson-args
