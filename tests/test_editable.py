@@ -196,7 +196,7 @@ def test_editble_reentrant(venv, editable_imports_itself_during_build):
 
 @pytest.mark.skipif(tag.platform.startswith('musllinux'), reason='ninja -n segfaults on Alpine container')
 def test_editable_verbose(venv, editable_complex, monkeypatch):
-    monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
+    monkeypatch.setenv(_editable.VERBOSE, '1')
     venv.pip('install', os.fspath(editable_complex))
 
     # First import to make sure that the project is built
