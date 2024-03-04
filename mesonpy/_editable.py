@@ -319,7 +319,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         if self._verbose or bool(env.get(VERBOSE, '')):
             # We do not want any output if there is no work to do. Code is adapted from:
             # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
-            if self._build_cmd[0] == 'meson':
+            if sys.platform == 'win32':
                 # On Windows meson compile is used so to do a dry run you need
                 # --ninja-args
                 dry_run_build_cmd = self._build_cmd + ['--ninja-args=-n']
