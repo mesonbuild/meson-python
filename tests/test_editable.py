@@ -209,8 +209,7 @@ def test_editable_verbose(venv, editable_complex, monkeypatch):
     complex_package_dir = venv.python(
         '-c', 'import os; import complex; print(os.path.dirname(complex.__file__))').strip()
     cython_path = pathlib.Path(complex_package_dir).parent / 'test.pyx'
-    cython_content = cython_path.read_text()
-    cython_path.write_text(cython_content)
+    cython_path.touch()
     output = venv.python('-c', 'import complex').strip()
     assert output.startswith('meson-python: building complex with')
 
