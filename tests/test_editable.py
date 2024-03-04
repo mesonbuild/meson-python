@@ -249,3 +249,14 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
         # remove hooks
         del sys.meta_path[0]
         del sys.path_hooks[0]
+
+
+def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
+    mesonpy.Project(package_custom_target_dir, tmp_path)
+    finder = _editable.MesonpyMetaFinder({'package'}, os.fspath(tmp_path), ['ninja'])
+    try:
+        sys.meta_path.insert(0, finder)
+        import package.generated.one
+        import package.generated.two  # noqa: F401
+    finally:
+        del sys.meta_path[0]

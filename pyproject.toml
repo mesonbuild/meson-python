@@ -20,7 +20,7 @@ requires-python = '>= 3.7'
 license = { file = 'LICENSES/MIT.txt' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
 maintainers = [
-  { name = 'Ralf Gommers ', email = 'ralf.gommers@gmail.com' },
+  { name = 'Ralf Gommers', email = 'ralf.gommers@gmail.com' },
   { name = 'Daniele Nicolodi', email = 'daniele@grinta.net' },
   { name = 'Henry Schreiner', email = 'HenrySchreinerIII@gmail.com' },
   { name = 'Thomas Li', email = '47963215+lithomas1@users.noreply.github.com' },
@@ -53,8 +53,8 @@ test = [
   'typing-extensions >= 3.7.4; python_version < "3.11"',
 ]
 docs = [
-  'furo >= 2021.08.31',
-  'sphinx ~= 4.0',
+  'furo >= 2023.5.20',
+  'sphinx ~= 6.2',
   'sphinx-copybutton >= 0.5.0',
   'sphinx-design >= 0.1.0',
   'sphinxext-opengraph >= 0.7.0',

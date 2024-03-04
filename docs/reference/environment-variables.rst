@@ -8,6 +8,36 @@
 Environment variables
 *********************
 
+Environment variables can be used to influence ``meson-python``'s behavior, as
+well as the behavior of Meson and other tools that may be used during the
+build. This page lists all the environment variables directly used by
+``meson-python``.
+
+Meson recommends using command line arguments instead of environment variables,
+but does support a number of environment variables for compatibility with other
+build systems:
+
+- `Compiler and linker flag variables <https://mesonbuild.com/Reference-tables.html#compiler-and-linker-flag-environment-variables>`__
+- `Compiler and linker selection variables <https://mesonbuild.com/Reference-tables.html#compiler-and-linker-selection-variables>`__
+
+Other environment variables may influence how other tools used during the setup
+or build steps operate. For example, ``pkg-config`` supports
+``PKG_CONFIG_PATH`` which influences the search path for ``.pc`` files
+describing the available dependencies.
+
+.. warning::
+
+    Conda sets a number of environment variables during environment activation
+    for compiler/linker selection (``CC``, ``CXX``, ``FC``, ``LD``) and
+    compile/link flags (``CFLAGS``, ``CXXFLAGS``, ``FFLAGS``, ``LDFLAGS``) when
+    compilers are installed in a conda environment. This may have unexpected
+    side effects (see for example the note in
+    :ref:`how-to-guides-debug-builds`).
+
+
+Environment variables used by meson-python
+==========================================
+
 .. envvar:: ARCHFLAGS
 
    This environmental variable is used for supporting architecture cross
