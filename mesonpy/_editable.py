@@ -316,8 +316,9 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         env = os.environ.copy()
         env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
-        sys.stderr.write(f"{env.get(VERBOSE, '')=}\n")
+        sys.stderr.write('VERBOSE value:' + env.get(VERBOSE, '') + '\n')
         if self._verbose or bool(env.get(VERBOSE, '')):
+            sys.stderr.write('this line gets executed contrary to what codecov says\n')
             # We do not want any output if there is no work to do. Code is adapted from:
             # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
             if sys.platform == 'win32':
