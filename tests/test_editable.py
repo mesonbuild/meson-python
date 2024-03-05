@@ -71,7 +71,8 @@ def test_mesonpy_meta_finder(package_complex, tmp_path, make_finder):
     mesonpy.Project(package_complex, tmp_path)
 
     # point the meta finder to the build directory
-    finder = make_finder({'complex'}, os.fspath(tmp_path), ['ninja'])
+    build_cmd = ['meson', 'compile'] if sys.platform == 'win32' else ['ninja']
+    finder = make_finder({'complex'}, os.fspath(tmp_path), build_cmd)
 
     # check repr
     assert repr(finder) == f'MesonpyMetaFinder({str(tmp_path)!r})'
