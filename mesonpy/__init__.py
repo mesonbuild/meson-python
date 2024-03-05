@@ -683,7 +683,12 @@ class Project():
                 if other:
                     raise ConfigError(f'Multi-architecture builds are not supported but $ARCHFLAGS={archflags!r}')
 
-                macver, _, nativearch = platform.mac_ver()
+                if sysconfig.get_platform().endswith('-ppc64'):
+                    nativearch = 'ppc64'
+                elif sysconfig.get_platform().endswith('-ppc'):
+                    nativearch = 'ppc'
+                else:
+                    macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:
                     x = os.environ.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
                     if not x.endswith(arch):
