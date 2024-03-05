@@ -308,7 +308,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         tree = self._rebuild()
         return find_spec(fullname, tree)
 
-    def _work_to_do(self, env):
+    def _work_to_do(self, env: dict[str, str]) -> bool:
         # Code is adapted from:
         # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
         if sys.platform != 'win32':
