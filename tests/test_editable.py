@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import functools
 import os
 import pathlib
 import pkgutil
@@ -61,12 +62,16 @@ def test_collect(package_complex):
     assert tree['complex']['more']['__init__.py'] == os.path.join(root, 'complex', 'more', '__init__.py')
 
 
-def test_mesonpy_meta_finder(package_complex, tmp_path):
+@pytest.mark.parametrize(
+    'make_finder',
+    [_editable.MesonpyMetaFinder, functools.partial(_editable.MesonpyMetaFinder, verbose=True)]
+)
+def test_mesonpy_meta_finder(package_complex, tmp_path, make_finder):
     # build a package in a temporary directory
     mesonpy.Project(package_complex, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder({'complex'}, os.fspath(tmp_path), ['ninja'])
+    finder = make_finder({'complex'}, os.fspath(tmp_path), ['ninja'])
 
     # check repr
     assert repr(finder) == f'MesonpyMetaFinder({str(tmp_path)!r})'
@@ -99,6 +104,8 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
     finally:
         # remove finder from the meta path
         del sys.meta_path[0]
+        for module in ['complex', 'complex.test', 'complex.namespace', 'complex.namespace.foo']:
+            del sys.modules[module]
 
 
 def test_mesonpy_traversable():
