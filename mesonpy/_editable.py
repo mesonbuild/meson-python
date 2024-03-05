@@ -308,6 +308,26 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         tree = self._rebuild()
         return find_spec(fullname, tree)
 
+    def _work_to_do(self, env):
+        # Code is adapted from:
+        # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
+        if sys.platform != 'win32':
+            dry_run_build_cmd = self._build_cmd + ['-n']
+        else:
+            # On Windows meson compile is used so to do a dry run you need to add --ninja-args=-n without ignoring
+            # existing --ninja-args in self._build_cmd
+            ninja_index_and_arg_list = [(i, arg) for i, arg in enumerate(self._build_cmd) if arg.startswith('--ninja-args=')]
+            if not ninja_index_and_arg_list:
+                dry_run_build_cmd = self._build_cmd + ['--ninja-args=-n']
+            else:
+                dry_run_build_cmd = self._build_cmd.copy()
+                # Last --ninja-args overrides all the previous ones, so need to modify only the last one to add -n
+                last_ninja_index, last_ninja_args = ninja_index_and_arg_list[-1]
+                dry_run_build_cmd[last_ninja_index] = last_ninja_args + ',-n'
+
+        p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True, check=True)
+        return b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout
+
     @functools.lru_cache(maxsize=1)
     def _rebuild(self) -> Node:
         # skip editable wheel lookup during rebuild: during the build
@@ -317,17 +337,8 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
         if self._verbose or bool(env.get(VERBOSE, '')):
-            # We do not want any output if there is no work to do. Code is adapted from:
-            # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
-            if sys.platform == 'win32':
-                # On Windows meson compile is used so to do a dry run you need
-                # --ninja-args
-                dry_run_build_cmd = self._build_cmd + ['--ninja-args=-n']
-            else:
-                dry_run_build_cmd = self._build_cmd + ['-n']
-
-            p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True, check=True)
-            if b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout:
+            # We want to show some output only if there is some work to do
+            if self._work_to_do(env):
                 module_names = ' '.join(sorted(self._top_level_modules))
                 build_command = ' '.join(self._build_cmd)
                 print(f'meson-python: building {module_names} with {build_command!r}', flush=True)

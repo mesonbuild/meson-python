@@ -104,6 +104,7 @@ def test_mesonpy_meta_finder(package_complex, tmp_path, make_finder):
     finally:
         # remove finder from the meta path
         del sys.meta_path[0]
+        # unload complex module and all its submodules
         for module in ['complex', 'complex.test', 'complex.namespace', 'complex.namespace.foo']:
             del sys.modules[module]
 
