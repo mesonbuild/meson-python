@@ -105,9 +105,9 @@ def test_mesonpy_meta_finder(package_complex, tmp_path, make_finder):
     finally:
         # remove finder from the meta path
         del sys.meta_path[0]
-        # unload complex module and all its submodules
+        # unload complex module and all its submodules to be able to run parametrized tests without side-effects
         for module in ['complex', 'complex.test', 'complex.namespace', 'complex.namespace.foo']:
-            del sys.modules[module]
+            sys.modules.pop(module, None)
 
 
 def test_mesonpy_traversable():
