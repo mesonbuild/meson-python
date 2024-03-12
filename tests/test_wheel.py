@@ -399,3 +399,16 @@ def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
         'package/generated/one.py',
         'package/generated/two.py',
     }
+
+# On Linux, Meson 1.10 or later is required, see https://github.com/mesonbuild/meson/pull/15141
+@pytest.mark.skipif(sys.platform == 'linux' and MESON_VERSION < (1, 9, 99), reason='Meson version too old')
+@pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
+def test_cmake_subproject(wheel_cmake_subproject):
+    artifact = wheel.wheelfile.WheelFile(wheel_cmake_subproject)
+    assert wheel_contents(artifact) == {
+        'cmake_subproject-1.dist-info/METADATA',
+        'cmake_subproject-1.dist-info/RECORD',
+        'cmake_subproject-1.dist-info/WHEEL',
+        f'.cmake_subproject.mesonpy.libs/libcmaketest{LIB_SUFFIX}',
+        f'cmakesubproject{EXT_SUFFIX}',
+    }
