@@ -5,7 +5,7 @@
 meson-python
 ============
 
-``meson-python`` is a Python build backend built on top of the Meson__
+``meson-python`` is a Python build back-end built on top of the Meson__
 build system. It enables using Meson for the configuration and build
 steps of Python packages. Meson is an open source build system meant
 to be both extremely fast, and, even more importantly, as user

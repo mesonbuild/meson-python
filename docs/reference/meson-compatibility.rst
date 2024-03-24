@@ -22,19 +22,17 @@ versions.
 .. option:: 1.1.0
 
    Meson 1.1.0 or later is required to support the ``exclude_files``
-   and ``exclude_directories`` arguments to Meson ``install_subdir``
+   and ``exclude_directories`` arguments to Meson ``install_subdir()``
    and similar installation functions. On older Meson versions, these
    arguments have no effect.
 
 .. option:: 1.2.3
 
-   Python 3.12 Meson 1.2.3 and later do not rely anymore on
-   ``distutils`` and is required to support support Python 3.12 and
-   later where the ``distutils`` modules has been removed from the
-   Python standard library. ``meson-python`` depends on this versions
-   of Meson, when installed on Python 3.12, thus packages using
-   ``meson-python`` do not need to add an explicit version
-   requirement.
+   Meson 1.2.3 or later is required to support Python 3.12 or later.
+   Since version 1.2.3, Meson does not rely anymore on the
+   ``distutils`` module, which was removed from the standard library
+   in Python 3.12. When installed on Python 3.12, ``meson-python``
+   depends on Meson 1.2.3 or later.
 
 .. option:: 1.3.0
 

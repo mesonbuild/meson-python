@@ -8,5 +8,4 @@ Development
 
 .. toctree::
 
-   documentation
    release-process
