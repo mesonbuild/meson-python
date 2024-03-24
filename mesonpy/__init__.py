@@ -517,6 +517,7 @@ class _EditableWheelBuilder(_WheelBuilder):
                 f'{loader_module_name}.py',
                 read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
                    install(
+                       {self._metadata.name!r},
                        {self._top_level_modules!r},
                        {os.fspath(build_dir)!r},
                        {build_command!r},

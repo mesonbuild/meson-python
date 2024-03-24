@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import ast
 import functools
 import importlib.abc
 import importlib.machinery
@@ -285,7 +286,8 @@ def find_spec(fullname: str, tree: Node) -> Optional[importlib.machinery.ModuleS
 
 
 class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
-    def __init__(self, names: Set[str], path: str, cmd: List[str], verbose: bool = False):
+    def __init__(self, package: str, names: Set[str], path: str, cmd: List[str], verbose: bool = False):
+        self._name = package
         self._top_level_modules = names
         self._build_path = path
         self._build_cmd = cmd
@@ -293,7 +295,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         self._loaders: List[Tuple[type, str]] = []
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self._build_path!r})'
+        return f'{self.__class__.__name__}({self._name!r}, {self._build_path!r})'
 
     def find_spec(
             self,
@@ -308,6 +310,21 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         tree = self._rebuild()
         return find_spec(fullname, tree)
 
+    def _work_to_do(self, env: dict[str, str]) -> bool:
+        if sys.platform == 'win32':
+            # On Windows the build command is 'meson compile' eventually with a --ninja-args= option.
+            if self._build_cmd[-1].startswith('--ninja-args='):
+                ninja_args = ast.literal_eval(self._build_cmd[-1].split('=', 1)[1]) + ['-n']
+                dry_run_build_cmd = self._build_cmd[:-1] + [f'--ninja-args={ninja_args!r}']
+            else:
+                dry_run_build_cmd = self._build_cmd + ['--ninja-args=-n']
+        else:
+            dry_run_build_cmd = self._build_cmd + ['-n']
+        # Check adapted from
+        # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
+        p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True)
+        return b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout
+
     @functools.lru_cache(maxsize=1)
     def _rebuild(self) -> Node:
         # skip editable wheel lookup during rebuild: during the build
@@ -317,12 +334,13 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
         env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
         if self._verbose or bool(env.get(VERBOSE, '')):
-            print('+ ' + ' '.join(self._build_cmd))
-            stdout = None
+            # We want to show some output only if there is some work to do
+            if self._work_to_do(env):
+                build_command = ' '.join(self._build_cmd)
+                print(f'meson-python: building {self._name}: {build_command}', flush=True)
+                subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
         else:
-            stdout = subprocess.DEVNULL
-
-        subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=stdout, check=True)
+            subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL)
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
@@ -366,7 +384,7 @@ class MesonpyPathFinder(importlib.abc.PathEntryFinder):
                 yield prefix + modname, False
 
 
-def install(names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
-    finder = MesonpyMetaFinder(names, path, cmd, verbose)
+def install(package: str, names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
+    finder = MesonpyMetaFinder(package, names, path, cmd, verbose)
     sys.meta_path.insert(0, finder)
     sys.path_hooks.insert(0, finder._path_hook)
