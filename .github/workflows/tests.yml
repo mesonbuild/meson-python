@@ -51,6 +51,8 @@ jobs:
           -
         include:
           - os: ubuntu
+            python: 'graalpy-24.0'
+          - os: ubuntu
             python: 'pypy-3.9'
           - os: ubuntu
             python: 'pypy-3.10'
