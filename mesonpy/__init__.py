@@ -998,13 +998,15 @@ def _get_meson_command(
     # package, however, it may occur that the meson Python package is installed
     # but the corresponding meson command is not available in $PATH. Implement
     # a runtime check to verify that the build environment is setup correcly.
-    required_version = _parse_version_string(version)
     try:
-        meson_version = subprocess.run(cmd + ['--version'], check=False, text=True, capture_output=True).stdout
+        r = subprocess.run(cmd + ['--version'], text=True, capture_output=True)
     except FileNotFoundError as err:
         raise ConfigError(f'meson executable "{meson}" not found') from err
+    if r.returncode != 0:
+        raise ConfigError(f'Could not execute meson: {r.stderr.strip()}')
+    meson_version = r.stdout.strip()
 
-    if _parse_version_string(meson_version) < required_version:
+    if _parse_version_string(meson_version) < _parse_version_string(version):
         raise ConfigError(f'Could not find meson version {version} or newer, found {meson_version}.')
 
     return cmd
