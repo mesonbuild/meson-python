@@ -13,7 +13,7 @@ description = 'Some package with all of the PEP 621 metadata'
 readme = 'README.md'
 requires-python = '>=3.7'
 license = {file = 'LICENSE'}
-keywords = ['full', 'metadata']
+keywords = ['full', 'metadata', 'keyword with spaces']
 authors = [
   {email = 'jhon.doe@example.com'},
   {name = 'Jane Doe'}
