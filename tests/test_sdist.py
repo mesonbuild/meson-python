@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
+import re
 import stat
 import sys
 import tarfile
@@ -30,7 +31,7 @@ def test_pep621(sdist_full_metadata):
     with tarfile.open(sdist_full_metadata, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    metadata = re.escape(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: full-metadata
         Version: 1.2.3
@@ -65,7 +66,11 @@ def test_pep621(sdist_full_metadata):
         # full-metadata
 
         An example package with all of the PEP 621 metadata!
-    ''')
+    '''))
+
+    # pyproject-metadata 0.8.0 and later uses a comma to separate keywords
+    expr = metadata.replace(r'Keywords:\ full\ metadata', r'Keywords:\ full[ ,]metadata')
+    assert re.fullmatch(expr, sdist_pkg_info)
 
 
 def test_dynamic_version(sdist_dynamic_version):
