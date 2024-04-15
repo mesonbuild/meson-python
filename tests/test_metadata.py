@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-import re
 
 import packaging.version
 import pyproject_metadata
@@ -49,10 +48,5 @@ def test_missing_version(package_missing_version):
     pyproject = {'project': {
         'name': 'missing-version',
     }}
-    match = '|'.join((
-        re.escape('Required "project.version" field is missing'),
-        # pyproject-metatadata 0.8.0 and later
-        re.escape('Field "project.version" missing and "version" not specified in "project.dynamic"'),
-    ))
-    with pytest.raises(pyproject_metadata.ConfigurationError, match=match):
+    with pytest.raises(pyproject_metadata.ConfigurationError, match='Field "project.version" missing'):
         Metadata.from_pyproject(pyproject, pathlib.Path())

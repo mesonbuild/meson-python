@@ -232,18 +232,12 @@ class MesonBuilderError(Error):
 
 class Metadata(pyproject_metadata.StandardMetadata):
     def __init__(self, name: str, *args: Any, **kwargs: Any):
-        super().__init__(name, *args, **kwargs)
-        # Local fix for https://github.com/FFY00/python-pyproject-metadata/issues/60
-        self.name = self._validate_name(name)
-
-    @staticmethod
-    def _validate_name(name: str) -> str:
         # See https://packaging.python.org/en/latest/specifications/core-metadata/#name
         if not re.match(r'^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$', name, re.IGNORECASE):
             raise pyproject_metadata.ConfigurationError(
                 f'Invalid project name "{name}". A valid name consists only of ASCII letters and '
                 f'numbers, period, underscore and hyphen. It must start and end with a letter or number')
-        return name
+        super().__init__(name, *args, **kwargs)
 
     @classmethod
     def from_pyproject(
@@ -252,12 +246,7 @@ class Metadata(pyproject_metadata.StandardMetadata):
         project_dir: Path = os.path.curdir,
         metadata_version: Optional[str] = None
     ) -> Self:
-        metadata = super().from_pyproject(data, project_dir)
-
-        # Check for missing version field.
-        if not metadata.version and 'version' not in metadata.dynamic:
-            raise pyproject_metadata.ConfigurationError(
-                'Required "project.version" field is missing and not declared as dynamic')
+        metadata = super().from_pyproject(data, project_dir, metadata_version)
 
         # Check for unsupported dynamic fields.
         unsupported_dynamic = set(metadata.dynamic) - {'version', }
@@ -266,17 +255,6 @@ class Metadata(pyproject_metadata.StandardMetadata):
             raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
 
         return metadata
-
-    # Local fix for a bug in pyproject-metadata. See
-    # https://github.com/mesonbuild/meson-python/issues/454
-    def _update_dynamic(self, value: Any) -> None:
-        if value and 'version' in self.dynamic:
-            self.dynamic.remove('version')
-
-    @property
-    def canonical_name(self) -> str:
-        # See https://packaging.python.org/en/latest/specifications/name-normalization/#normalization
-        return packaging.utils.canonicalize_name(self.name)
 
     @property
     def distribution_name(self) -> str:
