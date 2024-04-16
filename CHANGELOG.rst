@@ -11,6 +11,36 @@
 Changelog
 +++++++++
 
+0.16.0
+======
+
+- Correctly detect a wheel shipping shared libraries as being platform
+  dependent also when it does not ship compiled executables or Python
+  extension modules.
+- Use 11.0 as minimum macOS platform ABI tag on arm64: lower versions
+  do not exist on arm64.
+- Improve parsing of the ``$ARCHFLAGS`` environment
+  variable. Correctly handle repeated ``-arch`` flags.
+- Do not break when trying to log filename containing Unicode
+  characters that cannot be encoded in the encoding used by the
+  standard output stream.
+- Drop dependency on ``colorama`` on Windows.
+- Suppress all uses of ANSI terminal escapes when logging to a stream
+  that does not support them.
+- Fix ANSI escape coloring of error messages.
+- Respect the ``exclude_dirs`` and ``exclude_files`` arguments passed
+  to the ``install_subdir()`` Meson function in editable installs too.
+- Make ``pkgutil.iter_packages()`` work properly for modules loaded
+  from editable installs.
+- Add support for the ``custom_target()`` Meson function installing a
+  directory.
+- In editable installs, when a rebuild is triggered on module import,
+  emit a message indicating that the package is being rebuilt but
+  suppress any output when there is no work to do.
+
+Daniele Nicolodi, Loïc Estève, Ralf Gommers  --- 16-04-2024
+
+
 0.15.0
 ======
 
