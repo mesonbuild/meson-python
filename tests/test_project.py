@@ -23,7 +23,7 @@ from .conftest import in_git_repo_context, package_dir
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
-    with pytest.raises(mesonpy.MesonBuilderError, match='Package requires Python version ==1.0.0'):
+    with pytest.raises(mesonpy.MesonBuilderError, match='The package requires Python version ==1.0.0'):
         with mesonpy._project():
             pass
 
