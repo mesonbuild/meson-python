@@ -6,6 +6,8 @@ import io
 import os
 import pathlib
 import pkgutil
+import re
+import subprocess
 import sys
 
 from contextlib import redirect_stdout
@@ -16,7 +18,16 @@ import mesonpy
 
 from mesonpy import _editable
 
-from .test_wheel import EXT_SUFFIX
+from .test_wheel import EXT_SUFFIX, NOGIL_BUILD
+
+
+def find_cython_version():
+    cython_version_str = subprocess.run(['cython', '--version'], check=True,
+                                        stdout=subprocess.PIPE, text=True).stdout
+    version_str = re.search(r'(\d{1,4}\.\d{1,4}\.?\d{0,4})', cython_version_str).group(0)
+    return tuple(map(int, version_str.split('.')))
+
+CYTHON_VERSION = find_cython_version()
 
 
 def test_walk(package_complex):
@@ -280,6 +291,8 @@ def test_editable_rebuild(package_purelib_and_platlib, tmp_path, verbose, args):
             sys.modules.pop('pure', None)
 
 
+@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+                    reason='Cython version too old, no free-threaded CPython support')
 def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
     monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
     venv.pip('install', os.fspath(editable_complex))
