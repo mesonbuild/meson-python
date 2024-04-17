@@ -31,7 +31,7 @@ jobs:
           python-version: '3.11'
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.push.tag || github.event.inputs.tag }}
+          ref: ${{ github.event.inputs.tag || github.ref }}
       - run: python -m pip install .[docs]
       - run: python -m sphinx -W docs/ build/docs/
       - uses: actions/upload-pages-artifact@v3
@@ -46,6 +46,6 @@ jobs:
     environment:
       name: github-pages
     runs-on: ubuntu-latest
-    if: ${{ github.event.push.tag || github.event.inputs.tag }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' }}
     steps:
       - uses: actions/deploy-pages@v4
