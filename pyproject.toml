@@ -119,4 +119,6 @@ testpaths = ['tests']
 xfail_strict = true
 filterwarnings = [
   'error',
+  # For some reason, running the tests with GraalPy 24.0 triggers this warning.
+  'ignore:The distutils package is deprecated:DeprecationWarning',
 ]
