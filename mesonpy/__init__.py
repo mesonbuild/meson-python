@@ -747,7 +747,7 @@ class Project():
             self._metadata.requires_python.prereleases = True
             if platform.python_version().rstrip('+') not in self._metadata.requires_python:
                 raise MesonBuilderError(
-                    f'Package requires Python version {self._metadata.requires_python}, '
+                    f'The package requires Python version {self._metadata.requires_python}, '
                     f'running on {platform.python_version()}')
 
         # limited API
@@ -758,6 +758,11 @@ class Project():
             value = next((option['value'] for option in options if option['name'] == 'python.allow_limited_api'), None)
             if not value:
                 self._limited_api = False
+
+        if self._limited_api and bool(sysconfig.get_config_var('Py_GIL_DISABLED')):
+            raise BuildError(
+                'The package targets Python\'s Limited API, which is not supported by free-threaded CPython. '
+                'The "python.allow_limited_api" Meson build option may be used to override the package default.')
 
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
