@@ -19,7 +19,7 @@ the ``-C`` short command line option:
 
 .. tab-set::
 
-    .. tab-item:: pypa/buid
+    .. tab-item:: pypa/build
         :sync: key_pypa_build
 
 	.. code-block:: console
@@ -59,3 +59,70 @@ immediately install it, replace ``wheel`` with ``install``.  See the
 
 .. _build: https://pypa-build.readthedocs.io/en/stable/
 .. _pip: https://pip.pypa.io/
+
+
+Using a persistent build directory
+==================================
+
+By default, ``meson-python`` uses a temporary build directory which is
+deleted when the build terminates. A persistent build directory allows
+faster incremental builds and to access build logs and intermediate
+build artifacts. The ``build-dir`` :ref:`config setting
+<reference-config-settings>` instructs ``meson-python`` to use a
+user-specified build directory which will not be deleted. For example:
+
+.. tab-set::
+
+    .. tab-item:: pypa/build
+        :sync: key_pypa_build
+
+	.. code-block:: console
+
+	   $ python -m build -Cbuild-dir=build
+
+    .. tab-item:: pip
+        :sync: key_pip
+
+	.. code-block:: console
+
+	   $ python -m pip install . -Cbuild-dir=build
+
+After running this command, the ``build`` directory will contain all
+the build artifacts and support files created by ``meson``, ``ninja``
+and ``meson-python``.  The same build directory can be used by
+subsequent invocations of ``meson-python``, avoiding the need to
+rebuild the whole project when testing changes during development.
+
+Using a permanent build directory also aids in debugging a failing
+build by allowing access to build logs and intermediate build outputs,
+including the Meson introspection files and detailed log. The latter
+is stored in the ``meson-logs/meson-log.txt`` file in the build
+directory and can be useful to diagnose why a build fails at the
+project configuration stage. For example, to understand why dependency
+detection failed, it is often necessary to look at the ``pkg-config``
+or other dependency detection methods output.
+
+Access to detailed logs and intermediate build outputs is particularly
+helpful in CI setups where introspecting the build environment is
+usually more difficult than on a local system. Therefore, it can be
+useful to show the more detailed log files when the CI build step
+fails. For example, the following GitHub Actions workflow file snippet
+shows the detailed Meson setup log when the build fails:
+
+.. code-block:: yaml
+
+    - name: Build the package
+      run: python -m build --wheel -Cbuild-dir=build
+    - name: Show meson-log.txt
+      if: failure()
+      run: cat build/meson-logs/meson-log.txt
+
+Replacing ``failure()`` with ``always()`` in the code above will
+result in the Meson log file always being shown. See the GitHub
+Actions documentation__ for more details. Please be aware that the
+setup log can become very long for complex projects, and the GitHub
+Actions web interface becomes unresponsive when the running job emits
+many output lines.
+
+
+__ https://docs.github.com/en/actions/learn-github-actions/expressions#status-check-functions
