@@ -248,11 +248,12 @@ class Metadata(pyproject_metadata.StandardMetadata):
         return name
 
     @classmethod
-    def from_pyproject(cls, data: Mapping[str, Any], project_dir: Path) -> Metadata:  # type: ignore[override]
-        # The class method from the pyproject_metadata base class is not
-        # typed in a subclassing friendly way, thus annotations to ignore
-        # typing are needed.
-
+    def from_pyproject(
+        cls,
+        data: Mapping[str, Any],
+        project_dir: Path = os.path.curdir,
+        metadata_version: Optional[str] = None
+    ) -> Self:
         metadata = super().from_pyproject(data, project_dir)
 
         # Check for missing version field.
@@ -266,7 +267,7 @@ class Metadata(pyproject_metadata.StandardMetadata):
             fields = ', '.join(f'"{x}"' for x in unsupported_dynamic)
             raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
 
-        return metadata  # type: ignore[return-value]
+        return metadata
 
     # Local fix for a bug in pyproject-metadata. See
     # https://github.com/mesonbuild/meson-python/issues/454
