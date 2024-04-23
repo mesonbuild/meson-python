@@ -100,7 +100,6 @@ the use of ``meson-python`` and Meson for Python packaging.
 
    changelog
    about
-   contributing/index
    Discussions <https://github.com/mesonbuild/meson-python/discussions>
    Source Code <https://github.com/mesonbuild/meson-python>
    Issue Tracker <https://github.com/mesonbuild/meson-python/issues>

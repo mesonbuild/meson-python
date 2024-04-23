@@ -2,20 +2,16 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-
-.. _contributing-release-process:
-
-***************
 Release Process
-***************
+===============
 
-All releases are PGP signed with one of the keys listed in the
-`installation page`_. Before releasing please make sure your PGP key is listed
-there, and preferably signed by one of the other key holders.
+All releases are PGP signed with one of the keys listed in ``docs/about.rst``.
+Before releasing please make sure your PGP key is listed there, and preferably
+signed by one of the other key holders.
 
-If your key is not signed by one of the other key holders, please make sure the
-PR that added your key to the :doc:`../about` page was approved by at least one
-other maintainer.
+If your key is not signed by one of the other key holders, please make sure
+that the PR that added your key to ``docs/about.rst`` was approved by at least
+one other maintainer.
 
 After that is done, you may release the project by following these steps:
 
@@ -44,7 +40,7 @@ After that is done, you may release the project by following these steps:
          $ git push
          $ git push --tags
 
-#. Release to `PyPI <https://pypi.org/project/meson-python/>`_
+#. Release to PyPI:
 
    #. Build the Python artifacts:
 
@@ -60,9 +56,3 @@ After that is done, you may release the project by following these steps:
 
       There is no need to GPG-sign the artifacts: PyPI no longer
       supports uploading GPG signatures.
-
-If you have any questions, please look at previous releases and/or ping the
-other maintainers.
-
-
-.. _installation page: installation
