@@ -9,6 +9,7 @@ import stat
 import sys
 import tarfile
 import textwrap
+import time
 
 import pytest
 
@@ -205,3 +206,15 @@ def test_long_path(sdist_long_path):
         'long_path-1.0.0/meson.build',
         'long_path-1.0.0/pyproject.toml'
     }
+
+
+def test_reproducible(package_pure, tmp_path):
+    t1 = time.time()
+    sdist_path_a = mesonpy.build_sdist(tmp_path / 'a')
+    t2 = time.time()
+    # Ensure that the two sdists are build at least one second apart.
+    time.sleep(max(t1 + 1.0 - t2, 0.0))
+    sdist_path_b = mesonpy.build_sdist(tmp_path / 'b')
+
+    assert sdist_path_a == sdist_path_b
+    assert tmp_path.joinpath('a', sdist_path_a).read_bytes() == tmp_path.joinpath('b', sdist_path_b).read_bytes()

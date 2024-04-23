@@ -37,7 +37,11 @@ def create_targz(path: Path) -> Iterator[tarfile.TarFile]:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     file = typing.cast(IO[bytes], gzip.GzipFile(
         path,
-        mode='wb',
+        mode='w',
+        # Set the stream last modification time to 0.  This mimics
+        # what 'git archive' does and makes the archives byte-for-byte
+        # reproducible.
+        mtime=0,
     ))
     tar = tarfile.TarFile(
         mode='w',
