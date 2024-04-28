@@ -646,7 +646,7 @@ class Project():
         self._limited_api = False
 
         # load pyproject.toml
-        pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text())
+        pyproject = tomllib.loads(self._source_dir.joinpath('pyproject.toml').read_text(encoding='utf-8'))
 
         # load meson args from pyproject.toml
         pyproject_config = _validate_pyproject_config(pyproject)
