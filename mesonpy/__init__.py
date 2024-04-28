@@ -818,7 +818,7 @@ class Project():
     def _info(self, name: str) -> Any:
         """Read info from meson-info directory."""
         info = self._build_dir.joinpath('meson-info', f'{name}.json')
-        return json.loads(info.read_text())
+        return json.loads(info.read_text(encoding='utf-8'))
 
     @property
     def _manifest(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
