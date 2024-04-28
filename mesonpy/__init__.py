@@ -703,7 +703,7 @@ class Project():
                         cpu_family = {family!r}
                         endian = 'little'
                     ''')
-                    self._meson_cross_file.write_text(cross_file_data)
+                    self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
         # write the native file
@@ -711,7 +711,7 @@ class Project():
             [binaries]
             python = '{sys.executable}'
         ''')
-        self._meson_native_file.write_text(native_file_data)
+        self._meson_native_file.write_text(native_file_data, encoding='utf-8')
 
         # reconfigure if we have a valid Meson build directory. Meson
         # uses the presence of the 'meson-private/coredata.dat' file
