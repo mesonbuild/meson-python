@@ -103,11 +103,13 @@ def test_tag_stable_abi():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}'],
     }, limited_api=True)
-    assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
+    # PyPy does not support the stable ABI.
+    abi = 'abi3' if '__pypy__' not in sys.builtin_module_names else ABI
+    assert str(builder.tag) == f'{INTERPRETER}-{abi}-{PLATFORM}'
 
 
 @pytest.mark.xfail(sys.version_info < (3, 8) and sys.platform == 'win32', reason='Extension modules suffix without ABI tags')
-@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not use special modules suffix for stable ABI')
+@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the stable ABI')
 def test_tag_mixed_abi():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
