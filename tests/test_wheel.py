@@ -290,6 +290,7 @@ def test_skip_subprojects(package_subproject, tmp_path, arg):
 # Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
 @pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
 @pytest.mark.skipif(NOGIL_BUILD, reason='Free-threaded CPython does not support the limited API')
+@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the abi3 platform tag for wheels')
 def test_limited_api(wheel_limited_api):
     artifact = wheel.wheelfile.WheelFile(wheel_limited_api)
     name = artifact.parsed_filename
