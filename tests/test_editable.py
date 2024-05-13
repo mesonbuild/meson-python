@@ -104,9 +104,9 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
         import complex
         assert complex.__spec__.origin == os.fspath(package_complex / 'complex/__init__.py')
         assert complex.__file__ == os.fspath(package_complex / 'complex/__init__.py')
-        import complex.test
-        assert complex.test.__spec__.origin == os.fspath(tmp_path / f'test{EXT_SUFFIX}')
-        assert complex.test.answer() == 42
+        import complex.extension
+        assert complex.extension.__spec__.origin == os.fspath(tmp_path / f'extension{EXT_SUFFIX}')
+        assert complex.extension.answer() == 42
         import complex.namespace.foo
         assert complex.namespace.foo.__spec__.origin == os.fspath(package_complex / 'complex/namespace/foo.py')
         assert complex.namespace.foo.foo() == 'foo'
@@ -223,6 +223,7 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
         packages = {m.name for m in pkgutil.walk_packages(complex.__path__, complex.__name__ + '.')}
         assert packages == {
             'complex.bar',
+            'complex.extension',
             'complex.more',
             'complex.more.baz',
             'complex.more.move',
