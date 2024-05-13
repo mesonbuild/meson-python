@@ -47,12 +47,12 @@ fedora-37_task:
     cpu: 1
   << : *test
 
-manylinux-python3.11_task:
+manylinux-python3.13t_task:
   container:
     dockerfile: ci/manylinux.docker
     cpu: 1
   env:
-    PATH: "/opt/python/cp311-cp311/bin/:${PATH}"
+    PATH: "/opt/python/cp313-cp313t/bin/:${PATH}"
   << : *test
 
 manylinux-python3.7_task:
