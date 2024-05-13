@@ -34,6 +34,13 @@ install_subdir(
 )
 
 py.extension_module(
+    'extension',
+    'extension.c',
+    install: true,
+    subdir: 'complex',
+)
+
+py.extension_module(
     'test',
     'test.pyx',
     install: true,
