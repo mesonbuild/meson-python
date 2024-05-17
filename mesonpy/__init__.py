@@ -988,6 +988,8 @@ def _get_meson_command(
     # directly. For packages that vendor a forked Meson, the `meson.py` in the
     # root of the Meson repo can be used this way.
     if meson.endswith('.py'):
+        if not os.path.exists(meson):
+            raise ConfigError(f'Could not find the specified meson: "{meson}"')
         cmd = [sys.executable, meson]
     else:
         cmd = [meson]
@@ -997,7 +999,11 @@ def _get_meson_command(
     # but the corresponding meson command is not available in $PATH. Implement
     # a runtime check to verify that the build environment is setup correcly.
     required_version = _parse_version_string(version)
-    meson_version = subprocess.run(cmd + ['--version'], check=False, text=True, capture_output=True).stdout
+    try:
+        meson_version = subprocess.run(cmd + ['--version'], check=False, text=True, capture_output=True).stdout
+    except FileNotFoundError as err:
+        raise ConfigError(f'meson executable "{meson}" not found') from err
+
     if _parse_version_string(meson_version) < required_version:
         raise ConfigError(f'Could not find meson version {version} or newer, found {meson_version}.')
 
