@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
+import re
 import shutil
 import subprocess
 import sys
+import textwrap
 
 from typing import List
 
@@ -95,3 +98,48 @@ def test_validate_config_settings_list():
 def test_validate_config_settings_tuple():
     config = mesonpy._validate_config_settings({'setup-args': ('-Done=1', '-Dtwo=2')})
     assert config['setup-args'] == ['-Done=1', '-Dtwo=2']
+
+
+@pytest.mark.parametrize('meson', [None, 'meson'])
+def test_get_meson_command(monkeypatch, meson):
+    # The MESON environment variable affects the meson executable lookup and breaks the test.
+    monkeypatch.delenv('MESON', raising=False)
+    assert mesonpy._get_meson_command(meson) == ['meson']
+
+
+def test_get_meson_command_bad_path(monkeypatch):
+    # The MESON environment variable affects the meson executable lookup and breaks the test.
+    monkeypatch.delenv('MESON', raising=False)
+    with pytest.raises(mesonpy.ConfigError, match=re.escape('meson executable "bad" not found')):
+        mesonpy._get_meson_command('bad')
+
+
+def test_get_meson_command_bad_python_path(monkeypatch):
+    # The MESON environment variable affects the meson executable lookup and breaks the test.
+    monkeypatch.delenv('MESON', raising=False)
+    with pytest.raises(mesonpy.ConfigError, match=re.escape('Could not find the specified meson: "bad-python-path.py"')):
+        mesonpy._get_meson_command('bad-python-path.py')
+
+
+def test_get_meson_command_wrong_version(monkeypatch, tmp_path):
+    # The MESON environment variable affects the meson executable lookup and breaks the test.
+    monkeypatch.delenv('MESON', raising=False)
+    meson = tmp_path / 'meson.py'
+    meson.write_text(textwrap.dedent('''
+        print('0.0.1')
+    '''))
+    with pytest.raises(mesonpy.ConfigError, match=r'Could not find meson version [0-9\.]+ or newer, found 0\.0\.1\.'):
+        mesonpy._get_meson_command(os.fspath(meson))
+
+
+def test_get_meson_command_error(monkeypatch, tmp_path):
+    # The MESON environment variable affects the meson executable lookup and breaks the test.
+    monkeypatch.delenv('MESON', raising=False)
+    meson = tmp_path / 'meson.py'
+    meson.write_text(textwrap.dedent('''
+        import sys
+        print('Just testing', file=sys.stderr)
+        sys.exit(1)
+    '''))
+    with pytest.raises(mesonpy.ConfigError, match=re.escape('Could not execute meson: Just testing')):
+        mesonpy._get_meson_command(os.fspath(meson))
