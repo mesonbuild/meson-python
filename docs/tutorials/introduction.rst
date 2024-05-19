@@ -255,6 +255,19 @@ If the build succeeded, you'll have the binary artifacts in the ``dist`` folder.
    easier, we recommend checking out the cibuildwheel_ project, which allows you
    to automate it.
 
+Build isolation
+```````````````
+
+Building with ``python -m build`` or with ``pip`` uses build isolation by
+default. I.e., the build frontend creates a new, temporary virtual environment
+with all build dependencies before calling ``meson-python`` to build a wheel.
+
+If you disable build isolation, you are responsible for ensuring that
+``meson-python`` and all other build dependencies for the package are installed
+already in the Python environment. Note that if you use a virtual environment
+to build in, it must be activated (otherwise ``meson`` or another executable
+may not be found).
+
 
 Distributing the project
 ------------------------
