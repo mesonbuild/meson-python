@@ -67,9 +67,9 @@ Using a persistent build directory
 By default, ``meson-python`` uses a temporary build directory which is
 deleted when the build terminates. A persistent build directory allows
 faster incremental builds and to access build logs and intermediate
-build artifacts. The ``build-dir`` :ref:`config setting
-<reference-config-settings>` instructs ``meson-python`` to use a
-user-specified build directory which will not be deleted. For example:
+build artifacts. The :option:`build-dir` config setting can be used to
+build in a user-specified build directory which will not be deleted.
+For example:
 
 .. tab-set::
 
@@ -114,7 +114,7 @@ shows the detailed Meson setup log when the build fails:
     - name: Build the package
       run: python -m build --wheel -Cbuild-dir=build
     - name: Show meson-log.txt
-      if: failure()
+      if: ${{ failure() }}
       run: cat build/meson-logs/meson-log.txt
 
 Replacing ``failure()`` with ``always()`` in the code above will
