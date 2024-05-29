@@ -99,6 +99,7 @@ def test_tag_platlib_wheel():
     assert str(builder.tag) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
 
 
+@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the abi3 platform tag for wheels')
 def test_tag_stable_abi():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}'],

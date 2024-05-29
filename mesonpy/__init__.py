@@ -406,22 +406,22 @@ class _WheelBuilder():
 
     @cached_property
     def _stable_abi(self) -> Optional[str]:
-        if self._limited_api:
-            # PyPy does not use a special extension module filename
-            # suffix for modules targeting the stable API.
-            if '__pypy__' not in sys.builtin_module_names:
-                # Verify stable ABI compatibility: examine files installed
-                # in {platlib} that look like extension modules, and raise
-                # an exception if any of them has a Python version
-                # specific extension filename suffix ABI tag.
-                for path, _ in self._manifest['platlib']:
-                    match = _EXTENSION_SUFFIX_REGEX.match(path.name)
-                    if match:
-                        abi = match.group('abi')
-                        if abi is not None and abi != 'abi3':
-                            raise BuildError(
-                                f'The package declares compatibility with Python limited API but extension '
-                                f'module {os.fspath(path)!r} is tagged for a specific Python version.')
+        # PyPy does not use a special extension module filename
+        # suffix for modules targeting the stable API, and pip does not
+        # support installing wheels with the abi3 tag.
+        if self._limited_api and '__pypy__' not in sys.builtin_module_names:
+            # Verify stable ABI compatibility: examine files installed
+            # in {platlib} that look like extension modules, and raise
+            # an exception if any of them has a Python version
+            # specific extension filename suffix ABI tag.
+            for path, _ in self._manifest['platlib']:
+                match = _EXTENSION_SUFFIX_REGEX.match(path.name)
+                if match:
+                    abi = match.group('abi')
+                    if abi is not None and abi != 'abi3':
+                        raise BuildError(
+                            f'The package declares compatibility with Python limited API but extension '
+                            f'module {os.fspath(path)!r} is tagged for a specific Python version.')
             return 'abi3'
         return None
 
