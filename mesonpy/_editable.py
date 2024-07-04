@@ -327,20 +327,27 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
 
     @functools.lru_cache(maxsize=1)
     def _rebuild(self) -> Node:
-        # skip editable wheel lookup during rebuild: during the build
-        # the module we are rebuilding might be imported causing a
-        # rebuild loop.
-        env = os.environ.copy()
-        env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
+        try:
+            # skip editable wheel lookup during rebuild: during the build
+            # the module we are rebuilding might be imported causing a
+            # rebuild loop.
+            env = os.environ.copy()
+            env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
-        if self._verbose or bool(env.get(VERBOSE, '')):
-            # We want to show some output only if there is some work to do
-            if self._work_to_do(env):
-                build_command = ' '.join(self._build_cmd)
-                print(f'meson-python: building {self._name}: {build_command}', flush=True)
-                subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True)
-        else:
-            subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
+            if self._verbose or bool(env.get(VERBOSE, '')):
+                # We want to show some output only if there is some work to do
+                if self._work_to_do(env):
+                    build_command = ' '.join(self._build_cmd)
+                    print(f'meson-python: building {self._name}: {build_command}', flush=True)
+                    subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True)
+            else:
+                subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
+        except subprocess.CalledProcessError as exc:
+            raise ImportError(
+                f'Error in meson-python when building {self._name}: {build_command}\n'
+                'See above for more details'
+            ) from exc
+
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
