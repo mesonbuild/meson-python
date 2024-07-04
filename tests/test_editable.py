@@ -308,3 +308,35 @@ def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
 
     # Another import without file changes should not show any output
     assert venv.python('-c', 'import complex') == ''
+
+
+@pytest.mark.parametrize('verbose', [False, True], ids=('', 'verbose'))
+def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
+    with mesonpy._project({'builddir': os.fspath(tmp_path)}) as project:
+
+        finder = _editable.MesonpyMetaFinder(
+            project._metadata.name, {'plat', 'pure'},
+            os.fspath(tmp_path), project._build_command,
+            verbose=verbose,
+        )
+        path = package_purelib_and_platlib / 'plat.c'
+        code = path.read_text()
+
+        try:
+            # Install editable hooks
+            sys.meta_path.insert(0, finder)
+
+            # Insert invalid code in the extension module source code
+            path.write_text('return')
+
+            # Import module and trigger rebuild: the build fails and ImportErrror is raised
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                with pytest.raises(ImportError, match='re-building the purelib-and-platlib '):
+                    import plat  # noqa: F401
+            assert not verbose or stdout.getvalue().startswith('meson-python: building ')
+
+        finally:
+            del sys.meta_path[0]
+            sys.modules.pop('pure', None)
+            path.write_text(code)
