@@ -338,9 +338,9 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             if self._work_to_do(env):
                 build_command = ' '.join(self._build_cmd)
                 print(f'meson-python: building {self._name}: {build_command}', flush=True)
-                subprocess.run(self._build_cmd, cwd=self._build_path, env=env)
+                subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True)
         else:
-            subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL)
+            subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
