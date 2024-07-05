@@ -346,7 +346,8 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             build_command = ' '.join(self._build_cmd)
             raise ImportError(
                 f'Error in meson-python when building {self._name}: {build_command}\n'
-                'See above for more details'
+                'See above for more details (make sure to be in verbose editable mode, '
+                'for example by setting MESONPY_EDITABLE_VERBOSE=1)'
             ) from exc
 
 

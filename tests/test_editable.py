@@ -310,7 +310,10 @@ def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
     assert venv.python('-c', 'import complex') == ''
 
 
-def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_complex):
+def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_complex, monkeypatch):
+    # Compilation error in in stdout of compiling command only if we are in
+    # verbose meson editable mode
+    monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
     try:
         venv.pip('install', os.fspath(editable_complex))
         venv.python('-c', 'import complex')
@@ -320,10 +323,10 @@ def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_c
 
         process = subprocess.run([venv.executable, '-c', 'import complex'], capture_output=True)
         assert process.returncode == 1
+        stdout = process.stdout.decode()
         stderr = process.stderr.decode()
         assert 'ImportError' in stderr
-        # TODO Why is the original error not in the stderr???
-        # assert "compilation_error_here" in stderr
+        assert 'compilation_error_here' in stdout
 
         # Restore original content and import again, to make sure that the
         # workflow of "keep importing until the compilation error is fixed""
