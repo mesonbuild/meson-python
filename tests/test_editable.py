@@ -325,8 +325,9 @@ def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_c
         # TODO Why is the original error not in the stderr???
         # assert "compilation_error_here" in stderr
 
-        # Restore original content and reimport to make sure that the workflow
-        # of "keep importing until the compilation error is fixed"" works
+        # Restore original content and import again, to make sure that the
+        # workflow of "keep importing until the compilation error is fixed""
+        # works
         pyx.write_text(pyx_content)
         venv.python('-c', 'import complex')
     finally:
