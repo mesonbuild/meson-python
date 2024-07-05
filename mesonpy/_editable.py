@@ -343,6 +343,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             else:
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
         except subprocess.CalledProcessError as exc:
+            build_command = ' '.join(self._build_cmd)
             raise ImportError(
                 f'Error in meson-python when building {self._name}: {build_command}\n'
                 'See above for more details'

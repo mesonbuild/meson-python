@@ -308,3 +308,26 @@ def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
 
     # Another import without file changes should not show any output
     assert venv.python('-c', 'import complex') == ''
+
+
+def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_complex):
+    try:
+        venv.pip('install', os.fspath(editable_complex))
+        venv.python('-c', 'import complex')
+        pyx = package_complex.joinpath('test.pyx')
+        pyx_content = pyx.read_text()
+        pyx.write_text(pyx_content + '\n\ncompilation_error_here')
+
+        process = subprocess.run([venv.executable, '-c', 'import complex'], capture_output=True)
+        assert process.returncode == 1
+        stderr = process.stderr.decode()
+        assert 'ImportError' in stderr
+        # TODO Why is the original error not in the stderr???
+        # assert "compilation_error_here" in stderr
+
+        # TODO restore original content and reimport to make sure that the
+        # workflow of "keep importing until the compilation error is fixed""
+        # works
+    finally:
+        # restore the original content to avoid side-effects when the test fails
+        pyx.write_text(pyx_content)
