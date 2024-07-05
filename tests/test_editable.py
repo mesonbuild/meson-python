@@ -308,3 +308,31 @@ def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
 
     # Another import without file changes should not show any output
     assert venv.python('-c', 'import complex') == ''
+
+
+def test_editable_importerror_on_rebuild_error(venv, package_complex, editable_complex, monkeypatch):
+    # Compilation error in in stdout of compiling command only if we are in
+    # verbose meson editable mode
+    monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
+    try:
+        venv.pip('install', os.fspath(editable_complex))
+        venv.python('-c', 'import complex')
+        pyx = package_complex.joinpath('test.pyx')
+        pyx_content = pyx.read_text()
+        pyx.write_text(pyx_content + '\n\ncompilation_error_here')
+
+        process = subprocess.run([venv.executable, '-c', 'import complex'], capture_output=True)
+        assert process.returncode == 1
+        stdout = process.stdout.decode()
+        stderr = process.stderr.decode()
+        assert 'ImportError' in stderr
+        assert 'compilation_error_here' in stdout
+
+        # Restore original content and import again, to make sure that the
+        # workflow of "keep importing until the compilation error is fixed""
+        # works
+        pyx.write_text(pyx_content)
+        venv.python('-c', 'import complex')
+    finally:
+        # restore the original content to avoid side-effects when the test fails
+        pyx.write_text(pyx_content)
