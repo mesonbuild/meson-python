@@ -284,7 +284,7 @@ def test_editable_rebuild(package_purelib_and_platlib, tmp_path, verbose, args):
             # Importing again should result in no output.
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                import pure  # noqa: F401, F811
+                import pure  # noqa: F401
             assert stdout.getvalue() == ''
 
         finally:
