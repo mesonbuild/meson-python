@@ -77,10 +77,10 @@ strict = true
 
 [tool.ruff]
 line-length = 127
-extend-ignore = [
+lint.extend-ignore = [
   'B019',
 ]
-select = [
+lint.select = [
   'B',       # flake8-bugbear
   'C4',      # flake8-comprehensions
   'E',       # pycodestyle
