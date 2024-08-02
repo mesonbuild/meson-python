@@ -138,6 +138,8 @@ jobs:
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
         if: ${{ always() }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   msvc:
     runs-on: windows-latest
