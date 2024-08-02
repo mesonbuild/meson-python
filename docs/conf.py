@@ -16,15 +16,21 @@
 
 import datetime
 import os
+import time
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 import mesonpy
+
+build_date = datetime.datetime.fromtimestamp(
+    int(os.environ.get('SOURCE_DATE_EPOCH', time.time())),
+    tz=datetime.timezone.utc,
+)
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'meson-python'
-copyright = f'2021\N{EN DASH}{datetime.date.today().year} The meson-python developers'
+copyright = f'2021\N{EN DASH}{build_date.year} The meson-python developers'
 
 # The short X.Y version
 version = mesonpy.__version__
