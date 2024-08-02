@@ -4,7 +4,8 @@
 
 ci:
   autofix_prs: false
-  autoupdate_commit_msg: 'MAINT: bump repositories'
+  autoupdate_commit_msg: 'MAINT: bump pre-commit dependencies'
+  autoupdate_schedule: 'monthly'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
