@@ -77,7 +77,7 @@ opensuse-15_task:
 
 freebsd_task:
   freebsd_instance:
-    image_family: freebsd-13-2
+    image_family: freebsd-14-0
   install_script: pkg install -y git ninja
   << : *test
 
