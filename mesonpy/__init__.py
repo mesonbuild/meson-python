@@ -669,6 +669,10 @@ class Project():
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True, parents=True)
 
+        # if the build dir is empty, add .gitignore and .hgignore files
+        if not any(self._build_dir.iterdir()):
+            _add_ignore_files(self._build_dir)
+
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
             archflags = os.environ.get('ARCHFLAGS', '').strip()
@@ -1111,11 +1115,7 @@ def build_editable(
     if not config_settings:
         config_settings = {}
     if 'build-dir' not in config_settings and 'builddir' not in config_settings:
-        build_dir = pathlib.Path('build')
-        build_dir.mkdir(exist_ok=True)
-        if not next(build_dir.iterdir(), None):
-            _add_ignore_files(build_dir)
-        config_settings['build-dir'] = os.fspath(build_dir / str(mesonpy._tags.get_abi_tag()))
+        config_settings['build-dir'] = 'build/' + mesonpy._tags.get_abi_tag()
 
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:
