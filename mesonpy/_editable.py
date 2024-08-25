@@ -255,6 +255,7 @@ def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
                     tree[path.parts[1:]] = src
     return tree
 
+
 def find_spec(fullname: str, tree: Node) -> Optional[importlib.machinery.ModuleSpec]:
     namespace = False
     parts = fullname.split('.')
