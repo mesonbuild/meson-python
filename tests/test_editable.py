@@ -77,10 +77,10 @@ def test_collect(package_complex):
 
 def test_mesonpy_meta_finder(package_complex, tmp_path):
     # build a package in a temporary directory
-    mesonpy.Project(package_complex, tmp_path)
+    project = mesonpy.Project(package_complex, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, True)
 
     # check repr
     assert repr(finder) == f'MesonpyMetaFinder(\'complex\', {str(tmp_path)!r})'
@@ -141,10 +141,10 @@ def test_mesonpy_traversable():
 def test_resources(tmp_path):
     # build a package in a temporary directory
     package_path = pathlib.Path(__file__).parent / 'packages' / 'simple'
-    mesonpy.Project(package_path, tmp_path)
+    project = mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, True)
 
     # verify that we can look up resources
     spec = finder.find_spec('simple')
@@ -160,10 +160,10 @@ def test_resources(tmp_path):
 def test_importlib_resources(tmp_path):
     # build a package in a temporary directory
     package_path = pathlib.Path(__file__).parent / 'packages' / 'simple'
-    mesonpy.Project(package_path, tmp_path)
+    project = mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, True)
 
     try:
         # install the finder in the meta path
@@ -210,9 +210,9 @@ def test_editble_reentrant(venv, editable_imports_itself_during_build):
 
 def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
     # build a package in a temporary directory
-    mesonpy.Project(package_complex, tmp_path)
+    project = mesonpy.Project(package_complex, tmp_path)
 
-    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), ['ninja'])
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, True)
 
     try:
         # install editable hooks
@@ -244,8 +244,8 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
 
 
 def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
-    mesonpy.Project(package_custom_target_dir, tmp_path)
-    finder = _editable.MesonpyMetaFinder('package', {'package'}, os.fspath(tmp_path), ['ninja'])
+    project = mesonpy.Project(package_custom_target_dir, tmp_path)
+    finder = _editable.MesonpyMetaFinder('package', {'package'}, os.fspath(tmp_path), project._build_command, True)
     try:
         sys.meta_path.insert(0, finder)
         import package.generated.one
