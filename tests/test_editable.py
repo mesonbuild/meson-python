@@ -75,6 +75,8 @@ def test_collect(package_complex):
     assert tree['complex']['more']['__init__.py'] == os.path.join(root, 'complex', 'more', '__init__.py')
 
 
+@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+                    reason='Cython version too old, no free-threaded CPython support')
 def test_mesonpy_meta_finder(package_complex, tmp_path):
     # build a package in a temporary directory
     project = mesonpy.Project(package_complex, tmp_path)
@@ -208,6 +210,8 @@ def test_editble_reentrant(venv, editable_imports_itself_during_build):
         path.write_text(code)
 
 
+@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+                    reason='Cython version too old, no free-threaded CPython support')
 def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
     # build a package in a temporary directory
     project = mesonpy.Project(package_complex, tmp_path)
