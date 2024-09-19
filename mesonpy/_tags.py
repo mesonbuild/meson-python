@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import platform
+import struct
 import sys
 import sysconfig
 import typing
@@ -25,7 +26,7 @@ INTERPRETERS = {
 }
 
 
-_32_BIT_INTERPRETER = sys.maxsize <= 2**32
+_32_BIT_INTERPRETER = struct.calcsize('P') == 4
 
 
 def get_interpreter_tag() -> str:
