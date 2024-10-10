@@ -14,41 +14,50 @@ import pytest
 
 import mesonpy
 
-from .conftest import in_git_repo_context
+from .conftest import in_git_repo_context, metadata
 
 
 def test_no_pep621(sdist_library):
     with tarfile.open(sdist_library, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read().decode()
+        sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: library
         Version: 1.0.0
-    ''')
+    '''))
 
 
 def test_pep621(sdist_full_metadata):
     with tarfile.open(sdist_full_metadata, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read().decode()
+        sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read()
 
-    metadata = textwrap.dedent('''\
+    meta = metadata(sdist_pkg_info)
+
+    # pyproject-metadata prior to 0.9.0 strips trailing newlines
+    meta['license'] = meta['license'].rstrip()
+
+    # pyproject-metadata 0.9.0 and later does not emit Home-Page
+    meta.pop('home_page', None)
+    # nor normalizes Project-URL keys
+    meta['project_urls'] = {k.lower(): v for k, v in meta['project_urls'].items()}
+
+    assert meta == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: full-metadata
         Version: 1.2.3
         Summary: Some package with all of the PEP 621 metadata
         Keywords: full,metadata,keyword with spaces
-        Home-page: https://example.com
         Author: Jane Doe
         Author-Email: Unknown <jhon.doe@example.com>
         Maintainer-Email: Jane Doe <jane.doe@example.com>
         License: some license
         Classifier: Development Status :: 4 - Beta
         Classifier: Programming Language :: Python
-        Project-URL: Homepage, https://example.com
-        Project-URL: Documentation, https://readthedocs.org
-        Project-URL: Repository, https://github.com/mesonbuild/meson-python
-        Project-URL: Changelog, https://github.com/mesonbuild/meson-python/blob/master/CHANGELOG.rst
+        Project-URL: homepage, https://example.com
+        Project-URL: documentation, https://readthedocs.org
+        Project-URL: repository, https://github.com/mesonbuild/meson-python
+        Project-URL: changelog, https://github.com/mesonbuild/meson-python/blob/master/CHANGELOG.rst
         Requires-Python: >=3.7
         Requires-Dist: a
         Requires-Dist: b>1
@@ -67,20 +76,18 @@ def test_pep621(sdist_full_metadata):
         # full-metadata
 
         An example package with all of the PEP 621 metadata!
-    ''')
-
-    assert sdist_pkg_info == metadata
+    '''))
 
 
 def test_dynamic_version(sdist_dynamic_version):
     with tarfile.open(sdist_dynamic_version, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read().decode()
+        sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: dynamic-version
         Version: 1.0.0
-    ''')
+    '''))
 
 
 def test_contents(sdist_library):
