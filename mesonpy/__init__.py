@@ -896,7 +896,10 @@ class Project():
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('--tags')
         parser.add_argument('--skip-subprojects', nargs='?', const='*', default='')
-        args, _ = parser.parse_known_args(self._meson_args['install'])
+        args, others = parser.parse_known_args(self._meson_args['install'])
+        if others:
+            otherstr = ' '.join(others)
+            warnings.warn(f'unhandled arguments specified for meson install: {otherstr}', stacklevel=1)
         install_tags = {t.strip() for t in args.tags.split(',')} if args.tags else None
         skip_subprojects = {p for p in (p.strip() for p in args.skip_subprojects.split(',')) if p}
 
