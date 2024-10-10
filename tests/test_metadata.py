@@ -53,6 +53,8 @@ def test_missing_version(package_missing_version):
         re.escape('Required "project.version" field is missing'),
         # pyproject-metatadata 0.8.0 and later
         re.escape('Field "project.version" missing and "version" not specified in "project.dynamic"'),
+        # pyproject-metatadata 0.9.0 and later
+        re.escape('Field "project.version" missing and \'version\' not specified in "project.dynamic"'),
     ))
     with pytest.raises(pyproject_metadata.ConfigurationError, match=match):
         Metadata.from_pyproject(pyproject, pathlib.Path())
