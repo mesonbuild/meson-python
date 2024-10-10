@@ -202,7 +202,7 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         'dist-args': ('cli-dist',),
         'setup-args': ('cli-setup',),
         'compile-args': ('cli-compile',),
-        'install-args': ('cli-install',),
+        'install-args': ('--skip-subprojects=cli',),
     }
 
     with in_git_repo_context():
@@ -224,16 +224,15 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
     # check that the user options are passed to the invoked commands
     expected = [
         # sdist: calls to 'meson setup' and 'meson dist'
-        ['config-setup', 'cli-setup'],
-        ['config-dist', 'cli-dist'],
+        {'config-setup', 'cli-setup'},
+        {'config-dist', 'cli-dist'},
         # wheel: calls to 'meson setup', 'meson compile', and 'meson install'
-        ['config-setup', 'cli-setup'],
-        ['config-compile', 'cli-compile'],
-        ['config-install', 'cli-install'],
+        {'config-setup', 'cli-setup'},
+        {'config-compile', 'cli-compile'},
+        {'--skip-subprojects=config', '--skip-subprojects=cli'},
     ]
     for expected_args, cmd_args in zip(expected, args):
-        for arg in expected_args:
-            assert arg in cmd_args
+        assert expected_args.issubset(cmd_args)
 
 
 @pytest.mark.parametrize('package', ('top-level', 'meson-args'))
