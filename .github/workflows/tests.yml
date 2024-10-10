@@ -55,7 +55,8 @@ jobs:
         meson:
           -
         pyproject_metadata:
-          -
+          - '==0.8.1'
+          - '==0.9.0b7'
         include:
           - os: ubuntu-latest
             python: 'pypy-3.9'
