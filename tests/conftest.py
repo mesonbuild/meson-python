@@ -16,12 +16,19 @@ import warnings
 
 from venv import EnvBuilder
 
+import packaging.metadata
 import packaging.version
 import pytest
 
 import mesonpy
 
 from mesonpy._util import chdir
+
+
+def metadata(data):
+    meta, other = packaging.metadata.parse_email(data)
+    assert not other
+    return meta
 
 
 def adjust_packaging_platform_tag(platform: str) -> str:
