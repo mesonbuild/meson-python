@@ -17,12 +17,20 @@ import mesonpy
 
 from .conftest import in_git_repo_context
 
+import packaging
+import pyproject_metadata
+
+if packaging.version.Version(pyproject_metadata.__version__) < packaging.version.Version('0.9a0'):
+    _normalize = lambda x: x
+else:
+    _normalize = lambda x: x.replace('\n\n', '\n')
+
 
 def test_no_pep621(sdist_library):
     with tarfile.open(sdist_library, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert _normalize(sdist_pkg_info) == _metadata('''\
         Metadata-Version: 2.1
         Name: library
         Version: 1.0.0
@@ -79,7 +87,7 @@ def test_dynamic_version(sdist_dynamic_version):
     with tarfile.open(sdist_dynamic_version, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert _normalize(sdist_pkg_info) == textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: dynamic-version
         Version: 1.0.0
