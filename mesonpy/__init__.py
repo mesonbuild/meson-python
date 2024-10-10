@@ -119,7 +119,6 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[T
                         f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
-                assert os.path.isdir(src)
                 exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
                 exclude_dirs = {os.path.normpath(x) for x in target.get('exclude_dirs', [])}
                 for root, dirnames, filenames in os.walk(src):
