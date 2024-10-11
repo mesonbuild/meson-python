@@ -4,13 +4,15 @@
 
 import os
 import pathlib
-import re
 import stat
 import sys
 import tarfile
 import textwrap
 import time
 
+from itertools import chain
+
+import packaging.metadata
 import pytest
 
 import mesonpy
@@ -18,27 +20,33 @@ import mesonpy
 from .conftest import in_git_repo_context
 
 
+def metadata(data):
+    meta, other = packaging.metadata.parse_email(data)
+    assert not other
+    return meta
+
+
 def test_no_pep621(sdist_library):
     with tarfile.open(sdist_library, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: library
         Version: 1.0.0
-    ''')
+    '''))
 
 
 def test_pep621(sdist_full_metadata):
     with tarfile.open(sdist_full_metadata, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read().decode()
+        sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read()
 
-    metadata = re.escape(textwrap.dedent('''\
+    expected = metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: full-metadata
         Version: 1.2.3
         Summary: Some package with all of the PEP 621 metadata
-        Keywords: full metadata
+        Keywords: full, metadata
         Home-page: https://example.com
         Author: Jane Doe
         Author-Email: Unknown <jhon.doe@example.com>
@@ -70,20 +78,25 @@ def test_pep621(sdist_full_metadata):
         An example package with all of the PEP 621 metadata!
     '''))
 
-    # pyproject-metadata 0.8.0 and later uses a comma to separate keywords
-    expr = metadata.replace(r'Keywords:\ full\ metadata', r'Keywords:\ full[ ,]metadata')
-    assert re.fullmatch(expr, sdist_pkg_info)
+    meta = metadata(sdist_pkg_info)
+
+    # pyproject-metadata prior to 0.8.0 incorrectly uses whitespace to separate keywords
+    meta['keywords'] = list(chain(*(k.split(' ') for k in meta['keywords'])))
+    # pyproject-metadata prior to 0.9.0 strips trailing newlines
+    meta['license'] = meta['license'].rstrip()
+
+    assert meta == expected
 
 
 def test_dynamic_version(sdist_dynamic_version):
     with tarfile.open(sdist_dynamic_version, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read().decode()
 
-    assert sdist_pkg_info == textwrap.dedent('''\
+    assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
         Name: dynamic-version
         Version: 1.0.0
-    ''')
+    '''))
 
 
 def test_contents(sdist_library):
