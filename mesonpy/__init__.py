@@ -53,6 +53,17 @@ import mesonpy._wheelfile
 from mesonpy._compat import cached_property, read_binary
 
 
+try:
+    from packaging.licenses import canonicalize_license_expression
+except ImportError:
+    # PEP-639 support requires packaging >= 24.2.
+    def canonicalize_license_expression(s: str) -> str:
+        warnings.warn(
+            'canonicalization and validation of license expression in "project.license" '
+            'as defined by PEP-639 requires packaging version 24.2 or later.', stacklevel=2)
+        return s
+
+
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
@@ -265,6 +276,10 @@ class Metadata(pyproject_metadata.StandardMetadata):
             fields = ', '.join(f'"{x}"' for x in unsupported_dynamic)
             raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
 
+        # Validate license field to be a valid SDPX license expression.
+        if isinstance(metadata.license, str):
+            object.__setattr__(metadata, 'license', canonicalize_license_expression(metadata.license))
+
         return metadata
 
     # Local fix for a bug in pyproject-metadata. See
@@ -365,13 +380,6 @@ class _WheelBuilder():
         return f'.{self._metadata.distribution_name}.mesonpy.libs'
 
     @property
-    def _license_file(self) -> Optional[pathlib.Path]:
-        license_ = self._metadata.license
-        if license_:
-            return license_.file
-        return None
-
-    @property
     def wheel(self) -> bytes:
         """Return WHEEL file for dist-info."""
         return textwrap.dedent('''
@@ -453,9 +461,17 @@ class _WheelBuilder():
         if self.entrypoints_txt:
             whl.writestr(f'{self._distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
-        # add license (see https://github.com/mesonbuild/meson-python/issues/88)
-        if self._license_file:
-            whl.write(self._license_file, f'{self._distinfo_dir}/{os.path.basename(self._license_file)}')
+        # Add pre-PEP-639 license files.
+        if isinstance(self._metadata.license, pyproject_metadata.License):
+            license_file = self._metadata.license.file
+            if license_file:
+                whl.write(license_file, f'{self._distinfo_dir}/{os.path.basename(license_file)}')
+
+        # Add PEP-639 license-files. Use ``getattr()`` for compatibility with pyproject-metadata < 0.9.0.
+        license_files = getattr(self._metadata, 'license_files', None)
+        if license_files:
+            for f in license_files:
+                whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
 
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
