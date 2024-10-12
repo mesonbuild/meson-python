@@ -12,6 +12,12 @@ import pytest
 from mesonpy import Metadata
 
 
+try:
+    import packaging.licenses as packaging_licenses
+except ImportError:
+    packaging_licenses = None
+
+
 def test_package_name():
     name = 'package.Test'
     metadata = Metadata(name='package.Test', version=packaging.version.Version('0.0.1'))
@@ -56,4 +62,26 @@ def test_missing_version(package_missing_version):
         re.escape('Field "project.version" missing and \'version\' not specified in "project.dynamic"'),
     ))
     with pytest.raises(pyproject_metadata.ConfigurationError, match=match):
+        Metadata.from_pyproject(pyproject, pathlib.Path())
+
+
+@pytest.mark.skipif(packaging_licenses is None, reason='packaging too old')
+def test_normalize_license():
+    pyproject = {'project': {
+        'name': 'test',
+        'version': '1.2.3',
+        'license': 'mit or bsd-3-clause',
+    }}
+    metadata = Metadata.from_pyproject(pyproject, pathlib.Path())
+    assert metadata.license == 'MIT OR BSD-3-Clause'
+
+
+@pytest.mark.skipif(packaging_licenses is None, reason='packaging too old')
+def test_invalid_license():
+    pyproject = {'project': {
+        'name': 'test',
+        'version': '1.2.3',
+        'license': 'Foo',
+    }}
+    with pytest.raises(packaging_licenses.InvalidLicenseExpression, match='Unknown license: \'foo\''):
         Metadata.from_pyproject(pyproject, pathlib.Path())
