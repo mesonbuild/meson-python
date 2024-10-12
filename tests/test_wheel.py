@@ -6,25 +6,18 @@ import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import sysconfig
 import textwrap
 
 import packaging.tags
-import pyproject_metadata
 import pytest
 import wheel.wheelfile
 
 import mesonpy
 
-from .conftest import adjust_packaging_platform_tag, metadata
+from .conftest import MESON_VERSION, PYPROJECT_METADATA_VERSION, adjust_packaging_platform_tag, metadata
 
-
-PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
-
-_meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
-MESON_VERSION = tuple(map(int, _meson_ver_str.split('.')[:3]))
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 if sys.version_info <= (3, 8, 7):
