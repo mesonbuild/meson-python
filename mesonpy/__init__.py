@@ -749,14 +749,14 @@ class Project():
             # set version from meson.build if version is declared as dynamic
             if 'version' in self._metadata.dynamic:
                 version = self._meson_version
-                if version == 'undefined':
+                if version is None:
                     raise pyproject_metadata.ConfigurationError(
                         'Field "version" declared as dynamic but version is not defined in meson.build')
                 self._metadata.version = packaging.version.Version(version)
         else:
             # if project section is missing, use minimal metdata from meson.build
             name, version = self._meson_name, self._meson_version
-            if version == 'undefined':
+            if version is None:
                 raise pyproject_metadata.ConfigurationError(
                     'Section "project" missing in pyproject.toml and version is not defined in meson.build')
             self._metadata = Metadata(name=name, version=packaging.version.Version(version))
@@ -870,17 +870,19 @@ class Project():
 
     @property
     def _meson_name(self) -> str:
-        """Name in meson.build."""
-        name = self._info('intro-projectinfo')['descriptive_name']
-        assert isinstance(name, str)
-        return name
+        """The project name specified with ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo')['descriptive_name']
+        assert isinstance(value, str)
+        return value
 
     @property
-    def _meson_version(self) -> str:
-        """Version in meson.build."""
-        name = self._info('intro-projectinfo')['version']
-        assert isinstance(name, str)
-        return name
+    def _meson_version(self) -> Optional[str]:
+        """The version specified with the ``version`` argument to ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo')['version']
+        assert isinstance(value, str)
+        if value == 'undefined':
+            return None
+        return value
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
