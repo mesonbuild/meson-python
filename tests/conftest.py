@@ -18,11 +18,18 @@ from venv import EnvBuilder
 
 import packaging.metadata
 import packaging.version
+import pyproject_metadata
 import pytest
 
 import mesonpy
 
 from mesonpy._util import chdir
+
+
+PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
+
+_meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+MESON_VERSION = tuple(map(int, _meson_ver_str.split('.')[:3]))
 
 
 def metadata(data):
