@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import sysconfig
 import textwrap
@@ -17,11 +16,8 @@ import wheel.wheelfile
 
 import mesonpy
 
-from .conftest import adjust_packaging_platform_tag
+from .conftest import MESON_VERSION, PYPROJECT_METADATA_VERSION, adjust_packaging_platform_tag, metadata
 
-
-_meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
-MESON_VERSION = tuple(map(int, _meson_ver_str.split('.')[:3]))
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 if sys.version_info <= (3, 8, 7):
@@ -138,6 +134,29 @@ def test_configure_data(wheel_configure_data):
 def test_contents_license_file(wheel_license_file):
     artifact = wheel.wheelfile.WheelFile(wheel_license_file)
     assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
+
+
+@pytest.mark.xfail(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_license_pep639(wheel_license_pep639):
+    artifact = wheel.wheelfile.WheelFile(wheel_license_pep639)
+
+    assert wheel_contents(artifact) == {
+        'license_pep639-1.0.0.dist-info/METADATA',
+        'license_pep639-1.0.0.dist-info/RECORD',
+        'license_pep639-1.0.0.dist-info/WHEEL',
+        'license_pep639-1.0.0.dist-info/licenses/LICENSES/Apache-2.0.txt',
+        'license_pep639-1.0.0.dist-info/licenses/LICENSES/LGPL-2.1-or-later.txt',
+    }
+
+    assert metadata(artifact.read('license_pep639-1.0.0.dist-info/METADATA')) == metadata(textwrap.dedent('''\
+        Metadata-Version: 2.4
+        Name: license-pep639
+        Version: 1.0.0
+        License-Expression: Apache-2.0 OR LGPL-2.1-or-later
+        License-File: LICENSES/Apache-2.0.txt
+        License-File: LICENSES/LGPL-2.1-or-later.txt
+    '''))
 
 
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
