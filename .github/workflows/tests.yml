@@ -51,7 +51,7 @@ jobs:
           - windows-latest
         python:
           - '3.7'
-          - '3.12'
+          - '3.13'
         meson:
           -
         pyproject_metadata:
@@ -291,8 +291,8 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - '3.8'
-          - '3.11'
+          - '3.9'
+          - '3.12'
         meson:
           -
 
