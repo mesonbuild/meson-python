@@ -38,7 +38,7 @@ Changelog
   emit a message indicating that the package is being rebuilt but
   suppress any output when there is no work to do.
 
-Daniele Nicolodi, Loïc Estève, Ralf Gommers  --- 16-04-2024
+Daniele Nicolodi, Loïc Estève, Ralf Gommers --- 16-04-2024
 
 
 0.15.0
