@@ -11,6 +11,32 @@
 Changelog
 +++++++++
 
+0.17.0
+======
+
+- Refuse to build wheels targeting the limited API and free-threaded CPython:
+  the free-threaded CPython build does not support the limited API yet.
+- Always use UTF-8 encoding for writing Meson native and cross files. Always
+  use UTF-8 encoding for reading read Meson introspection data and
+  ``pyproject.toml``.
+- Do not include uncommitted changes when creating source distributions.
+  Previously, uncommitted changes to files under version control were
+  included, but not untracked files. There was no strong use case for this
+  behavior and it was too surprising to keep it.
+- Make source distribution reproducible: use the modification time of
+  ``pyproject.toml`` for the generated files in the source distribution
+  archives.
+- Disable the ``abi3`` wheel tag for PyPy when building wheels targeting the
+  limited API: PyPy supports the limited API but not the stable ABI.
+- Raise ``ImportError`` when the package rebuild fails when importing an
+  editable install.
+- Fix the wheel platform tag for GraalPy.
+- Add ``.gitignore`` and ``.hgignore`` files to build directory if it is empty.
+- Allow ``install_subdir()`` of missing directories.
+
+Christian Clauss, Daniele Nicolodi, Jonathan J. Helmus, Leo Singer, Loïc
+Estève, Michael Simacek, Ralf Gommers, Simon McVittie --- 19-10-2024.
+
 0.16.0
 ======
 
