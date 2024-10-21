@@ -65,7 +65,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
-__version__ = '0.17.0.dev0'
+__version__ = '0.18.0.dev0'
 
 
 _NINJA_REQUIRED_VERSION = '1.8.2'
