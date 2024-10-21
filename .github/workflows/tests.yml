@@ -87,7 +87,13 @@ jobs:
             meson: '~=1.2.3'
           - os: ubuntu-latest
             python: '3.12'
-            meson: '~=1.3'
+            meson: '~=1.3.0'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.4.0'
+          - os: ubuntu-latest
+            python: '3.12'
+            meson: '~=1.5.0'
           # Test with Meson master branch.
           - os: ubuntu-latest
             python: '3.12'
