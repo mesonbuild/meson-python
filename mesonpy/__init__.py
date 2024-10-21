@@ -65,9 +65,6 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
-__version__ = '0.18.0.dev0'
-
-
 _NINJA_REQUIRED_VERSION = '1.8.2'
 _MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
 
