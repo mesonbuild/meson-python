@@ -19,7 +19,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import in_git_repo_context, package_dir
+from .conftest import MESON_VERSION, PYPROJECT_METADATA_VERSION, in_git_repo_context, metadata, package_dir
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
@@ -38,6 +38,94 @@ def test_missing_dynamic_version(package_missing_dynamic_version):
     with pytest.raises(pyproject_metadata.ConfigurationError, match='Field "version" declared as dynamic but'):
         with mesonpy._project():
             pass
+
+
+@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_meson_build_metadata(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', version: '1.2.3', license: 'MIT', license_files: 'LICENSE')
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('LICENSE').write_text('')
+
+    p = mesonpy.Project(tmp_path, tmp_path / 'build')
+
+    assert metadata(bytes(p._metadata.as_rfc822())) == metadata(textwrap.dedent('''\
+        Metadata-Version: 2.4
+        Name: test
+        Version: 1.2.3
+        License-Expression: MIT
+        License-File: LICENSE
+    '''))
+
+
+@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_dynamic_license(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+        dynamic = ['license']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', license: 'MIT')
+    '''), encoding='utf8')
+
+    p = mesonpy.Project(tmp_path, tmp_path / 'build')
+
+    assert metadata(bytes(p._metadata.as_rfc822())) == metadata(textwrap.dedent('''\
+        Metadata-Version: 2.4
+        Name: test
+        Version: 1.0.0
+        License-Expression: MIT
+    '''))
+
+
+@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_dynamic_license_files(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+        dynamic = ['license', 'license-files']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', license: 'MIT', license_files: ['LICENSE'])
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('LICENSE').write_text('')
+
+    p = mesonpy.Project(tmp_path, tmp_path / 'build')
+
+    assert metadata(bytes(p._metadata.as_rfc822())) == metadata(textwrap.dedent('''\
+        Metadata-Version: 2.4
+        Name: test
+        Version: 1.0.0
+        License-Expression: MIT
+        License-File: LICENSE
+    '''))
 
 
 def test_user_args(package_user_args, tmp_path, monkeypatch):
