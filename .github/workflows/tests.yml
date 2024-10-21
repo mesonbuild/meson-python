@@ -104,7 +104,7 @@ jobs:
           # Test with oldest supported pyproject-metadata
           - os: ubuntu-latest
             python: '3.12'
-            pyproject_metadata: '==0.7.1'
+            pyproject_metadata: '==0.8.0'
           # Tets with pyproject-metadata release candidate
           - os: ubuntu-latest
             python: '3.12'
