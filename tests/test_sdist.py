@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-import os
 import pathlib
 import stat
 import sys
@@ -139,7 +138,7 @@ def test_contents_unstaged(package_pure, tmp_path):
         try:
             pathlib.Path('pure.py').write_text(new)
             pathlib.Path('other.py').touch()
-            sdist_path = mesonpy.build_sdist(os.fspath(tmp_path))
+            sdist_path = mesonpy.build_sdist(tmp_path)
         finally:
             pathlib.Path('pure.py').write_text(old)
             pathlib.Path('other.py').unlink()
