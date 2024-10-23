@@ -18,6 +18,7 @@ from venv import EnvBuilder
 
 import packaging.metadata
 import packaging.version
+import pyproject_metadata
 import pytest
 
 import mesonpy
@@ -25,8 +26,25 @@ import mesonpy
 from mesonpy._util import chdir
 
 
+PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
+
+_meson_ver_str = subprocess.run(['meson', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+MESON_VERSION = tuple(map(int, _meson_ver_str.split('.')[:3]))
+
+
 def metadata(data):
     meta, other = packaging.metadata.parse_email(data)
+    # PEP-639 support requires packaging >= 24.1.  Add minimal
+    # handling of PEP-639 fields here to allow testing with older
+    # packaging releases.
+    value = other.pop('license-expression', None)
+    if value is not None:
+        # The ``License-Expression`` header should appear only once.
+        assert len(value) == 1
+        meta['license-expression'] = value[0]
+    value = other.pop('license-file', None)
+    if value is not None:
+        meta['license-file'] = value
     assert not other
     return meta
 

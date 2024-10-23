@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'license-pep639'
+version = '1.0.0'
+license = 'Apache-2.0 OR LGPL-2.1-or-later'
+license-files = ['LICENSES/*']

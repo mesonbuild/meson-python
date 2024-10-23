@@ -17,7 +17,7 @@ import mesonpy
 from .conftest import in_git_repo_context, metadata
 
 
-def test_no_pep621(sdist_library):
+def test_meson_build_metadata(sdist_library):
     with tarfile.open(sdist_library, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('library-1.0.0/PKG-INFO').read()
 
@@ -28,7 +28,7 @@ def test_no_pep621(sdist_library):
     '''))
 
 
-def test_pep621(sdist_full_metadata):
+def test_pep621_metadata(sdist_full_metadata):
     with tarfile.open(sdist_full_metadata, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read()
 
