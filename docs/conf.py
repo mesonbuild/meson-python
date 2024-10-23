@@ -7,18 +7,14 @@ import os
 import time
 import sys
 
-sys.path.insert(0, os.path.abspath('..'))
-import mesonpy
-
 _build_time = int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
 _build_date = datetime.datetime.fromtimestamp(_build_time, tz=datetime.timezone.utc)
 
 project = 'meson-python'
-version = release = mesonpy.__version__
 copyright = f'2021\N{EN DASH}{_build_date.year} The meson-python developers'
 
 html_theme = 'furo'
-html_title = f'meson-python {version}'
+html_title = f'meson-python'
 
 extensions = [
     'sphinx_copybutton',
