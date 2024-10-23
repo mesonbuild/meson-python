@@ -65,7 +65,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
-__version__ = '0.17.0.dev0'
+__version__ = '0.17.1'
 
 
 _NINJA_REQUIRED_VERSION = '1.8.2'
@@ -246,7 +246,7 @@ class Metadata(pyproject_metadata.StandardMetadata):
         return name
 
     @classmethod
-    def from_pyproject(
+    def from_pyproject(  # type: ignore[override]
         cls,
         data: Mapping[str, Any],
         project_dir: Path = os.path.curdir,
@@ -367,7 +367,7 @@ class _WheelBuilder():
     @property
     def _license_file(self) -> Optional[pathlib.Path]:
         license_ = self._metadata.license
-        if license_:
+        if license_ and isinstance(license_, pyproject_metadata.License):
             return license_.file
         return None
 
