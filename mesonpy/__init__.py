@@ -240,7 +240,7 @@ class Metadata(pyproject_metadata.StandardMetadata):
         super().__init__(name, *args, **kwargs)
 
     @classmethod
-    def from_pyproject(
+    def from_pyproject(  # type: ignore[override]
         cls,
         data: Mapping[str, Any],
         project_dir: Path = os.path.curdir,
@@ -345,7 +345,7 @@ class _WheelBuilder():
     @property
     def _license_file(self) -> Optional[pathlib.Path]:
         license_ = self._metadata.license
-        if license_:
+        if license_ and isinstance(license_, pyproject_metadata.License):
             return license_.file
         return None
 
