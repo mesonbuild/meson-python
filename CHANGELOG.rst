@@ -11,6 +11,14 @@
 Changelog
 +++++++++
 
+0.17.1
+======
+
+- Update tests to work with newly released ``pyproject-metadata`` 0.9.0.
+- Fix tests to work when not executed in a git work tree.
+
+Daniele Nicolodi --- 23-10-2024.
+
 0.17.0
 ======
 
