@@ -82,6 +82,7 @@ the use of ``meson-python`` and Meson for Python packaging.
    how-to-guides/config-settings
    how-to-guides/meson-args
    how-to-guides/debug-builds
+   how-to-guides/shared-libraries
    reference/limitations
    projects-using-meson-python
 
