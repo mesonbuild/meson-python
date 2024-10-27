@@ -18,7 +18,7 @@ name = 'meson-python'
 version = '0.18.0.dev0'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.rst'
-requires-python = '>= 3.7'
+requires-python = '>= 3.8'
 license = { file = 'LICENSES/MIT.txt' }
 keywords = ['meson', 'build', 'backend', 'pep517', 'package']
 maintainers = [

@@ -55,12 +55,12 @@ manylinux-python3.13t_task:
     PATH: "/opt/python/cp313-cp313t/bin/:${PATH}"
   << : *test
 
-manylinux-python3.7_task:
+manylinux-python3.8_task:
   container:
     dockerfile: ci/manylinux.docker
     cpu: 1
   env:
-    PATH: "/opt/python/cp37-cp37m/bin/:${PATH}"
+    PATH: "/opt/python/cp38-cp38/bin/:${PATH}"
   << : *test
 
 miniconda_task:
