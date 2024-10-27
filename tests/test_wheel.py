@@ -179,6 +179,14 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
+    venv.pip('install', wheel_sharedlib_in_package)
+    output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
+    assert int(output) == 7
+    output = venv.python('-c', 'import mypkg; print(mypkg.example_prod(6, 7))')
+    assert int(output) == 42
+
+
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
 def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
