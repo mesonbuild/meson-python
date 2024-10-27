@@ -50,7 +50,7 @@ jobs:
           - macos-13
           - windows-latest
         python:
-          - '3.7'
+          - '3.8'
           - '3.13'
         meson:
           -
