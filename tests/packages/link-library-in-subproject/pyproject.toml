@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2022 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python']
+
+[project]
+name = 'link-library-in-subproject'
+version = '1.2.3'
+
+[tool.meson-python.args]
+setup = ['--default-library=static']
+install = ['--skip-subprojects']
