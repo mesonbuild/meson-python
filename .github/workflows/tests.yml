@@ -72,9 +72,6 @@ jobs:
           # from the stdlib in Python 3.12, thus test with Pythn 3.11.
           - os: ubuntu-latest
             python: '3.11'
-            meson: '~=0.63.3'
-          - os: ubuntu-latest
-            python: '3.11'
             meson: '~=0.64.0'
           - os: ubuntu-latest
             python: '3.11'
