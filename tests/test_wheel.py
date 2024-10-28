@@ -187,6 +187,13 @@ def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     assert int(output) == 42
 
 
+@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='Meson version too old')
+def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
+    venv.pip('install', wheel_link_library_in_subproject)
+    output = venv.python('-c', 'import foo; print(foo.example_sum(3, 6))')
+    assert int(output) == 9
+
+
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
 def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
