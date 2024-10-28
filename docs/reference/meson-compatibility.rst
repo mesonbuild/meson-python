@@ -15,9 +15,9 @@ maintain compatibility with as old as possible Meson releases.
 However, some functionality is available only with more recent Meson
 versions.
 
-.. option:: 0.63.3
+.. option:: 0.64.0
 
-   Meson is 0.63.3 is the minimum required version.
+   Meson is 0.64.0 is the minimum required version.
 
 .. option:: 1.1.0
 

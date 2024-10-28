@@ -6,7 +6,7 @@
 build-backend = 'mesonpy'
 backend-path = ['.']
 requires = [
-  'meson >= 0.63.3; python_version < "3.12"',
+  'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
   'packaging >= 19.0',
   'pyproject-metadata >= 0.8.0',
@@ -34,7 +34,7 @@ classifiers = [
 ]
 
 dependencies = [
-  'meson >= 0.63.3; python_version < "3.12"',
+  'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
   'packaging >= 19.0',
   'pyproject-metadata >= 0.8.0',
