@@ -19,7 +19,7 @@ import pytest
 
 import mesonpy
 
-from .conftest import MESON_VERSION, PYPROJECT_METADATA_VERSION, in_git_repo_context, metadata, package_dir
+from .conftest import MESON_VERSION, in_git_repo_context, metadata, package_dir
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
@@ -40,7 +40,6 @@ def test_missing_dynamic_version(package_missing_dynamic_version):
             pass
 
 
-@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
 @pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
 @pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
 def test_meson_build_metadata(tmp_path):
@@ -67,7 +66,6 @@ def test_meson_build_metadata(tmp_path):
     '''))
 
 
-@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
 @pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
 @pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
 def test_dynamic_license(tmp_path):
@@ -96,7 +94,6 @@ def test_dynamic_license(tmp_path):
     '''))
 
 
-@pytest.mark.skipif(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
 @pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
 @pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
 def test_dynamic_license_list(tmp_path):

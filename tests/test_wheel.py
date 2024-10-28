@@ -16,7 +16,7 @@ import wheel.wheelfile
 
 import mesonpy
 
-from .conftest import MESON_VERSION, PYPROJECT_METADATA_VERSION, adjust_packaging_platform_tag, metadata
+from .conftest import MESON_VERSION, adjust_packaging_platform_tag, metadata
 
 
 EXT_SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
@@ -136,7 +136,6 @@ def test_contents_license_file(wheel_license_file):
     assert artifact.read('license_file-1.0.0.dist-info/LICENSE.custom').rstrip() == b'Hello!'
 
 
-@pytest.mark.xfail(PYPROJECT_METADATA_VERSION < (0, 9), reason='pyproject-metadata too old')
 @pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
 def test_license_pep639(wheel_license_pep639):
     artifact = wheel.wheelfile.WheelFile(wheel_license_pep639)

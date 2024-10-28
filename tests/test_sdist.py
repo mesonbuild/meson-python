@@ -32,14 +32,8 @@ def test_pep621_metadata(sdist_full_metadata):
         sdist_pkg_info = sdist.extractfile('full_metadata-1.2.3/PKG-INFO').read()
 
     meta = metadata(sdist_pkg_info)
-
-    # pyproject-metadata prior to 0.9.0 strips trailing newlines
+    # Including the trailing newline in the expected value is inconvenient.
     meta['license'] = meta['license'].rstrip()
-
-    # pyproject-metadata 0.9.0 and later does not emit Home-Page
-    meta.pop('home_page', None)
-    # nor normalizes Project-URL keys
-    meta['project_urls'] = {k.lower(): v for k, v in meta['project_urls'].items()}
 
     assert meta == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
