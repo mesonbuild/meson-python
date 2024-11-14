@@ -228,7 +228,8 @@ Building the project
 
 Before continuing, ensure you have committed the three files we created so far
 to your Git repository - ``meson-python`` will only take into account the files
-that Git knows about.
+that Git knows about, and an sdist is created from the most recent commit -
+uncommitted changes are ignored.
 
 To generate the distribution artifacts we will use the `pypa/build`_ tool. It
 will create a temporary virtual environment, install all the required build
@@ -240,6 +241,9 @@ dependencies, and ask ``meson-python`` to build the artifacts.
    $ python -m build
 
 If the build succeeded, you'll have the binary artifacts in the ``dist`` folder.
+Note that by default, ``python -m build`` builds an sdist first, and then a
+wheel from the sdist. If you only want one artifact, add ``--sdist`` or
+``--wheel`` to the invocation.
 
 .. admonition:: Building wheels for multiple platforms
    :class: tip
