@@ -242,6 +242,9 @@ dependencies, and ask ``meson-python`` to build the artifacts.
    $ python -m build
 
 If the build succeeded, you'll have the binary artifacts in the ``dist`` folder.
+Note that by default, ``python -m build`` builds an sdist first, and then a
+wheel from the sdist. If you only want one artifact, add ``--sdist`` or
+``--wheel`` to the invocation.
 
 .. admonition:: Building wheels for multiple platforms
    :class: tip
