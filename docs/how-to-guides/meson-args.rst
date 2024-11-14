@@ -83,7 +83,7 @@ To set this option temporarily at build-time:
 
       .. code-block:: console
 
-         $ python -m build -Csetup-args="--default-library=static" .
+         $ python -m build --wheel -Csetup-args="--default-library=static" .
 
    .. tab-item:: pip
       :sync: key_pip
@@ -125,7 +125,7 @@ To set this option temporarily at build-time:
 
       .. code-block:: console
 
-         $ python -m build -Cinstall-args="--tags=runtime,python-runtime" .
+         $ python -m build --wheel -Cinstall-args="--tags=runtime,python-runtime" .
 
    .. tab-item:: pip
       :sync: key_pip
@@ -158,7 +158,7 @@ To set this option temporarily at build-time:
 
       .. code-block:: console
 
-         $ python -m build -Csetup-args="-Doptimization=3" .
+         $ python -m build --wheel -Csetup-args="-Doptimization=3" .
 
    .. tab-item:: pip
       :sync: key_pip
@@ -207,11 +207,11 @@ To set this option temporarily at build-time:
 
       .. code-block:: console
 
-	 $ python -m build -Csetup-args="--vsenv" .
+         $ python -m build --wheel -Csetup-args="--vsenv" .
 
    .. tab-item:: pip
       :sync: key_pip
 
       .. code-block:: console
 
-	 $ python -m pip wheel -Csetup-args="--vsenv" .
+         $ python -m pip wheel -Csetup-args="--vsenv" .

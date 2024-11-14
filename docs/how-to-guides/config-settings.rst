@@ -24,7 +24,7 @@ the ``-C`` short command line option:
 
       .. code-block:: console
 
-         $ python -m build \
+         $ python -m build --wheel \
                -Csetup-args="-Doption=true" \
                -Csetup-args="-Dvalue=1" \
                -Ccompile-args="-j6"
@@ -34,11 +34,10 @@ the ``-C`` short command line option:
 
       .. code-block:: console
 
-	 $ python -m pip wheel . \
+         $ python -m pip wheel . \
                -Csetup-args="-Doption=true" \
                -Csetup-args="-Dvalue=1" \
                -Ccompile-args="-j6"
-
 
 Refer to the `build`_ and `pip`_ documentation for details.  This
 example uses the ``python -m pip wheel`` command to build a Python wheel
@@ -76,18 +75,18 @@ For example:
 .. tab-set::
 
     .. tab-item:: pypa/build
-        :sync: key_pypa_build
+       :sync: key_pypa_build
 
-	.. code-block:: console
+       .. code-block:: console
 
-	   $ python -m build -Cbuild-dir=build
+          $ python -m build --wheel -Cbuild-dir=build
 
     .. tab-item:: pip
-        :sync: key_pip
+       :sync: key_pip
 
-	.. code-block:: console
+       .. code-block:: console
 
-	   $ python -m pip install . -Cbuild-dir=build
+          $ python -m pip install . -Cbuild-dir=build
 
 After running this command, the ``build`` directory will contain all
 the build artifacts and support files created by ``meson``, ``ninja``
