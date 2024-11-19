@@ -51,7 +51,7 @@ def test_unsupported_dynamic():
         Metadata.from_pyproject(pyproject, pathlib.Path())
 
 
-def test_missing_version(package_missing_version):
+def test_missing_version():
     pyproject = {'project': {
         'name': 'missing-version',
     }}
