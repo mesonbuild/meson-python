@@ -98,10 +98,6 @@ jobs:
           - os: windows-latest
             python: '3.12'
             meson: '@git+https://github.com/mesonbuild/meson.git'
-          # Test with oldest supported pyproject-metadata
-          - os: ubuntu-latest
-            python: '3.12'
-            pyproject_metadata: '==0.8.0'
 
     steps:
       - name: Checkout

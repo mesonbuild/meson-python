@@ -53,6 +53,20 @@ import mesonpy._wheelfile
 from mesonpy._compat import cached_property, read_binary
 
 
+try:
+    from packaging.licenses import InvalidLicenseExpression, canonicalize_license_expression
+except ImportError:
+    # PEP-639 support requires packaging >= 24.2.
+    def canonicalize_license_expression(s: str) -> str:  # type: ignore[misc]
+        warnings.warn(
+            'canonicalization and validation of license expression in "project.license" '
+            'as defined by PEP-639 requires packaging version 24.2 or later.', stacklevel=2)
+        return s
+
+    class InvalidLicenseExpression(Exception):  # type: ignore[no-redef]
+        pass
+
+
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
@@ -64,6 +78,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
+
+_PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
+_SUPPORTED_DYNAMIC_FIELDS = {'version', } if _PYPROJECT_METADATA_VERSION < (0, 9) else {'version', 'license', 'license-files'}
 
 _NINJA_REQUIRED_VERSION = '1.8.2'
 _MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
@@ -246,10 +263,14 @@ class Metadata(pyproject_metadata.StandardMetadata):
         metadata = super().from_pyproject(data, project_dir, metadata_version)
 
         # Check for unsupported dynamic fields.
-        unsupported_dynamic = set(metadata.dynamic) - {'version', }
+        unsupported_dynamic = set(metadata.dynamic) - _SUPPORTED_DYNAMIC_FIELDS  # type: ignore[operator]
         if unsupported_dynamic:
             fields = ', '.join(f'"{x}"' for x in unsupported_dynamic)
             raise pyproject_metadata.ConfigurationError(f'Unsupported dynamic fields: {fields}')
+
+        # Validate license field to be a valid SDPX license expression.
+        if isinstance(metadata.license, str):
+            metadata.license = canonicalize_license_expression(metadata.license)
 
         return metadata
 
@@ -340,13 +361,6 @@ class _WheelBuilder():
         return f'.{self._metadata.distribution_name}.mesonpy.libs'
 
     @property
-    def _license_file(self) -> Optional[pathlib.Path]:
-        license_ = self._metadata.license
-        if license_ and isinstance(license_, pyproject_metadata.License):
-            return license_.file
-        return None
-
-    @property
     def wheel(self) -> bytes:
         """Return WHEEL file for dist-info."""
         return textwrap.dedent('''
@@ -428,9 +442,17 @@ class _WheelBuilder():
         if self.entrypoints_txt:
             whl.writestr(f'{self._distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
-        # add license (see https://github.com/mesonbuild/meson-python/issues/88)
-        if self._license_file:
-            whl.write(self._license_file, f'{self._distinfo_dir}/{os.path.basename(self._license_file)}')
+        # Add pre-PEP-639 license files.
+        if isinstance(self._metadata.license, pyproject_metadata.License):
+            license_file = self._metadata.license.file
+            if license_file:
+                whl.write(license_file, f'{self._distinfo_dir}/{os.path.basename(license_file)}')
+
+        # Add PEP-639 license-files. Use ``getattr()`` for compatibility with pyproject-metadata < 0.9.0.
+        license_files = getattr(self._metadata, 'license_files', None)
+        if license_files:
+            for f in license_files:
+                whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
 
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
@@ -708,17 +730,34 @@ class Project():
             # set version from meson.build if version is declared as dynamic
             if 'version' in self._metadata.dynamic:
                 version = self._meson_version
-                if version == 'undefined':
+                if version is None:
                     raise pyproject_metadata.ConfigurationError(
                         'Field "version" declared as dynamic but version is not defined in meson.build')
                 self._metadata.version = packaging.version.Version(version)
+            if 'license' in self._metadata.dynamic:
+                license = self._meson_license
+                if license is None:
+                    raise pyproject_metadata.ConfigurationError(
+                        'Field "license" declared as dynamic but license is not specified in meson.build')
+                # mypy is not happy when analyzing typing based on
+                # pyproject-metadata < 0.9 where license needs to be of
+                # License type.  However, this code is not executed if
+                # pyproject-metadata is older than 0.9 because then dynamic
+                # license is not allowed.
+                self._metadata.license = license  # type: ignore[assignment, unused-ignore]
+            if 'license-files' in self._metadata.dynamic:
+                self._metadata.license_files = self._meson_license_files
         else:
             # if project section is missing, use minimal metdata from meson.build
             name, version = self._meson_name, self._meson_version
-            if version == 'undefined':
+            if not version:
                 raise pyproject_metadata.ConfigurationError(
                     'Section "project" missing in pyproject.toml and version is not defined in meson.build')
-            self._metadata = Metadata(name=name, version=packaging.version.Version(version))
+            kwargs = {
+                'license': self._meson_license,
+                'license_files': self._meson_license_files
+            } if _PYPROJECT_METADATA_VERSION >= (0, 9) else {}
+            self._metadata = Metadata(name=name, version=packaging.version.Version(version), **kwargs)
 
         # verify that we are running on a supported interpreter
         if self._metadata.requires_python:
@@ -829,17 +868,44 @@ class Project():
 
     @property
     def _meson_name(self) -> str:
-        """Name in meson.build."""
-        name = self._info('intro-projectinfo')['descriptive_name']
-        assert isinstance(name, str)
-        return name
+        """The project name specified with ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo')['descriptive_name']
+        assert isinstance(value, str)
+        return value
 
     @property
-    def _meson_version(self) -> str:
-        """Version in meson.build."""
-        name = self._info('intro-projectinfo')['version']
-        assert isinstance(name, str)
-        return name
+    def _meson_version(self) -> Optional[str]:
+        """The version specified with the ``version`` argument to ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo')['version']
+        assert isinstance(value, str)
+        if value == 'undefined':
+            return None
+        return value
+
+    @property
+    def _meson_license(self) -> Optional[str]:
+        """The license specified with the ``license`` argument to ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo').get('license', None)
+        if value is None:
+            return None
+        assert isinstance(value, list)
+        if len(value) > 1:
+            raise pyproject_metadata.ConfigurationError(
+                'Using a list of strings for the license declared in meson.build is ambiguous: use a SPDX license expression')
+        value = value[0]
+        assert isinstance(value, str)
+        if value == 'unknown':
+            return None
+        return str(canonicalize_license_expression(value)) # str() is to make mypy happy
+
+    @property
+    def _meson_license_files(self) -> Optional[List[pathlib.Path]]:
+        """The license files specified with the ``license_files`` argument to ``project()`` in meson.build."""
+        value = self._info('intro-projectinfo').get('license_files', None)
+        if not value:
+            return None
+        assert isinstance(value, list)
+        return [pathlib.Path(x) for x in value]
 
     def sdist(self, directory: Path) -> pathlib.Path:
         """Generates a sdist (source distribution) in the specified directory."""
@@ -847,7 +913,8 @@ class Project():
         self._run(self._meson + ['dist', '--allow-dirty', '--no-tests', '--formats', 'gztar', *self._meson_args['dist']])
 
         dist_name = f'{self._metadata.distribution_name}-{self._metadata.version}'
-        meson_dist_name = f'{self._meson_name}-{self._meson_version}'
+        meson_version = self._meson_version or 'undefined'
+        meson_dist_name = f'{self._meson_name}-{meson_version}'
         meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist_path = pathlib.Path(directory, f'{dist_name}.tar.gz')
         pyproject_toml_mtime = 0
@@ -1023,7 +1090,7 @@ def _pyproject_hook(func: Callable[P, T]) -> Callable[P, T]:
         warnings.showwarning = _showwarning
         try:
             return func(*args, **kwargs)
-        except (Error, pyproject_metadata.ConfigurationError) as exc:
+        except (Error, InvalidLicenseExpression, pyproject_metadata.ConfigurationError) as exc:
             prefix = f'{style.ERROR}meson-python: error:{style.RESET} '
             _log('\n' + textwrap.indent(str(exc), prefix))
             raise SystemExit(1) from exc
