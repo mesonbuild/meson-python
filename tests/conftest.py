@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import contextlib
+import importlib.metadata
 import os
 import os.path
 import pathlib
@@ -58,8 +59,8 @@ package_dir = pathlib.Path(__file__).parent / 'packages'
 
 @contextlib.contextmanager
 def in_git_repo_context(path=os.path.curdir):
-    # Resist the tentation of using pathlib.Path here: it is not
-    # supporded by subprocess in Python 3.7.
+    # Resist the temptation of using pathlib.Path here: it is not
+    # supported by subprocess in Python 3.7.
     path = os.path.abspath(path)
     shutil.rmtree(os.path.join(path, '.git'), ignore_errors=True)
     try:
@@ -96,10 +97,6 @@ class VEnv(EnvBuilder):
 
         # Free-threaded Python 3.13 requires pip 24.1b1 or later.
         if sysconfig.get_config_var('Py_GIL_DISABLED'):
-            # importlib.metadata is not available on Python 3.7 and
-            # earlier, however no-gil builds are available only for
-            # Python 3.13 and later.
-            import importlib.metadata
             if packaging.version.Version(importlib.metadata.version('pip')) < packaging.version.Version('24.1b1'):
                 self.pip('install', '--upgrade', 'pip >= 24.1b1')
 
