@@ -19,7 +19,7 @@ After that is done, you may release the project by following these steps:
 
    #. Create the release commit
 
-      #. Bump the versions in ``pyproject.toml``.
+      #. Bump the versions in ``pyproject.toml`` and in ``mesonpy/__init__.py``.
       #. Create ``CHANGELOG.rst`` section for the new release and fill it.
       #. The commit message should read: ``REL: set version to X.Y.Z``
 

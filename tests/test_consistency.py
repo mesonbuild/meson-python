@@ -11,6 +11,15 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
+import mesonpy
+
+
+def test_version():
+    pyproject = pathlib.Path(__file__).parent.parent.joinpath('pyproject.toml')
+    with open(pyproject, 'rb') as f:
+        project_version = tomllib.load(f)['project']['version']
+    assert mesonpy.__version__ == project_version
+
 
 def test_pyproject_dependencies():
     pyproject = pathlib.Path(__file__).parent.parent.joinpath('pyproject.toml')
