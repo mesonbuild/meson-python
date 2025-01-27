@@ -41,9 +41,9 @@ debian-unstable_task:
     cpu: 1
   << : *test
 
-fedora-37_task:
+fedora-41_task:
   container:
-    dockerfile: ci/fedora-37.docker
+    dockerfile: ci/fedora-41.docker
     cpu: 1
   << : *test
 
