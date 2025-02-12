@@ -77,8 +77,8 @@ opensuse-15_task:
 
 freebsd_task:
   freebsd_instance:
-    image_family: freebsd-14-0
-  install_script: pkg install -y git ninja
+    image_family: freebsd-14-2
+  install_script: pkg install -y git ninja patchelf
   << : *test
 
 macos-arm64_task:
