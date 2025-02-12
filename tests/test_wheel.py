@@ -172,7 +172,6 @@ def test_contents(package_library, wheel_library):
     }
 
 
-@pytest.mark.skipif(sys.platform not in {'linux', 'darwin', 'sunos5'}, reason='Not supported on this platform')
 def test_local_lib(venv, wheel_link_against_local_lib):
     venv.pip('install', wheel_link_against_local_lib)
     output = venv.python('-c', 'import example; print(example.example_sum(1, 2))')
@@ -200,9 +199,9 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
-    expected = {f'{origin}/.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
+    expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / f'example{EXT_SUFFIX}'))
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     # Verify that rpath is a superset of the expected one: linking to
     # the Python runtime may require additional rpath entries.
     assert rpath >= expected

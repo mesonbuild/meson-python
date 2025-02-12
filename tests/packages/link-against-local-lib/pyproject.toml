@@ -5,3 +5,6 @@
 [build-system]
 build-backend = 'mesonpy'
 requires = ['meson-python']
+
+[tool.meson-python]
+allow-windows-internal-shared-libs = true

@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "examplelib.h"
+
 int sum(int a, int b) {
 	return a + b;
 }
