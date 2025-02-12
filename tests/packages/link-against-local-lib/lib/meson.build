@@ -5,5 +5,6 @@
 example_lib = shared_library(
     'example',
     'examplelib.c',
+    c_args: lib_compile_args,
     install: true,
 )
