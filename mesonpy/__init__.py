@@ -115,6 +115,7 @@ _INSTALLATION_PATH_MAP = {
 class Entry(typing.NamedTuple):
     dst: pathlib.Path
     src: str
+    rpath: Optional[str] = None
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Entry]]:
@@ -163,7 +164,7 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[E
                         filedst = dst / relpath
                         wheel_files[path].append(Entry(filedst, filesrc))
             else:
-                wheel_files[path].append(Entry(dst, src))
+                wheel_files[path].append(Entry(dst, src, target.get('install_rpath')))
 
     return wheel_files
 
@@ -422,25 +423,25 @@ class _WheelBuilder():
             return 'abi3'
         return None
 
-    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path) -> None:
+    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile,
+                      origin: Path, destination: pathlib.Path, rpath: Optional[str]) -> None:
         """Add a file to the wheel."""
 
-        if self._has_internal_libs:
-            if _is_native(origin):
-                if sys.platform == 'win32' and not self._allow_windows_shared_libs:
-                    raise NotImplementedError(
-                        'Loading shared libraries bundled in the Python wheel on Windows requires '
-                        'setting the DLL load path or preloading. See the documentation for '
-                        'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
-
-                # When an executable, libray, or Python extension module is
+        if _is_native(origin):
+            libspath = None
+            if self._has_internal_libs:
+                # When an executable, library, or Python extension module is
                 # dynamically linked to a library built as part of the project,
                 # Meson adds a library load path to it pointing to the build
                 # directory, in the form of a relative RPATH entry. meson-python
-                # relocates the shared libraries to the $project.mesonpy.libs
+                # relocates the shared libraries to the ``.<project-name>.mesonpy.libs``
                 # folder. Rewrite the RPATH to point to that folder instead.
                 libspath = os.path.relpath(self._libs_dir, destination.parent)
-                mesonpy._rpath.fix_rpath(origin, libspath)
+
+            # Adjust RPATH: remove build RPATH added by meson, add an RPATH
+            # entries as per above, and add any ``install_rpath`` specified in
+            # meson.build
+            mesonpy._rpath.fix_rpath(origin, rpath, libspath)
 
         try:
             wheel_file.write(origin, destination.as_posix())
@@ -469,6 +470,13 @@ class _WheelBuilder():
                 whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
 
     def build(self, directory: Path) -> pathlib.Path:
+
+        if sys.platform == 'win32' and self._has_internal_libs and not self._allow_windows_shared_libs:
+            raise ConfigError(
+                'Loading shared libraries bundled in the Python wheel on Windows requires '
+                'setting the DLL load path or preloading. See the documentation for '
+                'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
+
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
@@ -478,7 +486,7 @@ class _WheelBuilder():
                 root = 'purelib' if self._pure else 'platlib'
 
                 for path, entries in self._manifest.items():
-                    for dst, src in entries:
+                    for dst, src, rpath in entries:
                         counter.update(src)
 
                         if path == root:
@@ -489,7 +497,7 @@ class _WheelBuilder():
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
-                        self._install_path(whl, src, dst)
+                        self._install_path(whl, src, dst, rpath)
 
         return wheel_file
 

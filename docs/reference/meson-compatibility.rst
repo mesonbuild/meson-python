@@ -52,6 +52,10 @@ versions.
    populate the package license and license files from the ones
    declared via the ``project()`` call in ``meson.build``.
 
+   Meson 1.6.0 or later is also required for support for the
+   ``install_rpath`` argument to Meson functions declaring build rules
+   for object files.
+
 .. option:: 1.9.0
 
    Meson 1.9.0 or later is required to support building for iOS.
