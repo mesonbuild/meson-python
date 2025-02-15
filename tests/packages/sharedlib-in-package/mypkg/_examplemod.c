@@ -4,36 +4,23 @@
 
 #include <Python.h>
 
-#include "examplelib.h"
-#include "examplelib2.h"
+#include "lib.h"
 
-static PyObject* example_sum(PyObject* self, PyObject *args)
+static PyObject* example_prodsum(PyObject* self, PyObject *args)
 {
-    int a, b;
-    if (!PyArg_ParseTuple(args, "ii", &a, &b)) {
+    int a, b, x;
+
+    if (!PyArg_ParseTuple(args, "iii", &a, &b, &x)) {
         return NULL;
     }
 
-    long result = sum(a, b);
-
-    return PyLong_FromLong(result);
-}
-
-static PyObject* example_prod(PyObject* self, PyObject *args)
-{
-    int a, b;
-    if (!PyArg_ParseTuple(args, "ii", &a, &b)) {
-        return NULL;
-    }
-
-    long result = prod(a, b);
+    long result = prodsum(a, b, x);
 
     return PyLong_FromLong(result);
 }
 
 static PyMethodDef methods[] = {
-    {"example_prod", (PyCFunction)example_prod, METH_VARARGS, NULL},
-    {"example_sum", (PyCFunction)example_sum, METH_VARARGS, NULL},
+    {"prodsum", (PyCFunction)example_prodsum, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL},
 };
 
