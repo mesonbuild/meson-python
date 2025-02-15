@@ -178,10 +178,8 @@ def test_sharedlib_in_package_legacy(venv, wheel_sharedlib_in_package_legacy):
 
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
-    assert int(output) == 7
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_prod(6, 7))')
-    assert int(output) == 42
+    output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
+    assert int(output) == 11
 
 
 @pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='meson too old')
