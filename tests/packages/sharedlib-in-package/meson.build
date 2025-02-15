@@ -6,4 +6,5 @@ project('sharedlib-in-package', 'c', version: '1.0.0')
 
 py = import('python').find_installation(pure: false)
 
+subdir('src')
 subdir('mypkg')
