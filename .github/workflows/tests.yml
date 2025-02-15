@@ -91,6 +91,9 @@ jobs:
           - os: ubuntu-latest
             python: '3.12'
             meson: '~=1.5.0'
+          - os: ubuntu-latest
+            python: '3.13'
+            meson: '~=1.6.0'
           # Test with Meson master branch.
           - os: ubuntu-latest
             python: '3.12'

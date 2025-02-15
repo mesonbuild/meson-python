@@ -53,6 +53,10 @@ versions.
    declared via the ``project()`` call in ``meson.build``. This also
    requires ``pyproject-metadata`` version 0.9.0 or later.
 
+   Meson 1.6.0 or later is also required for support for the
+   ``install_rpath`` argument to Meson functions declaring build rules
+   for object files.
+
 Build front-ends by default build packages in an isolated Python
 environment where build dependencies are installed. Most often, unless
 a package or its build dependencies declare explicitly a version
