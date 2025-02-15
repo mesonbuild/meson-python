@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "mypkg_dll.h"
+#include "lib.h"
+#include "sublib.h"
 
-MYPKG_DLL int prod(int a, int b) {
-    return a * b;
+int prodsum(int a, int b, int x) {
+    return prod(a, x) + b;
 }
