@@ -60,7 +60,7 @@ jobs:
           - os: ubuntu-latest
             python: 'pypy-3.9'
           - os: ubuntu-latest
-            python: 'pypy-3.10'
+            python: 'pypy-3.11'
           - os: ubuntu-latest
             python: '3.8'
           - os: ubuntu-latest
