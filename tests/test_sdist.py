@@ -216,3 +216,22 @@ def test_reproducible(package_pure, tmp_path):
 
     assert sdist_path_a == sdist_path_b
     assert tmp_path.joinpath('a', sdist_path_a).read_bytes() == tmp_path.joinpath('b', sdist_path_b).read_bytes()
+
+@pytest.mark.filterwarnings('ignore:symbolic link')
+def test_symlinks(tmp_path, sdist_symlinks):
+    with tarfile.open(sdist_symlinks, 'r:gz') as sdist:
+        names = {member.name for member in sdist.getmembers()}
+        mtimes = {member.mtime for member in sdist.getmembers()}
+
+    assert names == {
+        'symlinks-1.0.0/PKG-INFO',
+        'symlinks-1.0.0/meson.build',
+        'symlinks-1.0.0/pyproject.toml',
+        'symlinks-1.0.0/__init__.py',
+        'symlinks-1.0.0/submodule/__init__.py',
+        'symlinks-1.0.0/submodule/aaa.py',
+        'symlinks-1.0.0/submodule/bbb.py',
+    }
+
+    # All the archive members have a valid mtime.
+    assert 0 not in mtimes
