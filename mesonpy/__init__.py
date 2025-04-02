@@ -25,6 +25,7 @@ import pathlib
 import platform
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import sysconfig
@@ -717,6 +718,62 @@ class Project():
                     ''')
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+        elif sysconfig.get_platform().startswith('ios-'):
+            ios_ver = platform.ios_ver()
+
+            arch = platform.machine()
+            family = 'aarch64' if arch == 'arm64' else arch
+            subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
+            min_ios_version = os.getenv("IPHONEOS_DEPLOYMENT_TARGET", ios_ver.release)
+
+            cflags = []
+            for flag in shlex.split(sysconfig.get_config_var('CFLAGS')):
+                # Ensure the iOS minimum version reflects the current build environment
+                if flag.startswith('-mios-version-min='):
+                    cflags.append(f"-mios-version-min={min_ios_version}")
+                # Don't propagate warning settings or preprocessor defines
+                elif not (flag.startswith('-W') or flag.startswith('-D')):
+                    cflags.append(flag)
+
+            ldflags = []
+            # BLDSHARED includes the linker as the first argument; we just need the flags.
+            for flag in shlex.split(sysconfig.get_config_var('BLDSHARED'))[1:]:
+                # Ensure the iOS minimum version reflects the current build environment
+                if flag.startswith('-mios-version-min='):
+                    ldflags.append(f"-mios-version-min={min_ios_version}")
+                # Don't propagate linking flags; those will be added by meson.
+                elif flag not in {"-dynamiclib"}:
+                    ldflags.append(flag)
+
+            cross_file_data = textwrap.dedent(f'''
+                [binaries]
+                c = '{arch}-apple-{subsystem}-clang'
+                cpp = '{arch}-apple-{subsystem}-clang++'
+                objc = '{arch}-apple-{subsystem}-clang'
+                objcpp = '{arch}-apple-{subsystem}-clang++'
+                ar = '{arch}-apple-{subsystem}-ar'
+
+                [built-in options]
+                c_args = {cflags!r}
+                cpp_args = {cflags!r}
+                objc_args = {cflags!r}
+
+                c_link_args = {ldflags!r}
+                cpp_link_args = {ldflags!r}
+                objc_link_args = {ldflags!r}
+
+                [host_machine]
+                system = 'ios'
+                subsystem = {subsystem!r}
+                cpu = {arch!r}
+                cpu_family = {family!r}
+                endian = 'little'
+
+                [properties]
+                longdouble_format = 'IEEE_DOUBLE_LE'
+            ''')
+            self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
+            self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
