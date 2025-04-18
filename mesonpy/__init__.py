@@ -24,8 +24,8 @@ import os
 import pathlib
 import platform
 import re
-import shutil
 import shlex
+import shutil
 import subprocess
 import sys
 import sysconfig
@@ -724,7 +724,7 @@ class Project():
             arch = platform.machine()
             family = 'aarch64' if arch == 'arm64' else arch
             subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
-            min_ios_version = os.getenv("IPHONEOS_DEPLOYMENT_TARGET", ios_ver.release)
+            min_ios_version = os.getenv('IPHONEOS_DEPLOYMENT_TARGET', ios_ver.release)
 
             cflags = []
             for flag in shlex.split(sysconfig.get_config_var('CFLAGS')):
@@ -742,7 +742,7 @@ class Project():
                 if flag.startswith('-mios-version-min='):
                     ldflags.append(f"-mios-version-min={min_ios_version}")
                 # Don't propagate linking flags; those will be added by meson.
-                elif flag not in {"-dynamiclib"}:
+                elif flag not in {'-dynamiclib'}:
                     ldflags.append(flag)
 
             cross_file_data = textwrap.dedent(f'''

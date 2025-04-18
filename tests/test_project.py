@@ -9,6 +9,7 @@ import shutil
 import sys
 import sysconfig
 import textwrap
+
 from unittest.mock import Mock
 
 
@@ -378,7 +379,7 @@ def test_archflags_envvar_parsing_invalid(package_purelib_and_platlib, monkeypat
         os.environ.pop('_PYTHON_HOST_PLATFORM', None)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 13), reason="Requires Python 3.13 or higher")
+@pytest.mark.skipif(sys.version_info < (3, 13), reason='Requires Python 3.13 or higher')
 @pytest.mark.parametrize('multiarch', [
     'arm64-iphoneos',
     'arm64-iphonesimulator',
@@ -386,21 +387,21 @@ def test_archflags_envvar_parsing_invalid(package_purelib_and_platlib, monkeypat
 ])
 def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     arch, abi = multiarch.split('-')
-    subsystem = "ios-simulator" if abi == "iphonesimulator" else "ios"
+    subsystem = 'ios-simulator' if abi == 'iphonesimulator' else 'ios'
 
     # Mock being on iOS
-    monkeypatch.setattr(sys, "platform", "ios")
-    monkeypatch.setattr(platform, "machine", Mock(return_value=arch))
-    monkeypatch.setattr(sysconfig, "get_platform", Mock(return_value=f"ios-13.0-{multiarch}"))
-    ios_ver = platform.IOSVersionInfo("iOS", "13.0", "iPhone", multiarch.endswith('simulator'))
-    monkeypatch.setattr(platform, "ios_ver", Mock(return_value=ios_ver))
+    monkeypatch.setattr(sys, 'platform', 'ios')
+    monkeypatch.setattr(platform, 'machine', Mock(return_value=arch))
+    monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value=f"ios-13.0-{multiarch}"))
+    ios_ver = platform.IOSVersionInfo('iOS', '13.0', 'iPhone', multiarch.endswith('simulator'))
+    monkeypatch.setattr(platform, 'ios_ver', Mock(return_value=ios_ver))
 
     # Create an iOS project.
     project = mesonpy.Project(source_dir=package_simple, build_dir=tmp_path)
 
     # Meson configuration points at the cross file
-    assert project._meson_args["setup"] == [
-        "--cross-file",
+    assert project._meson_args['setup'] == [
+        '--cross-file',
         os.fspath(tmp_path / 'meson-python-cross-file.ini'),
     ]
 
