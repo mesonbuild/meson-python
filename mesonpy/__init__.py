@@ -106,6 +106,7 @@ _INSTALLATION_PATH_MAP = {
     # custom location
     '{libdir}': 'mesonpy-libs',
     '{libdir_shared}': 'mesonpy-libs',
+    '{libdir_static}': 'mesonpy-libs',
 }
 
 
