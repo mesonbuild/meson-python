@@ -24,7 +24,6 @@ import os
 import pathlib
 import platform
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -725,7 +724,7 @@ class Project():
             family = 'aarch64' if arch == 'arm64' else arch
             subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
             min_ios_version = os.getenv('IPHONEOS_DEPLOYMENT_TARGET', ios_ver.release)
-            prefix = sysconfig.get_config_var("prefix")
+            prefix = sysconfig.get_config_var('prefix')
 
             cross_file_data = textwrap.dedent(f'''
                 [binaries]
