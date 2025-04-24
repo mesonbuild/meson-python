@@ -252,38 +252,6 @@ jobs:
         run: python -m pytest --showlocals -vv
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
-  pyston:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python:
-          - '3.8'
-        meson:
-          -
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pyston
-        run: |
-          wget https://github.com/pyston/pyston/releases/download/pyston_2.3.5/pyston_2.3.5_20.04_amd64.deb
-          sudo apt install $(pwd)/pyston_2.3.5_20.04_amd64.deb
-
-      - name: Install Ninja
-        run: sudo apt-get install ninja-build
-
-      - name: Install Meson
-        run: python -m pip install "meson ${{ matrix.meson }}"
-        if: ${{ matrix.meson }}
-
-      - name: Install
-        run: pyston -m pip install .[test]
-
-      - name: Run tests
-        run: pyston -m pytest --showlocals -vv
-
   homebrew:
     runs-on: macos-latest
     strategy:
