@@ -725,42 +725,20 @@ class Project():
             family = 'aarch64' if arch == 'arm64' else arch
             subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
             min_ios_version = os.getenv('IPHONEOS_DEPLOYMENT_TARGET', ios_ver.release)
-
-            cflags = []
-            for flag in shlex.split(sysconfig.get_config_var('CFLAGS')):
-                # Ensure the iOS minimum version reflects the current build environment
-                if flag.startswith('-mios-version-min='):
-                    cflags.append(f"-mios-version-min={min_ios_version}")
-                # Don't propagate warning settings or preprocessor defines
-                elif not (flag.startswith('-W') or flag.startswith('-D')):
-                    cflags.append(flag)
-
-            ldflags = []
-            # BLDSHARED includes the linker as the first argument; we just need the flags.
-            for flag in shlex.split(sysconfig.get_config_var('BLDSHARED'))[1:]:
-                # Ensure the iOS minimum version reflects the current build environment
-                if flag.startswith('-mios-version-min='):
-                    ldflags.append(f"-mios-version-min={min_ios_version}")
-                # Don't propagate linking flags; those will be added by meson.
-                elif flag not in {'-dynamiclib'}:
-                    ldflags.append(flag)
+            prefix = sysconfig.get_config_var("prefix")
 
             cross_file_data = textwrap.dedent(f'''
                 [binaries]
-                c = '{arch}-apple-{subsystem}-clang'
-                cpp = '{arch}-apple-{subsystem}-clang++'
-                objc = '{arch}-apple-{subsystem}-clang'
-                objcpp = '{arch}-apple-{subsystem}-clang++'
-                ar = '{arch}-apple-{subsystem}-ar'
+                c = ['{arch}-apple-{subsystem}-clang', '-mios-version-min={min_ios_version}']
+                cpp = ['{arch}-apple-{subsystem}-clang++', '-mios-version-min={min_ios_version}']
+                objc = ['{arch}-apple-{subsystem}-clang', '-mios-version-min={min_ios_version}']
+                objcpp = ['{arch}-apple-{subsystem}-clang++', '-mios-version-min={min_ios_version}']
+                ar = ['{arch}-apple-{subsystem}-ar']
 
                 [built-in options]
-                c_args = {cflags!r}
-                cpp_args = {cflags!r}
-                objc_args = {cflags!r}
-
-                c_link_args = {ldflags!r}
-                cpp_link_args = {ldflags!r}
-                objc_link_args = {ldflags!r}
+                c_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
+                cpp_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
+                objc_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
 
                 [host_machine]
                 system = 'ios'
