@@ -379,7 +379,7 @@ def test_archflags_envvar_parsing_invalid(package_purelib_and_platlib, monkeypat
         os.environ.pop('_PYTHON_HOST_PLATFORM', None)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 13), reason='Requires Python 3.13 or higher')
+@pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
 @pytest.mark.parametrize('multiarch', [
     'arm64-iphoneos',
     'arm64-iphonesimulator',
@@ -400,10 +400,7 @@ def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     project = mesonpy.Project(source_dir=package_simple, build_dir=tmp_path)
 
     # Meson configuration points at the cross file
-    assert project._meson_args['setup'] == [
-        '--cross-file',
-        os.fspath(tmp_path / 'meson-python-cross-file.ini'),
-    ]
+    assert project._meson_args['setup'] == ['--cross-file', os.fspath(tmp_path / 'meson-python-cross-file.ini')]
 
     # Meson config files exist, and have some relevant keys
     assert (tmp_path / 'meson-python-native-file.ini').exists()

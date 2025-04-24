@@ -75,7 +75,7 @@ def test_python_host_platform(monkeypatch):
     assert mesonpy._tags.get_platform_tag().endswith('x86_64')
 
 
-@pytest.mark.skipif(sys.version_info < (3, 13), reason='Requires Python 3.13 or higher')
+@pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
 def test_ios_platform_tag(monkeypatch):
     # Mock being on iOS
     monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value='ios-13.0-arm64-iphoneos'))
