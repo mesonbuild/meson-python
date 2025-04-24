@@ -1000,6 +1000,10 @@ class Project():
 
                     sdist.addfile(member, file)
 
+                elif not member.isdir() and not member.issym():
+                    warnings.warn(
+                        f'special file in the source archive ignored: {member.name}', stacklevel=1)
+
             # Add 'PKG-INFO'.
             member = tarfile.TarInfo(f'{dist_name}/PKG-INFO')
             member.uid = member.gid = 0
