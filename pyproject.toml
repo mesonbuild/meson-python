@@ -33,7 +33,6 @@ classifiers = [
   'Programming Language :: Python',
   'Topic :: Software Development :: Build Tools',
 ]
-
 dependencies = [
   'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
@@ -43,7 +42,13 @@ dependencies = [
   'tomli >= 1.0.0; python_version < "3.11"',
 ]
 
-[project.optional-dependencies]
+[project.urls]
+homepage = 'https://github.com/mesonbuild/meson-python'
+repository = 'https://github.com/mesonbuild/meson-python'
+documentation = 'https://mesonbuild.com/meson-python/'
+changelog = 'https://mesonbuild.com/meson-python/changelog.html'
+
+[dependency-groups]
 test = [
   'build',
   'pytest >= 6.0',
@@ -60,12 +65,6 @@ docs = [
   'sphinx-design >= 0.1.0',
   'sphinxext-opengraph >= 0.7.0',
 ]
-
-[project.urls]
-homepage = 'https://github.com/mesonbuild/meson-python'
-repository = 'https://github.com/mesonbuild/meson-python'
-documentation = 'https://mesonbuild.com/meson-python/'
-changelog = 'https://mesonbuild.com/meson-python/changelog.html'
 
 
 [tool.mypy]

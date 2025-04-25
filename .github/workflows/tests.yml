@@ -139,7 +139,7 @@ jobs:
         if: ${{ matrix.dependencies }}
 
       - name: Install
-        run: python -m pip install .[test]
+        run: python -m pip install . --group test
 
       - name: Run tests
         run: python -m pytest --showlocals -vv --cov --cov-report=xml
@@ -182,7 +182,7 @@ jobs:
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: python -m pip install .[test]
+        run: python -m pip install . --group test
 
       - name: Run tests
         run: python -m pytest --showlocals -vv
@@ -255,7 +255,7 @@ jobs:
           pushd /usr/share/python-wheels/
           python -m pip download setuptools pip
           popd
-          python -m pip install .[test]
+          python -m pip install . --group test
         shell: C:\cygwin\bin\env.exe CYGWIN_NOWINPATH=1 CHERE_INVOKING=1 C:\cygwin\bin\bash.exe -leo pipefail -o igncr {0}
 
       - name: Run tests
@@ -294,7 +294,7 @@ jobs:
         if: ${{ matrix.meson }}
 
       - name: Install
-        run: python -m pip install .[test]
+        run: python -m pip install . --group test
 
       - name: Run tests
         run: python -m pytest --showlocals -vv
