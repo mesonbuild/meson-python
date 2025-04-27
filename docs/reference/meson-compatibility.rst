@@ -50,8 +50,7 @@ versions.
    Meson 1.6.0 or later is required to support ``license`` and
    ``license-files`` dynamic fields in ``pyproject.toml`` and to
    populate the package license and license files from the ones
-   declared via the ``project()`` call in ``meson.build``. This also
-   requires ``pyproject-metadata`` version 0.9.0 or later.
+   declared via the ``project()`` call in ``meson.build``.
 
 Build front-ends by default build packages in an isolated Python
 environment where build dependencies are installed. Most often, unless
