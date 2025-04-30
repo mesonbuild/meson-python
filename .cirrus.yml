@@ -8,6 +8,7 @@ test_template: &test
     - python3 --version
     - python3 -m venv env
     - . env/bin/activate
+    - python3 -m pip install git+https://github.com/mesonbuild/meson.git@refs/pull/14535/head
     - python3 -m pip install .[test]
     - python3 -m pytest
 
