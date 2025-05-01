@@ -409,5 +409,5 @@ def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     cross_config = (tmp_path / 'meson-python-cross-file.ini').read_text()
 
     assert "\nsystem = 'ios'\n" in cross_config
-    assert f"\nc = ['{arch}-apple-{subsystem}-clang', '-mios-version-min=" in cross_config
+    assert f"\nc = '{arch}-apple-{subsystem}-clang'\n" in cross_config
     assert f"\nsubsystem = '{subsystem}'\n" in cross_config

@@ -723,21 +723,14 @@ class Project():
             arch = platform.machine()
             family = 'aarch64' if arch == 'arm64' else arch
             subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
-            min_ios_version = os.getenv('IPHONEOS_DEPLOYMENT_TARGET', ios_ver.release)
-            prefix = sysconfig.get_config_var('prefix')
 
             cross_file_data = textwrap.dedent(f'''
                 [binaries]
-                c = ['{arch}-apple-{subsystem}-clang', '-mios-version-min={min_ios_version}']
-                cpp = ['{arch}-apple-{subsystem}-clang++', '-mios-version-min={min_ios_version}']
-                objc = ['{arch}-apple-{subsystem}-clang', '-mios-version-min={min_ios_version}']
-                objcpp = ['{arch}-apple-{subsystem}-clang++', '-mios-version-min={min_ios_version}']
-                ar = ['{arch}-apple-{subsystem}-ar']
-
-                [built-in options]
-                c_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
-                cpp_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
-                objc_link_args = ['-mios-version-min={min_ios_version}', '-F', {prefix!r}, '-framework', 'Python']
+                c = '{arch}-apple-{subsystem}-clang'
+                cpp = '{arch}-apple-{subsystem}-clang++'
+                objc = '{arch}-apple-{subsystem}-clang'
+                objcpp = '{arch}-apple-{subsystem}-clang++'
+                ar = '{arch}-apple-{subsystem}-ar'
 
                 [host_machine]
                 system = 'ios'
@@ -745,9 +738,6 @@ class Project():
                 cpu = {arch!r}
                 cpu_family = {family!r}
                 endian = 'little'
-
-                [properties]
-                longdouble_format = 'IEEE_DOUBLE_LE'
             ''')
             self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
             self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
