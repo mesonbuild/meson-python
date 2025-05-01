@@ -168,6 +168,9 @@ def _get_ios_platform_tag() -> str:
     except ValueError:
         version = tuple(map(int, platform.ios_ver().release.split('.')))[:2]
 
+    # Although _multiarch is an internal implementation detail, it's a core part
+    # of how CPython is implemented on iOS; this attribute is also relied upon
+    # by `packaging` as part of tag determiniation.
     multiarch = sys.implementation._multiarch.replace('-', '_')
 
     return f"ios_{version[0]}_{version[1]}_{multiarch}"
