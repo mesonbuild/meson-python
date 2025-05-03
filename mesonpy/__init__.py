@@ -966,6 +966,9 @@ class Project():
                         warnings.warn(
                             f'symbolic link pointing to a directory ignored: {name}', stacklevel=1)
 
+                # Copy `member` before starting to modify it
+                member = copy.copy(member)
+
                 if member.isfile():
                     file = meson_dist.extractfile(member.name)
 
