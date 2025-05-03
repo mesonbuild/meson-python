@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project('symlinks', version: '1.0.0')
+project('symlinks')
 
 py = import('python').find_installation()
 

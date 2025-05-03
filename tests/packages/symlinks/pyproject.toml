@@ -5,3 +5,7 @@
 [build-system]
 build-backend = 'mesonpy'
 requires = ['meson-python']
+
+[project]
+name = 'symlinks'
+version = '1.0.0'
