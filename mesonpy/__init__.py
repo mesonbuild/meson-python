@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import collections
 import contextlib
+import copy
 import difflib
 import functools
 import importlib.machinery
@@ -23,6 +24,7 @@ import json
 import os
 import pathlib
 import platform
+import posixpath
 import re
 import shutil
 import subprocess
@@ -79,7 +81,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
-__version__ = '0.18.0.dev0'
+__version__ = '0.18.0'
 
 
 _PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
@@ -961,6 +963,33 @@ class Project():
 
         with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist_path) as sdist:
             for member in meson_dist.getmembers():
+                # Recursively resolve symbolic links.  The source distribution
+                # archive format specification allows for symbolic links as
+                # long as the target path does not include a '..' component.
+                # This makes symbolic links support unusable in most cases,
+                # therefore include the symbolic link targets as regular files
+                # in all cases.
+                while member.issym():
+                    name = member.name
+                    target = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
+                    try:
+                        # This can be implemented using the .replace() method
+                        # in Python 3.12 and later. The .replace() method was
+                        # added as part of PEP 706 and back-ported to Python
+                        # 3.9 and later in patch releases, thus it cannot be
+                        # relied upon until the minimum supported Python
+                        # version is 3.12.
+                        member = copy.copy(meson_dist.getmember(target))
+                        member.name = name
+                    except KeyError:
+                        warnings.warn(
+                            'symbolic link with absolute path target, pointing outside the '
+                            f'archive, or dangling ignored: {name}', stacklevel=1)
+                        break
+                    if member.isdir():
+                        warnings.warn(
+                            f'symbolic link pointing to a directory ignored: {name}', stacklevel=1)
+
                 if member.isfile():
                     file = meson_dist.extractfile(member.name)
 
@@ -994,6 +1023,10 @@ class Project():
                     member.uid = member.gid = 0
 
                     sdist.addfile(member, file)
+
+                elif not member.isdir() and not member.issym():
+                    warnings.warn(
+                        f'special file in the source archive ignored: {member.name}', stacklevel=1)
 
             # Add 'PKG-INFO'.
             member = tarfile.TarInfo(f'{dist_name}/PKG-INFO')

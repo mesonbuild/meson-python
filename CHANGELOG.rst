@@ -11,6 +11,35 @@
 Changelog
 +++++++++
 
+0.18.0
+======
+
+- Drop Python 3.7 support.
+- Bump minimum required Meson version to 0.64.0.
+- Bump minimum required ``pyproject-metadata`` version to 0.9.0 to enable
+  support for PEP 639.
+- Bump minimum required ``packaging`` version to 23.2. ``pyproject-metadata``
+  version 0.9.1 requires this version of ``packaging`` but fails to record the
+  version requirement in the package metadata. Enforcing the version
+  requirement in ``meson-python`` allows fixing possible dependency problems
+  without having ``meson-python`` depend on a very recent
+  ``pyproject-metadata`` release.
+- Add support for PEP 639 metadata fields. Canonicalization and validation of
+  the license expression requires ``packaging`` version 24.2 or later.
+- Add support for declaring the ``licence`` and ``license-files`` as dynamic
+  fields in ``pyproject.toml`` to extract the package license and license
+  files from the ones declared via the ``project()`` call in
+  ``meson.build``. This requires Meson version 1.6.0 or later.
+- Add support for ``RPATH`` handling on SunOS.
+- Include shared libraries built as part of the Meson project in the Python
+  wheels also on Windows, when explicitly enabled via the
+  ``tool.meson-python.allow-windows-internal-shared-libs`` project setting.
+- Add support for symbolic links that point to files within the source tree.
+  They are now included as regular files in the sdist archive.
+
+Daniele Nicolodi, Marcel Telka, Ralf Gommers --- 30-04-2025.
+
+
 0.17.1
 ======
 
@@ -18,6 +47,7 @@ Changelog
 - Fix tests to work when not executed in a git work tree.
 
 Daniele Nicolodi --- 23-10-2024.
+
 
 0.17.0
 ======
@@ -44,6 +74,7 @@ Daniele Nicolodi --- 23-10-2024.
 
 Christian Clauss, Daniele Nicolodi, Jonathan J. Helmus, Leo Singer, Loïc
 Estève, Michael Simacek, Ralf Gommers, Simon McVittie --- 19-10-2024.
+
 
 0.16.0
 ======
