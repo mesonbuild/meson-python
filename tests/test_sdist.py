@@ -223,6 +223,10 @@ def test_symlinks(tmp_path, sdist_symlinks):
         names = {member.name for member in sdist.getmembers()}
         mtimes = {member.mtime for member in sdist.getmembers()}
 
+    # Check that the symlinks `baz.py` and `qux.py` pointing outside the
+    # source tree are not included. These files are present in the
+    # meson-python git repository but cannot be included in the meson-python
+    # sdist. Thus this test is effective only when run from a git checkout.
     assert names == {
         'symlinks-1.0.0/PKG-INFO',
         'symlinks-1.0.0/meson.build',
