@@ -166,7 +166,7 @@ def _get_ios_platform_tag() -> str:
     try:
         version = tuple(map(int, os.environ.get('IPHONEOS_DEPLOYMENT_TARGET', '').split('.')))[:2]
     except ValueError:
-        version = tuple(map(int, platform.ios_ver().release.split('.')))[:2]
+        version = tuple(map(int, platform.ios_ver().release.split('.')))[:2]  # type: ignore[attr-defined]
 
     # Although _multiarch is an internal implementation detail, it's a core part
     # of how CPython is implemented on iOS; this attribute is also relied upon

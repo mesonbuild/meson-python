@@ -720,7 +720,7 @@ class Project():
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
         elif sysconfig.get_platform().startswith('ios-'):
-            ios_ver = platform.ios_ver()
+            ios_ver = platform.ios_ver()  # type: ignore[attr-defined]
 
             arch = platform.machine()
             family = 'aarch64' if arch == 'arm64' else arch
