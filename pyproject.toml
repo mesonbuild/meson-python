@@ -15,7 +15,7 @@ requires = [
 
 [project]
 name = 'meson-python'
-version = '0.18.0'
+version = '0.19.0.dev0'
 description = 'Meson Python build backend (PEP 517)'
 readme = 'README.rst'
 requires-python = '>= 3.8'
