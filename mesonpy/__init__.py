@@ -762,7 +762,7 @@ class Project():
             if 'license-files' in self._metadata.dynamic:
                 self._metadata.license_files = self._meson_license_files
         else:
-            # if project section is missing, use minimal metdata from meson.build
+            # if project section is missing, use minimal metadata from meson.build
             name, version = self._meson_name, self._meson_version
             if not version:
                 raise pyproject_metadata.ConfigurationError(
