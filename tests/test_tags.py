@@ -76,6 +76,7 @@ def test_python_host_platform(monkeypatch):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 def test_ios_platform_tag(monkeypatch):
     # Mock being on iOS
     monkeypatch.setattr(sys.implementation, '_multiarch', 'arm64-iphoneos')
