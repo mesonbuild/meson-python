@@ -344,7 +344,9 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             else:
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
         except subprocess.CalledProcessError as exc:
-            raise ImportError(f're-building the {self._name} meson-python editable wheel package failed') from exc
+            output = exc.output if exc.output is not None else exc.stdout
+            raise ImportError(f're-building the {self._name} meson-python editable wheel package failed with: \n{output.decode(errors="replace")}') from exc
+
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
