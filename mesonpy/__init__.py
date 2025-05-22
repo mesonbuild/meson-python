@@ -719,6 +719,30 @@ class Project():
                     ''')
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+        elif sysconfig.get_platform().startswith('ios-'):
+            ios_ver = platform.ios_ver()  # type: ignore[attr-defined]
+
+            arch = platform.machine()
+            family = 'aarch64' if arch == 'arm64' else arch
+            subsystem = 'ios-simulator' if ios_ver.is_simulator else 'ios'
+
+            cross_file_data = textwrap.dedent(f'''
+                [binaries]
+                c = '{arch}-apple-{subsystem}-clang'
+                cpp = '{arch}-apple-{subsystem}-clang++'
+                objc = '{arch}-apple-{subsystem}-clang'
+                objcpp = '{arch}-apple-{subsystem}-clang++'
+                ar = '{arch}-apple-{subsystem}-ar'
+
+                [host_machine]
+                system = 'ios'
+                subsystem = {subsystem!r}
+                cpu = {arch!r}
+                cpu_family = {family!r}
+                endian = 'little'
+            ''')
+            self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
+            self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
