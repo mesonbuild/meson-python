@@ -344,7 +344,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             else:
                 subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
         except subprocess.CalledProcessError as exc:
-            output = exc.output.decode(errors='replace') if exc.output is not None else "No error details available"
+            output = exc.output.decode(errors='replace') if exc.output is not None else 'No error details available'
             raise ImportError(
                 f're-building the {self._name} meson-python editable wheel package failed with: \n{output}'
             ) from exc
