@@ -49,6 +49,7 @@ test = [
   'pytest-cov[toml]',
   'pytest-mock',
   'cython >= 3.0.3', # required for Python 3.12 support
+  'ninja',
   'wheel',
   'typing-extensions >= 3.7.4; python_version < "3.11"',
 ]
