@@ -336,9 +336,46 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match='re-building the purelib-and-platlib '):
+                with pytest.raises(ImportError, match=r're-building the purelib-and-platlib (?s:.)*error: expected identifier'):
                     import plat  # noqa: F401
-            assert not verbose or stdout.getvalue().startswith('meson-python: building ')
+            if verbose:
+                assert stdout.getvalue().startswith('meson-python: building ')
+            else:
+                assert not stdout.getvalue()
+
+        finally:
+            del sys.meta_path[0]
+            sys.modules.pop('pure', None)
+            path.write_text(code)
+
+@pytest.mark.parametrize('verbose', [False, True], ids=('', 'verbose'))
+def test_editable_meson_file_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
+    with mesonpy._project({'builddir': os.fspath(tmp_path)}) as project:
+
+        finder = _editable.MesonpyMetaFinder(
+            project._metadata.name, {'plat', 'pure'},
+            os.fspath(tmp_path), project._build_command,
+            verbose=verbose,
+        )
+        path = package_purelib_and_platlib / 'meson.build'
+        code = path.read_text()
+
+        try:
+            # Install editable hooks
+            sys.meta_path.insert(0, finder)
+
+            # Insert invalid code in the meson build file
+            path.write_text('return')
+
+            # Import module and trigger rebuild: the build fails and ImportErrror is raised
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                with pytest.raises(ImportError, match=r're-building the purelib-and-platlib (?s:.)*ERROR: Invalid source tree:'):
+                    import plat  # noqa: F401
+            if verbose:
+                assert stdout.getvalue().startswith('meson-python: building ')
+            else:
+                assert not stdout.getvalue()
 
         finally:
             del sys.meta_path[0]
