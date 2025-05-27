@@ -99,6 +99,9 @@ known-first-party = [
   'mesonpy',
 ]
 
+[tool.ruff.format]
+quote-style = 'single'
+
 
 [tool.coverage.run]
 disable_warnings = [
