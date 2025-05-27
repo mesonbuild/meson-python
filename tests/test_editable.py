@@ -369,7 +369,7 @@ def test_editable_meson_file_rebuild_error(package_purelib_and_platlib, tmp_path
             sys.meta_path.insert(0, finder)
 
             # Insert invalid code in the meson build file
-            path.write_text('return')
+            path.write_text('<not valid')
 
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
