@@ -160,10 +160,28 @@ def _get_macosx_platform_tag() -> str:
     return f'macosx_{major}_{minor}_{arch}'
 
 
+def _get_ios_platform_tag() -> str:
+    # Override the iOS version if one is provided via the
+    # IPHONEOS_DEPLOYMENT_TARGET environment variable.
+    try:
+        version = tuple(map(int, os.environ.get('IPHONEOS_DEPLOYMENT_TARGET', '').split('.')))[:2]
+    except ValueError:
+        version = tuple(map(int, platform.ios_ver().release.split('.')))[:2]  # type: ignore[attr-defined]
+
+    # Although _multiarch is an internal implementation detail, it's a core part
+    # of how CPython is implemented on iOS; this attribute is also relied upon
+    # by `packaging` as part of tag determiniation.
+    multiarch = sys.implementation._multiarch.replace('-', '_')
+
+    return f"ios_{version[0]}_{version[1]}_{multiarch}"
+
+
 def get_platform_tag() -> str:
     platform = sysconfig.get_platform()
     if platform.startswith('macosx'):
         return _get_macosx_platform_tag()
+    if platform.startswith('ios'):
+        return _get_ios_platform_tag()
     if _32_BIT_INTERPRETER:
         # 32-bit Python running on a 64-bit kernel.
         if platform == 'linux-x86_64':
