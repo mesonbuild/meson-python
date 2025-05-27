@@ -52,6 +52,10 @@ versions.
    populate the package license and license files from the ones
    declared via the ``project()`` call in ``meson.build``.
 
+.. option:: 1.9.0
+
+   Meson 1.9.0 or later is required to support building for iOS.
+
 Build front-ends by default build packages in an isolated Python
 environment where build dependencies are installed. Most often, unless
 a package or its build dependencies declare explicitly a version

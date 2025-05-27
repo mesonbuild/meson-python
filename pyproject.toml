@@ -8,7 +8,8 @@ backend-path = ['.']
 requires = [
   'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
-  'packaging >= 23.2',
+  'packaging >= 23.2; sys_platform != "ios"',
+  'packaging >= 24.2; sys_platform == "ios"',
   'pyproject-metadata >= 0.9.0',
   'tomli >= 1.0.0; python_version < "3.11"',
 ]
@@ -37,7 +38,8 @@ classifiers = [
 dependencies = [
   'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
-  'packaging >= 23.2',
+  'packaging >= 23.2; sys_platform != "ios"',
+  'packaging >= 24.2; sys_platform == "ios"',
   'pyproject-metadata >= 0.9.0',
   'tomli >= 1.0.0; python_version < "3.11"',
 ]
