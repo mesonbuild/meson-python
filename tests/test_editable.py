@@ -336,7 +336,9 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match=r're-building the purelib-and-platlib (?s:.)*error: expected identifier'):
+                with pytest.raises(
+                    ImportError, match=r're-building the purelib-and-platlib (?s:.)*error: expected identifier'
+                ):
                     import plat  # noqa: F401
             if verbose:
                 assert stdout.getvalue().startswith('meson-python: building ')
@@ -348,13 +350,15 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             sys.modules.pop('pure', None)
             path.write_text(code)
 
+
 @pytest.mark.parametrize('verbose', [False, True], ids=('', 'verbose'))
 def test_editable_meson_file_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
     with mesonpy._project({'builddir': os.fspath(tmp_path)}) as project:
-
         finder = _editable.MesonpyMetaFinder(
-            project._metadata.name, {'plat', 'pure'},
-            os.fspath(tmp_path), project._build_command,
+            project._metadata.name,
+            {'plat', 'pure'},
+            os.fspath(tmp_path),
+            project._build_command,
             verbose=verbose,
         )
         path = package_purelib_and_platlib / 'meson.build'
@@ -370,7 +374,9 @@ def test_editable_meson_file_rebuild_error(package_purelib_and_platlib, tmp_path
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match=r're-building the purelib-and-platlib (?s:.)*ERROR: Invalid source tree:'):
+                with pytest.raises(
+                    ImportError, match=r're-building the purelib-and-platlib (?s:.)*ERROR: Invalid source tree:'
+                ):
                     import plat  # noqa: F401
             if verbose:
                 assert stdout.getvalue().startswith('meson-python: building ')
