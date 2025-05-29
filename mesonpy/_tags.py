@@ -173,7 +173,7 @@ def _get_ios_platform_tag() -> str:
     # by `packaging` as part of tag determiniation.
     multiarch = sys.implementation._multiarch.replace('-', '_')
 
-    return f"ios_{version[0]}_{version[1]}_{multiarch}"
+    return f'ios_{version[0]}_{version[1]}_{multiarch}'
 
 
 def get_platform_tag() -> str:
