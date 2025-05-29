@@ -392,7 +392,7 @@ def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     # Mock being on iOS
     monkeypatch.setattr(sys, 'platform', 'ios')
     monkeypatch.setattr(platform, 'machine', Mock(return_value=arch))
-    monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value=f"ios-13.0-{multiarch}"))
+    monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value=f'ios-13.0-{multiarch}'))
     ios_ver = platform.IOSVersionInfo('iOS', '13.0', 'iPhone', multiarch.endswith('simulator'))
     monkeypatch.setattr(platform, 'ios_ver', Mock(return_value=ios_ver))
 
