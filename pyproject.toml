@@ -76,10 +76,15 @@ strict = true
 
 [tool.ruff]
 line-length = 127
-lint.extend-ignore = [
+
+[tool.ruff.format]
+quote-style = 'single'
+
+[tool.ruff.lint]
+extend-ignore = [
   'B019',
 ]
-lint.select = [
+select = [
   'B',       # flake8-bugbear
   'C4',      # flake8-comprehensions
   'E',       # pycodestyle
@@ -92,9 +97,6 @@ lint.select = [
 exclude = [
   'docs/conf.py',
 ]
-
-[tool.ruff.format]
-quote-style = 'single'
 
 [tool.ruff.lint.flake8-quotes]
 avoid-escape = false
