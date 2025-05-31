@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2021 The meson-python developers
+
+SPDX-License-Identifier: MIT
+-->
+
 # Contributing
 
 Thank you for your interest in contributing to `meson-python`!
