@@ -23,11 +23,11 @@ The current maintainers of ``meson-python`` are:
 - `Ralf Gommers <https://github.com/rgommers>`_
 - `Daniele Nicolodi <https://github.com/dnicolodi>`_
 - `Henry Schreiner <https://github.com/henryiii>`_
-- `Thomas Li <https://github.com/lithomas1>`_
 
 Emeritus maintainers:
 
 - `Filipe Laíns <https://github.com/FFY00>`_
+- `Thomas Li <https://github.com/lithomas1>`_
 
 
 Funding

@@ -10,6 +10,7 @@ import sys
 import sysconfig
 
 from collections import defaultdict
+from unittest.mock import Mock
 
 import packaging.tags
 import pytest
@@ -72,6 +73,25 @@ def test_python_host_platform(monkeypatch):
     assert mesonpy._tags.get_platform_tag().endswith('arm64')
     monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-11.1-x86_64')
     assert mesonpy._tags.get_platform_tag().endswith('x86_64')
+
+
+@pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
+def test_ios_platform_tag(monkeypatch):
+    # Mock being on iOS
+    monkeypatch.setattr(sys.implementation, '_multiarch', 'arm64-iphoneos')
+    monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value='ios-13.0-arm64-iphoneos'))
+    ios_ver = platform.IOSVersionInfo('iOS', '13.0', 'iPhone', False)
+    monkeypatch.setattr(platform, 'ios_ver', Mock(return_value=ios_ver))
+
+    # Check the default value
+    assert next(packaging.tags.ios_platforms((13, 0))) == mesonpy._tags.get_platform_tag()
+
+    # Check the value when IPHONEOS_DEPLOYMENT_TARGET is set.
+    for major in range(13, 20):
+        for minor in range(3):
+            monkeypatch.setenv('IPHONEOS_DEPLOYMENT_TARGET', f'{major}.{minor}')
+            assert next(packaging.tags.ios_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
 
 
 def wheel_builder_test_factory(content, pure=True, limited_api=False):

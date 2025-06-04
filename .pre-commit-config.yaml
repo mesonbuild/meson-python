@@ -18,7 +18,6 @@ repos:
   - id: check-yaml
   - id: check-toml
   - id: debug-statements
-  - id: double-quote-string-fixer
   - id: end-of-file-fixer
   - id: trailing-whitespace
 - repo: https://github.com/astral-sh/ruff-pre-commit

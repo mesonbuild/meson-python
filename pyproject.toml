@@ -8,7 +8,8 @@ backend-path = ['.']
 requires = [
   'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
-  'packaging >= 23.2',
+  'packaging >= 23.2; sys_platform != "ios"',
+  'packaging >= 24.2; sys_platform == "ios"',
   'pyproject-metadata >= 0.9.0',
   'tomli >= 1.0.0; python_version < "3.11"',
 ]
@@ -26,7 +27,6 @@ maintainers = [
   { name = 'Ralf Gommers', email = 'ralf.gommers@gmail.com' },
   { name = 'Daniele Nicolodi', email = 'daniele@grinta.net' },
   { name = 'Henry Schreiner', email = 'HenrySchreinerIII@gmail.com' },
-  { name = 'Thomas Li', email = '47963215+lithomas1@users.noreply.github.com' },
 ]
 classifiers = [
   'Development Status :: 5 - Production/Stable',
@@ -37,7 +37,8 @@ classifiers = [
 dependencies = [
   'meson >= 0.64.0; python_version < "3.12"',
   'meson >= 1.2.3; python_version >= "3.12"',
-  'packaging >= 23.2',
+  'packaging >= 23.2; sys_platform != "ios"',
+  'packaging >= 24.2; sys_platform == "ios"',
   'pyproject-metadata >= 0.9.0',
   'tomli >= 1.0.0; python_version < "3.11"',
 ]
@@ -75,21 +76,32 @@ strict = true
 
 [tool.ruff]
 line-length = 127
-lint.extend-ignore = [
+
+[tool.ruff.format]
+quote-style = 'single'
+
+[tool.ruff.lint]
+extend-ignore = [
   'B019',
 ]
-lint.select = [
+select = [
   'B',       # flake8-bugbear
   'C4',      # flake8-comprehensions
   'E',       # pycodestyle
   'F',       # pyflakes
   'I',       # isort
+  'Q',       # flake8-quotes
   'W',       # pycodestyle
   'RUF100',  # ruff
 ]
 exclude = [
   'docs/conf.py',
 ]
+
+[tool.ruff.lint.flake8-quotes]
+avoid-escape = false
+inline-quotes = 'single'
+multiline-quotes = 'single'
 
 [tool.ruff.lint.isort]
 lines-between-types = 1
