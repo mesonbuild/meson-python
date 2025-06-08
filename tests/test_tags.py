@@ -55,6 +55,11 @@ def test_macos_platform_tag(monkeypatch):
         for minor in range(3):
             monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.{minor}')
             assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
+    for major in range(11, 13):
+        monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.0')
+        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag()
+        monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}')
+        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag()
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
