@@ -109,7 +109,8 @@ def _get_macosx_platform_tag() -> str:
     # Override the macOS version if one is provided via the
     # MACOSX_DEPLOYMENT_TARGET environment variable.
     try:
-        version = tuple(map(int, os.environ.get('MACOSX_DEPLOYMENT_TARGET', '').split('.')))[:2]
+        parts = os.environ.get('MACOSX_DEPLOYMENT_TARGET', '').split('.')[:2]
+        version = tuple(map(int, parts + ['0'] * (2 - len(parts))))
     except ValueError:
         version = tuple(map(int, ver.split('.')))[:2]
 
@@ -164,7 +165,8 @@ def _get_ios_platform_tag() -> str:
     # Override the iOS version if one is provided via the
     # IPHONEOS_DEPLOYMENT_TARGET environment variable.
     try:
-        version = tuple(map(int, os.environ.get('IPHONEOS_DEPLOYMENT_TARGET', '').split('.')))[:2]
+        parts = os.environ.get('IPHONEOS_DEPLOYMENT_TARGET', '').split('.')[:2]
+        version = tuple(map(int, parts + ['0'] * (2 - len(parts))))
     except ValueError:
         version = tuple(map(int, platform.ios_ver().release.split('.')))[:2]  # type: ignore[attr-defined]
 
