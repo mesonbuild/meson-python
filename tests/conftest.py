@@ -183,3 +183,12 @@ def disable_pip_version_check():
     mpatch = pytest.MonkeyPatch()
     yield mpatch.setenv('PIP_DISABLE_PIP_VERSION_CHECK', '1')
     mpatch.undo()
+
+
+@pytest.fixture(autouse=True, scope='session')
+def cleanenv():
+    # Cannot use the 'monkeypatch' fixture because of scope mismatch.
+    mpatch = pytest.MonkeyPatch()
+    # $MACOSX_DEPLOYMENT_TARGET affects the computation of the platform tag on macOS.
+    yield mpatch.delenv('MACOSX_DEPLOYMENT_TARGET', raising=False)
+    mpatch.undo()

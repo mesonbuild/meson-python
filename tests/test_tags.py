@@ -40,13 +40,7 @@ SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 ABI3SUFFIX = get_abi3_suffix()
 
 
-@pytest.fixture()
-def cleanenv(monkeypatch):
-    # $MACOSX_DEPLOYMENT_TARGET affects the computation of the platform tag on macOS.
-    monkeypatch.delenv('MACOSX_DEPLOYMENT_TARGET', raising=False)
-
-
-def test_wheel_tag(cleanenv):
+def test_wheel_tag():
     assert str(mesonpy._tags.Tag()) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
     assert str(mesonpy._tags.Tag(abi='abi3')) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
@@ -118,14 +112,14 @@ def test_tag_purelib_wheel():
     assert str(builder.tag) == 'py3-none-any'
 
 
-def test_tag_platlib_wheel(cleanenv):
+def test_tag_platlib_wheel():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{SUFFIX}'],
     })
     assert str(builder.tag) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
 
 
-def test_tag_stable_abi(cleanenv):
+def test_tag_stable_abi():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}'],
     }, limited_api=True)
@@ -136,7 +130,7 @@ def test_tag_stable_abi(cleanenv):
 
 @pytest.mark.xfail(sys.version_info < (3, 8) and sys.platform == 'win32', reason='Extension modules suffix without ABI tags')
 @pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the stable ABI')
-def test_tag_mixed_abi(cleanenv):
+def test_tag_mixed_abi():
     builder = wheel_builder_test_factory({
         'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
     }, pure=False, limited_api=True)
