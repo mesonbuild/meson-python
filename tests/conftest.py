@@ -154,7 +154,7 @@ def generate_sdist_fixture(package):
 def generate_wheel_fixture(package):
     @pytest.fixture(scope='session')
     def fixture(tmp_path_session):
-        with chdir(package_dir / package), in_git_repo_context():
+        with chdir(package_dir / package):
             return tmp_path_session / mesonpy.build_wheel(tmp_path_session)
     return fixture
 
@@ -163,7 +163,7 @@ def generate_editable_fixture(package):
     @pytest.fixture(scope='session')
     def fixture(tmp_path_session):
         shutil.rmtree(package_dir / package / '.mesonpy' / 'editable', ignore_errors=True)
-        with chdir(package_dir / package), in_git_repo_context():
+        with chdir(package_dir / package):
             return tmp_path_session / mesonpy.build_editable(tmp_path_session)
     return fixture
 
