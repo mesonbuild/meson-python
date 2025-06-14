@@ -192,3 +192,18 @@ def cleanenv():
     # $MACOSX_DEPLOYMENT_TARGET affects the computation of the platform tag on macOS.
     yield mpatch.delenv('MACOSX_DEPLOYMENT_TARGET', raising=False)
     mpatch.undo()
+
+
+@pytest.fixture(autouse=True, scope='session')
+def meson_fatal_warnings():
+    # Cannot use the 'monkeypatch' fixture because of scope mismatch.
+    mpatch = pytest.MonkeyPatch()
+    mesonpy_project_init = mesonpy.Project.__init__
+
+    def __init__(self, source_dir, build_dir, meson_args=None, editable_verbose=False):
+        if meson_args is None:
+            meson_args = {}
+        meson_args['setup'] = meson_args.get('setup', []) + ['--fatal-meson-warnings']
+        mesonpy_project_init(self, source_dir, build_dir, meson_args, editable_verbose)
+
+    mpatch.setattr(mesonpy.Project, '__init__', __init__)
