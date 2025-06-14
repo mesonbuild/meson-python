@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-project('limited-api', 'c', version: '1.0.0')
+project('limited-api', 'c', version: '1.0.0', meson_version: '>= 1.3')
 
 py = import('python').find_installation(pure: false)
 
