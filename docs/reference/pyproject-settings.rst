@@ -29,9 +29,9 @@ use them and examples.
 .. option:: tool.meson-python.limited-api
 
    A boolean indicating whether the extension modules contained in the
-   Python package target the `Python limited API`__.  Extension
+   Python package target the `Python limited API`_.  Extension
    modules can be compiled for the Python limited API specifying the
-   ``limited_api`` argument to the |extension_module()|__ function
+   ``limited_api`` argument to the |extension_module()|_ function
    in the Meson Python module.  When this setting is set to true, the
    value ``abi3`` is used for the Python wheel filename ABI tag.
 
@@ -63,8 +63,36 @@ use them and examples.
 
    Extra arguments to be passed to the ``meson install`` command.
 
+.. option:: tool.meson-python.wheel.exclude
 
-__ https://docs.python.org/3/c-api/stable.html?highlight=limited%20api#stable-application-binary-interface
-__ https://mesonbuild.com/Python-module.html#extension_module
+   List of glob patterns matching paths of files that must be excluded from
+   the Python wheel. The accepted glob patterns are the ones implemented by
+   the Python :mod:`fnmatch` with case sensitive matching. The paths to be
+   matched are as they appear in the Meson introspection data, namely they are
+   rooted in one of the Meson install locations: ``{bindir}``, ``{datadir}``,
+   ``{includedir}``, ``{libdir_shared}``, ``{libdir_static}``, et cetera.
+
+   Inspecting the `Meson introspection data`_ may be useful to craft the exclude
+   patterns. It is accessible as the ``meson-info/intro-install_plan.json`` JSON
+   document in the build directory.
+
+   This configuration setting is measure of last resort to exclude installed
+   files from a Python wheel. It is to be used when the project includes
+   subprojects that do not allow fine control on the installed files. Better
+   solutions include the use of Meson install tags and excluding subprojects
+   to be installed via :option:`tool.meson-python.args.install`.
+
+.. option:: tool.meson-python.wheel.include
+
+   List of glob patterns matching paths of files that must not be excluded
+   from the Python wheel. All files recorded for installation in the Meson
+   project are included in the Python wheel unless matching an exclude glob
+   pattern specified in :option:`tool.meson-python.wheel.exclude`. An include
+   glob pattern is useful exclusively to limit the effect of an exclude
+   pattern that matches too many files.
+
+.. _python limited api: https://docs.python.org/3/c-api/stable.html?highlight=limited%20api#stable-application-binary-interface
+.. _extension_module(): `https://mesonbuild.com/Python-module.html#extension_module
+.. _meson introspection data: https://mesonbuild.com/IDE-integration.html#install-plan
 
 .. |extension_module()| replace:: ``extension_module()``

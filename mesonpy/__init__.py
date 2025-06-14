@@ -16,6 +16,7 @@ import collections
 import contextlib
 import copy
 import difflib
+import fnmatch
 import functools
 import importlib.machinery
 import io
@@ -112,14 +113,32 @@ _INSTALLATION_PATH_MAP = {
 }
 
 
-def _map_to_wheel(sources: Dict[str, Dict[str, Any]]) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+def _compile_patterns(patterns: List[str]) -> Callable[[str], bool]:
+    if not patterns:
+        return lambda x: False
+    func = re.compile('|'.join(fnmatch.translate(os.path.normpath(p)) for p in patterns)).match
+    return typing.cast('Callable[[str], bool]', func)
+
+
+def _map_to_wheel(
+    sources: Dict[str, Dict[str, Any]],
+    exclude: List[str],
+    include: List[str],
+) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
+    excluded = _compile_patterns(exclude)
+    included = _compile_patterns(include)
 
     for key, group in sources.items():
         for src, target in group.items():
-            destination = pathlib.Path(target['destination'])
+            target_destination = os.path.normpath(target['destination'])
+
+            if excluded(target_destination) and not included(target_destination):
+                continue
+
+            destination = pathlib.Path(target_destination)
             anchor = destination.parts[0]
             dst = pathlib.Path(*destination.parts[1:])
 
@@ -580,6 +599,10 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
         'limited-api': _bool,
         'allow-windows-internal-shared-libs': _bool,
         'args': _table(dict.fromkeys(_MESON_ARGS_KEYS, _strings)),
+        'wheel': _table({
+            'exclude': _strings,
+            'include': _strings,
+        }),
     })
 
     table = pyproject.get('tool', {}).get('meson-python', {})
@@ -828,6 +851,10 @@ class Project():
         # from the package, make sure the developers acknowledge this.
         self._allow_windows_shared_libs = pyproject_config.get('allow-windows-internal-shared-libs', False)
 
+        # Files to be excluded from the wheel
+        self._excluded_files = pyproject_config.get('wheel', {}).get('exclude', [])
+        self._included_files = pyproject_config.get('wheel', {}).get('include', [])
+
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
         # Flush the line to ensure that the log line with the executed
@@ -914,7 +941,7 @@ class Project():
                 sources[key][target] = details
 
         # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources)
+        return _map_to_wheel(sources, self._excluded_files, self._included_files)
 
     @property
     def _meson_name(self) -> str:

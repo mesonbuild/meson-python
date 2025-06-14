@@ -5,3 +5,15 @@
 [build-system]
 build-backend = 'mesonpy'
 requires = ['meson-python']
+
+[tool.meson-python.wheel]
+exclude = [
+    # Meson before version 1.3.0 install data files in
+    # ``{datadir}/{project name}/``, later versions install
+    # in the more correct ``{datadir}/{subproject name}/``.
+    '{datadir}/*/data.txt',
+    '{py_purelib}/dep.*',
+]
+include = [
+    '{py_purelib}/dep.py',
+]
