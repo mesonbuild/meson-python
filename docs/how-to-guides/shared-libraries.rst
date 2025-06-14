@@ -187,37 +187,26 @@ strategies for folding a library built in a subproject into a wheel built with
    to be within the Python package's tree, or rely on ``meson-python`` to fold
    it into the wheel when it'd otherwise be installed to ``libdir``.
 
-Option (1) tends to be easier, so unless the library of interest cannot be
-built as a static library or it would inflate the wheel size too much because
-it's needed by multiple Python extension modules, we recommend trying option
-(1) first.
-
-A typical C or C++ project providing a library to link against tends to provide
-(a) one or more ``library()`` targets, which can be built as shared, static, or both,
-and (b) headers, pkg-config files, tests and perhaps other development targets
-that are needed to use the ``library()`` target(s). One of the challenges to use
-such projects as a subproject is that the headers and other installable targets
-are targeting system locations (e.g., ``<prefix>/include/``) which isn't supported
-by wheels and hence ``meson-python`` errors out when it encounters such an install
-target. This is perhaps the main issue one encounters with subproject usage,
-and the following two sections discuss how options (1) and (2) can work around
-that.
+Static linking tends to be easier, and it is the recommended solution, unless
+the library of interest cannot be built as a static library or it would
+inflate the wheel size too much because it's needed by multiple Python
+extension modules.
 
 Static library from subproject
 ------------------------------
 
-The major advantage of building a library target as static and folding it directly
-into an extension module is that no targets from the subproject need to be installed.
-To configure the subproject for this use case, add the following to the
-``pyproject.toml`` file of your package:
+The major advantage of building a library target as static and folding it
+directly into an extension module is that the RPATH or the DLL search path do
+not need to be adjusted and no targets from the subproject need to be
+installed. To ensures that ``library()`` targets are built as static, and that
+no parts of the subprojects are installed, the following configuration can be
+added in ``pyproject.toml`` to ensure the relevant options are passed to Meson:
 
 .. code-block:: toml
 
     [tool.meson-python.args]
     setup = ['--default-library=static']
     install = ['--skip-subprojects']
-
-This ensures that ``library`` targets are built as static, and nothing gets installed.
 
 To then link against the static library in the subproject, say for a subproject
 named ``bar`` with the main library target contained in a ``bar_dep`` dependency,
@@ -235,30 +224,37 @@ add this to your ``meson.build`` file:
         install: true,
     )
 
-That is all!
-
 Shared library from subproject
 ------------------------------
 
-If we can't use the static library approach from the section above and we need
-a shared library, then we must have ``install: true`` for that shared library
-target. This can only work if we can pass some build option to the subproject
-that tells it to *only* install the shared library and not headers or other
-targets that we don't need. Install tags don't work per subproject, so
-this will look something like:
+Sometimes it may be necessary or preferable to use dynamic linking to a shared
+library provided in a subproject, for example to avoid inflating the wheel
+size having multiple copies of the same object code in different extension
+modules using the same library. In this case, the subproject needs to install
+the shared library in the usual location in ``libdir``.  ``meson-python``
+will automatically include it into the wheel in
+``.<project-name>.mesonpy.libs`` just like an internal shared library.
+
+Most projects, however, install more than the shared library and the extra
+components, such as header files or documentation, should not be included in
+the Python wheel. Projects may have configuration options to disable building
+and installing additional components, in this case, these options can be
+passed to the ``subproject()`` call:
 
 .. code-block:: meson
 
     foo_subproj = subproject('foo',
         default_options: {
-            # This is a custom option - if it doesn't exist, can you add it
-            # upstream or in WrapDB?
-            'only_install_main_lib': true,
+            'docs': 'disabled',
         })
     foo_dep = foo_subproj.get_variable('foo_dep')
 
-Now we can use ``foo_dep`` like a normal dependency, ``meson-python`` will
-include it into the wheel in ``.<project-name>.mesonpy.libs`` just like an
-internal shared library that targets ``libdir`` (see
-:ref:`internal-shared-libraries`).
-*Remember: this method doesn't support Windows (yet)!*
+Install tags do not work per subproject, therefore to exclude other parts of
+the subproject from being included in the wheel, we need to resort to
+``meson-python`` install location filters using the
+:option:`tool.meson-python.wheel.exclude` build option:
+
+.. code-block:: toml
+
+    [tool.meson-python.wheel]
+    exclude = ['{prefix}/include/*']
