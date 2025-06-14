@@ -719,6 +719,9 @@ class Project():
                     ''')
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+
+        # Support iOS targets. iOS does not have native build tools and always
+        # requires cross compilation: synthesize the appropriate cross file.
         elif sysconfig.get_platform().startswith('ios-'):
             ios_ver = platform.ios_ver()  # type: ignore[attr-defined]
 
