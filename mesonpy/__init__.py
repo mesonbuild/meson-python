@@ -711,6 +711,8 @@ class Project():
                         cpp = ['c++', '-arch', {arch!r}]
                         objc = ['cc', '-arch', {arch!r}]
                         objcpp = ['c++', '-arch', {arch!r}]
+                        strip = ['strip', '-arch', {arch!r}]
+
                         [host_machine]
                         system = 'darwin'
                         cpu = {arch!r}
@@ -731,11 +733,12 @@ class Project():
 
             cross_file_data = textwrap.dedent(f'''
                 [binaries]
+                ar = '{arch}-apple-{subsystem}-ar'
                 c = '{arch}-apple-{subsystem}-clang'
                 cpp = '{arch}-apple-{subsystem}-clang++'
                 objc = '{arch}-apple-{subsystem}-clang'
                 objcpp = '{arch}-apple-{subsystem}-clang++'
-                ar = '{arch}-apple-{subsystem}-ar'
+                strip = '{arch}-apple-{subsystem}-strip'
 
                 [host_machine]
                 system = 'ios'
