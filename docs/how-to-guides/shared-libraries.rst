@@ -64,18 +64,28 @@ A shared library produced by ``library()`` or ``shared_library()`` built like th
 
 is installed to ``libdir`` by default. If the only reason the shared library exists
 is to be used inside the Python package being built, then it is best to modify
-the install location to be within the Python package itself:
+the install location, via the ``install_dir`` argument, to be within
+the Python package itself:
 
-.. code-block:: python
+.. TODO update the text block below to 'meson' when
+.. meson lexer is updated to fix
+.. https://github.com/pygments/pygments/issues/2918
 
-   install_path: py.get_install_dir() / 'mypkg/subdir'
+.. code-block:: text
+
+    example_lib = shared_library(
+        'example',
+        'examplelib.c',
+        install: true,
+        install_dir: py.get_install_dir() / 'mypkg/subdir',
+    )
 
 Then an extension module in the same install directory can link against the
 shared library in a portable manner by using ``install_rpath``:
 
 .. code-block:: meson
 
-    py3.extension_module('_extmodule',
+    py.extension_module('_extmodule',
         '_extmodule.c',
         link_with: example_lib,
         install: true,
