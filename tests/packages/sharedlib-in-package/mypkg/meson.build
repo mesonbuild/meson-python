@@ -10,29 +10,42 @@ else
     import_dll_args = []
 endif
 
-example_lib = shared_library(
-    'examplelib',
-    'examplelib.c',
+sublib = shared_library(
+    'sublib',
+    'sublib.c',
     c_args: export_dll_args,
+    install: true,
+    install_dir: py.get_install_dir() / 'mypkg/sub',
+)
+
+sublib_dep = declare_dependency(
+    compile_args: import_dll_args,
+    link_with: sublib,
+)
+
+lib = shared_library(
+    'lib',
+    'lib.c',
+    dependencies: sublib_dep,
+    c_args: export_dll_args,
+    install_rpath: '$ORIGIN/sub',
     install: true,
     install_dir: py.get_install_dir() / 'mypkg',
 )
 
-example_lib_dep = declare_dependency(
+lib_dep = declare_dependency(
     compile_args: import_dll_args,
-    link_with: example_lib,
+    link_with: lib,
 )
-
-subdir('sub')
 
 py.extension_module(
     '_example',
     '_examplemod.c',
-    dependencies: [example_lib_dep, example_lib2_dep],
+    dependencies: lib_dep,
     include_directories: 'sub',
     install: true,
     subdir: 'mypkg',
-    install_rpath: '$ORIGIN',
+    install_rpath: build_machine.system() == 'darwin' ? '@loader_path' : '$ORIGIN',
 )
 
 py.install_sources(
