@@ -63,6 +63,21 @@ use them and examples.
 
    Extra arguments to be passed to the ``meson install`` command.
 
+.. option:: tool.meson-python.wheel.exclude
+
+   List of glob patterns matching paths of files that must be excluded from
+   the Python wheel. The accepted glob patterns are the ones implemented by
+   the Python :mod:`fnmatch` with case sensitive matching. The paths to be
+   matched are as they appear in the Meson introspection data, namely they are
+   rooted in one of the Meson install locations: ``{bindir}``, ``{datadir}``,
+   ``{includedir}``, ``{libdir_shared}``, ``{libdir_static}``, et cetera.
+
+   This configuration setting is measure of last resort to exclude installed
+   files from a Python wheel. It is to be used when the project includes
+   subprojects that do not allow fine control on the installed files. Better
+   solutions include the use of Meson install tags and excluding subprojects
+   to be installed via :option:`tool.meson-python.args.install`.
+
 
 __ https://docs.python.org/3/c-api/stable.html?highlight=limited%20api#stable-application-binary-interface
 __ https://mesonbuild.com/Python-module.html#extension_module
