@@ -332,11 +332,15 @@ class _WheelBuilder():
         manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
         limited_api: bool,
         allow_windows_shared_libs: bool,
+        is_cross: bool,
+        build_details: Optional[Dict[str, str | Dict[str, Any]]] = None,
     ) -> None:
         self._metadata = metadata
         self._manifest = manifest
         self._limited_api = limited_api
         self._allow_windows_shared_libs = allow_windows_shared_libs
+        self._is_cross = is_cross
+        self._build_details = build_details
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -367,8 +371,8 @@ class _WheelBuilder():
             # does not contain any extension module (does not
             # distribute any file in {platlib}) thus use generic
             # implementation and ABI tags.
-            return mesonpy._tags.Tag('py3', 'none', None)
-        return mesonpy._tags.Tag(None, self._stable_abi, None)
+            return mesonpy._tags.Tag('py3', 'none', None, self._build_details)
+        return mesonpy._tags.Tag(None, self._stable_abi, None, self._build_details)
 
     @property
     def name(self) -> str:
@@ -779,6 +783,21 @@ class Project():
         ''')
         self._meson_native_file.write_text(native_file_data, encoding='utf-8')
 
+        # Handle cross compilation
+        self._is_cross = any(s.startswith('--cross-file') for s in self._meson_args['setup'])
+        self._build_details = None
+        if self._is_cross:
+            # Use build-details.json (PEP 739) to determine
+            # platform/interpreter/abi tags, if given.
+            for setup_arg in self._meson_args['setup']:
+                if setup_arg.startswith('-Dpython.build_config='):
+                    with open(setup_arg.split('-Dpython.build_config=')[1]) as f:
+                        self._build_details = json.load(f)
+                    break
+            else:
+                # TODO: warn that interpreter details may be wrong. Get platform from cross file.
+                pass
+
         # reconfigure if we have a valid Meson build directory. Meson
         # uses the presence of the 'meson-private/coredata.dat' file
         # in the build directory as indication that the build
@@ -1096,7 +1115,7 @@ class Project():
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel in the specified directory."""
         self.build()
-        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
+        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs, self._is_cross, self._build_details)
         return builder.build(directory)
 
     def editable(self, directory: Path) -> pathlib.Path:
