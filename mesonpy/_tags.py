@@ -29,10 +29,15 @@ INTERPRETERS = {
 _32_BIT_INTERPRETER = struct.calcsize('P') == 4
 
 
-def get_interpreter_tag() -> str:
-    name = sys.implementation.name
+def get_interpreter_tag(build_details: Optional[dict] = None) -> str:
+    if build_details is None:
+        name = sys.implementation.name
+        version = sys.version_info
+    else:
+        name = build_details['implementation']['name']
+        _v = build_details['implementation']['version']
+        version = (_v['major'], _v['minor'])
     name = INTERPRETERS.get(name, name)
-    version = sys.version_info
     return f'{name}{version[0]}{version[1]}'
 
 
@@ -53,7 +58,12 @@ def _get_cpython_abi() -> str:
     return f'cp{version[0]}{version[1]}{debug}{pymalloc}'
 
 
-def get_abi_tag() -> str:
+def get_abi_tag(build_details: Optional[dict] = None) -> str:
+    if build_details is not None:
+        ext_suffix = build_details['abi']['extension_suffix']
+    else:
+        ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
     # The best solution to obtain the Python ABI is to parse the
     # $SOABI or $EXT_SUFFIX sysconfig variables as defined in PEP-314.
 
@@ -62,7 +72,7 @@ def get_abi_tag() -> str:
     # See https://foss.heptapod.net/pypy/pypy/-/issues/3816 and
     # https://github.com/pypa/packaging/pull/607.
     try:
-        empty, abi, ext = str(sysconfig.get_config_var('EXT_SUFFIX')).split('.')
+        empty, abi, ext = str(ext_suffix).split('.')
     except ValueError as exc:
         # CPython <= 3.8.7 on Windows does not implement PEP3149 and
         # uses '.pyd' as $EXT_SUFFIX, which does not allow to extract
@@ -178,8 +188,8 @@ def _get_ios_platform_tag() -> str:
     return f'ios_{version[0]}_{version[1]}_{multiarch}'
 
 
-def get_platform_tag() -> str:
-    platform = sysconfig.get_platform()
+def get_platform_tag(build_details: Optional[dict] = None) -> str:
+    platform = build_details['platform'] if build_details is not None else sysconfig.get_platform()
     if platform.startswith('macosx'):
         return _get_macosx_platform_tag()
     if platform.startswith('ios'):
@@ -194,10 +204,10 @@ def get_platform_tag() -> str:
 
 
 class Tag:
-    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None):
-        self.interpreter = interpreter or get_interpreter_tag()
-        self.abi = abi or get_abi_tag()
-        self.platform = platform or get_platform_tag()
+    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None, build_details: Optional[dict] = None):
+        self.interpreter = interpreter or get_interpreter_tag(build_details)
+        self.abi = abi or get_abi_tag(build_details)
+        self.platform = platform or get_platform_tag(build_details)
 
     def __str__(self) -> str:
         return f'{self.interpreter}-{self.abi}-{self.platform}'
