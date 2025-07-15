@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2025 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+# These test files contain symlinks to outside the repo (hence invalid - on
+# purpose) so exclude them to prevent warnings. See gh-728 for context.
+tests/packages/symlinks/baz.py export-ignore
+tests/packages/symlinks/qux.py export-ignore
