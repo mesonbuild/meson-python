@@ -340,6 +340,7 @@ class _WheelBuilder():
     _manifest: Dict[str, List[_Entry]]
     _limited_api: bool
     _allow_windows_shared_libs: bool
+    _build_details: mesonpy._tags.BuildDetails
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -364,14 +365,14 @@ class _WheelBuilder():
     def tag(self) -> mesonpy._tags.Tag:
         """Wheel tags."""
         if self._pure:
-            return mesonpy._tags.Tag('py3', 'none', 'any')
+            return mesonpy._tags.Tag('py3', 'none', 'any', build_details=self._build_details)
         if not self._has_extension_modules:
             # The wheel has platform dependent code (is not pure) but
             # does not contain any extension module (does not
             # distribute any file in {platlib}) thus use generic
             # implementation and ABI tags.
-            return mesonpy._tags.Tag('py3', 'none', None)
-        return mesonpy._tags.Tag(None, self._stable_abi, None)
+            return mesonpy._tags.Tag('py3', 'none', None, build_details=self._build_details)
+        return mesonpy._tags.Tag(None, self._stable_abi, None, build_details=self._build_details)
 
     @property
     def name(self) -> str:
@@ -844,6 +845,27 @@ class Project():
         ''')
         self._meson_native_file.write_text(native_file_data, encoding='utf-8')
 
+        # Starting with version 1.10, Meson can consume a `build-details.json`
+        # file following the specification is PEP 739 to obtain required
+        # information to build extension modules without having to run the
+        # interpreter. The path to the `build-details.json` can be specified
+        # passing the with the `-Dpython.build_config=` option to `meson
+        # setup`. Extract the value passed to this option and use the details
+        # in the `build-details.json` file to compute the wheel tag.
+        self._build_details: mesonpy._tags.BuildDetails = mesonpy._tags.introspect_build_details()
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-D', action='append', default=[])
+        args, _ = parser.parse_known_args(self._meson_args['setup'])
+        for arg in reversed(args.D):
+            name, value = arg.split('=', 1)
+            if name == 'python.build_config':
+                try:
+                    with open(value, 'r', encoding='utf8') as f:
+                        self._build_details = json.load(f)
+                except OSError as err:
+                    raise ConfigError(f'The file specified as "python.build_config" cannot be opened: {err}') from err
+                break
+
         # reconfigure if we have a valid Meson build directory. Meson
         # uses the presence of the 'meson-private/coredata.dat' file
         # in the build directory as indication that the build
@@ -1161,13 +1183,15 @@ class Project():
     def wheel(self, directory: Path) -> pathlib.Path:
         """Generates a wheel in the specified directory."""
         self.build()
-        builder = _WheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
+        builder = _WheelBuilder(
+            self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs, self._build_details)
         return builder.build(directory)
 
     def editable(self, directory: Path) -> pathlib.Path:
         """Generates an editable wheel in the specified directory."""
         self.build()
-        builder = _EditableWheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
+        builder = _EditableWheelBuilder(
+            self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs, self._build_details)
         return builder.build(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
 
 
@@ -1333,7 +1357,7 @@ def build_editable(
     if not config_settings:
         config_settings = {}
     if 'build-dir' not in config_settings and 'builddir' not in config_settings:
-        config_settings['build-dir'] = 'build/' + mesonpy._tags.get_abi_tag()
+        config_settings['build-dir'] = 'build/' + mesonpy._tags.get_abi_tag(mesonpy._tags.introspect_build_details())
 
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:

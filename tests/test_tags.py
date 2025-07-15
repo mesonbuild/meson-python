@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import importlib.machinery
+import json
 import os
 import pathlib
 import platform
@@ -55,11 +58,12 @@ def get_abi3_suffix():
 SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 ABI3SUFFIX = get_abi3_suffix()
 STABLE_ABI_KIND = 'abi3t' if FREE_THREADED_BUILD and sys.version_info >= (3, 15) else 'abi3'
+SYSTEM_BUILD_DETAILS = mesonpy._tags.introspect_build_details()
 
 
 def test_wheel_tag():
-    assert str(mesonpy._tags.Tag()) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
-    assert str(mesonpy._tags.Tag(abi='abi3')) == f'{INTERPRETER}-abi3-{PLATFORM}'
+    assert str(mesonpy._tags.Tag(build_details=SYSTEM_BUILD_DETAILS)) == f'{INTERPRETER}-{ABI}-{PLATFORM}'
+    assert str(mesonpy._tags.Tag(abi='abi3', build_details=SYSTEM_BUILD_DETAILS)) == f'{INTERPRETER}-abi3-{PLATFORM}'
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
@@ -67,16 +71,16 @@ def test_macos_platform_tag(monkeypatch):
     for minor in range(9, 16):
         monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'10.{minor}')
         version = (10, minor) if platform.mac_ver()[2] != 'arm64' else (11, 0)
-        assert next(packaging.tags.mac_platforms(version)) == mesonpy._tags.get_platform_tag()
+        assert next(packaging.tags.mac_platforms(version)) == mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS)
     for major in range(11, 20):
         for minor in range(3):
             monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.{minor}')
-            assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
+            assert next(packaging.tags.mac_platforms((major, minor))) == mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS)
     for major in range(11, 13):
         monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}.0')
-        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag()
+        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS)
         monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', f'{major}')
-        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag()
+        assert next(packaging.tags.mac_platforms((major, 0))) == mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS)
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
@@ -84,17 +88,17 @@ def test_macos_platform_tag_arm64(monkeypatch):
     monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-12.0-arm64')
     # Verify that the minimum platform ABI version on arm64 is 11.0.
     monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', '10.12')
-    assert mesonpy._tags.get_platform_tag() == 'macosx_11_0_arm64'
+    assert mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS) == 'macosx_11_0_arm64'
     monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', '12.34')
-    assert mesonpy._tags.get_platform_tag() == 'macosx_12_0_arm64'
+    assert mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS) == 'macosx_12_0_arm64'
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 def test_python_host_platform(monkeypatch):
     monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-12.0-arm64')
-    assert mesonpy._tags.get_platform_tag().endswith('arm64')
+    assert mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS).endswith('arm64')
     monkeypatch.setenv('_PYTHON_HOST_PLATFORM', 'macosx-11.1-x86_64')
-    assert mesonpy._tags.get_platform_tag().endswith('x86_64')
+    assert mesonpy._tags.get_platform_tag(SYSTEM_BUILD_DETAILS).endswith('x86_64')
 
 
 @pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
@@ -105,22 +109,23 @@ def test_ios_platform_tag(monkeypatch):
     monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value='ios-13.0-arm64-iphoneos'))
     ios_ver = platform.IOSVersionInfo('iOS', '13.0', 'iPhone', False)
     monkeypatch.setattr(platform, 'ios_ver', Mock(return_value=ios_ver))
+    build_details = mesonpy._tags.introspect_build_details()
 
     # Check the default value
-    assert next(packaging.tags.ios_platforms((13, 0))) == mesonpy._tags.get_platform_tag()
+    assert next(packaging.tags.ios_platforms((13, 0))) == mesonpy._tags.get_platform_tag(build_details)
 
     # Check the value when IPHONEOS_DEPLOYMENT_TARGET is set.
     for major in range(13, 20):
         for minor in range(3):
             monkeypatch.setenv('IPHONEOS_DEPLOYMENT_TARGET', f'{major}.{minor}')
-            assert next(packaging.tags.ios_platforms((major, minor))) == mesonpy._tags.get_platform_tag()
+            assert next(packaging.tags.ios_platforms((major, minor))) == mesonpy._tags.get_platform_tag(build_details)
 
 
 def wheel_builder_test_factory(content, pure=True, limited_api=False):
     manifest = defaultdict(list)
     for key, value in content.items():
         manifest[key] = [mesonpy._Entry(pathlib.Path(x), os.path.join('build', x)) for x in value]
-    return mesonpy._WheelBuilder(None, manifest, limited_api, False)
+    return mesonpy._WheelBuilder(None, manifest, limited_api, False, SYSTEM_BUILD_DETAILS)
 
 
 def test_tag_empty_wheel():
@@ -176,3 +181,62 @@ def test_tag_stable_abi_multiarch():
     }, pure=False, limited_api=True)
     abi = 'abi3.abi3t' if STABLE_ABI_KIND == 'abi3t' else 'abi3'
     assert str(builder.tag) == f'{INTERPRETER}-{abi}-{PLATFORM}'
+
+
+@pytest.mark.skipif(sys.platform == 'darwin', reason='build-details on macos disagree with system over deployment target')
+def test_system_build_details():
+    try:
+        with open(os.path.join(sysconfig.get_path('stdlib'), 'build-details.json'), encoding='utf8') as f:
+            build_details = json.load(f)
+    except FileNotFoundError:
+        return pytest.skip('build-details.json not found')
+    assert str(mesonpy._tags.Tag(build_details=SYSTEM_BUILD_DETAILS)) == str(mesonpy._tags.Tag(build_details=build_details))
+
+
+BUILD_DETAILS = {
+    'linux-x86_64': {
+        'platform': 'linux-x86_64',
+        'implementation': {'name': 'cpython', 'version': {'major': 3, 'minor': 15}},
+        'abi': {'extension_suffix': '.cpython-315-x86_64-linux-gnu.so'}
+    },
+    'macosx-x86_64': {
+        'platform': 'macosx-11.0-x86_64',
+        'implementation': {'name': 'cpython', 'version': {'major': 3, 'minor': 14}},
+        'abi': {'extension_suffix': '.cpython-314-darwin.so'}
+    },
+    'macosx-arm64': {
+        'platform': 'macosx-11.0-arm64',
+        'implementation': {'name': 'cpython', 'version': {'major': 3, 'minor': 14}},
+        'abi': {'extension_suffix': '.cpython-314-darwin.so'}
+    },
+}
+
+
+@pytest.mark.parametrize(
+    ('build_details', 'expected_tag'),
+    [
+        (BUILD_DETAILS['linux-x86_64'], 'cp315-cp315-linux_x86_64'),
+        (BUILD_DETAILS['macosx-x86_64'], 'cp314-cp314-macosx_11_0_x86_64'),
+        (BUILD_DETAILS['macosx-arm64'], 'cp314-cp314-macosx_11_0_arm64'),
+    ]
+)
+def test_build_details(monkeypatch, build_details: mesonpy._tags.BuildDetails, expected_tag: str):
+    # this should not affect the result
+    monkeypatch.setattr(mesonpy._tags, '_32_BIT_INTERPRETER', True)
+    assert str(mesonpy._tags.Tag(build_details=build_details)) == expected_tag
+
+
+@pytest.mark.parametrize(
+    ('version', 'expected_tag_x86_64', 'expected_tag_arm64'),
+    [
+        ('10', 'cp314-cp314-macosx_10_0_x86_64', 'cp314-cp314-macosx_11_0_arm64'),
+        ('10.3', 'cp314-cp314-macosx_10_3_x86_64', 'cp314-cp314-macosx_11_0_arm64'),
+        ('11.2', 'cp314-cp314-macosx_11_0_x86_64', 'cp314-cp314-macosx_11_0_arm64'),
+    ]
+)
+def test_macos_deployment_target_overrides_build_details(
+    monkeypatch, version: str, expected_tag_x86_64: str, expected_tag_arm64: str
+):
+    monkeypatch.setenv('MACOSX_DEPLOYMENT_TARGET', version)
+    assert str(mesonpy._tags.Tag(build_details=BUILD_DETAILS['macosx-x86_64'])) == expected_tag_x86_64
+    assert str(mesonpy._tags.Tag(build_details=BUILD_DETAILS['macosx-arm64'])) == expected_tag_arm64
