@@ -178,6 +178,27 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_sharedlib_in_package)
+    artifact.extractall(tmp_path)
+
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
+    # This RPATH entry should be removed by meson-python but it is not.
+    build_rpath = {f'{origin}/../src'}
+    assert rpath == {origin, *build_rpath}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
+    # This RPATH entry should be removed by meson-python but it is not.
+    build_rpath = {f'{origin}/'}
+    assert rpath == {f'{origin}/sub', *build_rpath}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
+    assert rpath == set()
+
+
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
     output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
