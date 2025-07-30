@@ -8,7 +8,11 @@ py.extension_module(
     dependencies: lib_dep,
     install: true,
     subdir: 'mypkg',
-    install_rpath: '$ORIGIN',
+    # install_rpath is not exposed in the Meson introspection data in Meson
+    # versions prior to 1.6.0 and thus cannot be set by meson-python when
+    # building the Python wheel. Use link_args to set the RPATH.
+    # install_rpath: '$ORIGIN',
+    link_args: '-Wl,-rpath,$ORIGIN',
 )
 
 py.install_sources(
