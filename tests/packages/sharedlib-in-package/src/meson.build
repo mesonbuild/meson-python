@@ -30,7 +30,11 @@ lib = shared_library(
     c_args: export_dll_args,
     install: true,
     install_dir: py.get_install_dir() / 'mypkg',
-    install_rpath: '$ORIGIN/sub',
+    # install_rpath is not exposed in the Meson introspection data in Meson
+    # versions prior to 1.6.0 and thus cannot be set by meson-python when
+    # building the Python wheel. Use link_args to set the RPATH.
+    # install_rpath: '$ORIGIN/sub',
+    link_args: '-Wl,-rpath,$ORIGIN/sub',
 )
 
 lib_dep = declare_dependency(
