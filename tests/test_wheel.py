@@ -192,7 +192,7 @@ def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_rpath(wheel_link_against_local_lib, tmp_path):
+def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
@@ -200,9 +200,7 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
     expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
 
     rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
-    # Verify that rpath is a superset of the expected one: linking to
-    # the Python runtime may require additional rpath entries.
-    assert rpath >= expected
+    assert rpath == expected
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
