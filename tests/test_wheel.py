@@ -176,6 +176,25 @@ def test_sharedlib_in_package_legacy(venv, wheel_sharedlib_in_package_legacy):
     assert int(output) == 42
 
 
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_sharedlib_in_package)
+    artifact.extractall(tmp_path)
+
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
+    # FIXME: RPATH entries added by Meson to point to the build directory are not removed.
+    assert rpath >= {origin}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
+    # FIXME: RPATH entries added by Meson to point to the build directory are not removed.
+    assert rpath >= {f'{origin}/sub'}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
+    assert rpath == set()
+
+
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
     output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
@@ -190,7 +209,7 @@ def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_rpath(wheel_link_against_local_lib, tmp_path):
+def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
