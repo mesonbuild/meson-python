@@ -74,7 +74,7 @@ else:
 
     def _get_rpath(filepath: Path) -> List[str]:
         r = subprocess.run(['patchelf', '--print-rpath', os.fspath(filepath)], capture_output=True, text=True)
-        return r.stdout.strip().split(':')
+        return [x for x in r.stdout.strip().split(':') if x]
 
     def _set_rpath(filepath: Path, rpath: Iterable[str]) -> None:
         subprocess.run(['patchelf','--set-rpath', ':'.join(rpath), os.fspath(filepath)], check=True)
