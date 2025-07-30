@@ -11,8 +11,8 @@ py.extension_module(
     # install_rpath is not exposed in the Meson introspection data in Meson
     # versions prior to 1.6.0 and thus cannot be set by meson-python when
     # building the Python wheel. Use link_args to set the RPATH.
-    # install_rpath: '$ORIGIN',
-    link_args: '-Wl,-rpath,$ORIGIN',
+    # install_rpath: f'@origin@',
+    link_args: f'-Wl,-rpath,@origin@',
 )
 
 py.install_sources(
