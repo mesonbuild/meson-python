@@ -199,6 +199,22 @@ def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
     assert rpath == set()
 
 
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_sharedlib_in_package_rpath_ldflags(package_sharedlib_in_package, tmp_path, monkeypatch):
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    extra_rpath = {f'{origin}/test-ldflags', '/usr/lib/test-ldflags'}
+    ldflags = ' '.join(f'-Wl,-rpath,{p}' for p in extra_rpath)
+    monkeypatch.setenv('LDFLAGS', ldflags)
+
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    artifact.extractall(tmp_path)
+
+    for path in f'_example{EXT_SUFFIX}', f'liblib{LIB_SUFFIX}', f'sub/libsublib{LIB_SUFFIX}':
+        rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / path))
+        assert extra_rpath <= rpath
+
+
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
     output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
@@ -222,6 +238,25 @@ def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
 
     rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     assert rpath == expected
+
+
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_link_against_local_lib_rpath_ldflags(package_link_against_local_lib, tmp_path, monkeypatch):
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    extra_rpath = {f'{origin}/test-ldflags', '/usr/lib/test-ldflags'}
+    ldflags = ' '.join(f'-Wl,-rpath,{p}' for p in extra_rpath)
+    monkeypatch.setenv('LDFLAGS', ldflags)
+
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    artifact.extractall(tmp_path)
+
+    # The RPATH entry relative to $ORIGIN added via $LDFLAGS is
+    # erroneusly stripped by meson-python.
+    extra_rpath = {'/usr/lib/test-ldflags',}
+
+    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
+    assert extra_rpath <= rpath
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
