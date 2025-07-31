@@ -19,24 +19,25 @@ the ``-C`` short command line option:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build \
-               -Csetup-args="-Doption=true" \
-               -Csetup-args="-Dvalue=1" \
-               -Ccompile-args="-j6"
+         $ python -m build --wheel \
+                  -Csetup-args="-Doption=true" \
+                  -Csetup-args="-Dvalue=1" \
+                  -Ccompile-args="-j6"
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip wheel . \
-               --config-settings=setup-args="-Doption=disable" \
-               --config-settings=compile-args="-j6"
+         $ # note: for Pip <23.1, use `--config-settings=` instead of `-C`
+         $ python -m pip wheel . \
+                  -Csetup-args="-Doption=disable" \
+                  -Ccompile-args="-j6"
 
 
 Refer to the `build`_ and `pip`_ documentation for details.  This
@@ -73,19 +74,19 @@ user-specified build directory which will not be deleted. For example:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build -Cbuild-dir=build
+         $ python -m build --wheel -Cbuild-dir=build
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip install . -Cbuild-dir=build
+         $ python -m pip install . -Cbuild-dir=build
 
 After running this command, the ``build`` directory will contain all
 the build artifacts and support files created by ``meson``, ``ninja``
