@@ -2,37 +2,17 @@
 #
 # SPDX-License-Identifier: MIT
 
-if meson.get_compiler('c').get_id() in ['msvc', 'clang-cl', 'intel-cl']
-    export_dll_args = ['-DMYPKG_DLL_EXPORTS']
-    import_dll_args = ['-DMYPKG_DLL_IMPORTS']
-else
-    export_dll_args = []
-    import_dll_args = []
-endif
-
-example_lib = shared_library(
-    'examplelib',
-    'examplelib.c',
-    c_args: export_dll_args,
-    install: true,
-    install_dir: py.get_install_dir() / 'mypkg',
-)
-
-example_lib_dep = declare_dependency(
-    compile_args: import_dll_args,
-    link_with: example_lib,
-)
-
-subdir('sub')
-
 py.extension_module(
     '_example',
     '_examplemod.c',
-    dependencies: [example_lib_dep, example_lib2_dep],
-    include_directories: 'sub',
+    dependencies: lib_dep,
     install: true,
     subdir: 'mypkg',
-    install_rpath: '$ORIGIN',
+    # install_rpath is not exposed in the Meson introspection data in Meson
+    # versions prior to 1.6.0 and thus cannot be set by meson-python when
+    # building the Python wheel. Use link_args to set the RPATH.
+    # install_rpath: f'@origin@',
+    link_args: f'-Wl,-rpath,@origin@',
 )
 
 py.install_sources(
