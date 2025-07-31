@@ -244,6 +244,7 @@ def collect(install_plan: Dict[str, Dict[str, Any]]) -> Node:
     tree = Node()
     for key, data in install_plan.items():
         for src, target in data.items():
+            src = os.path.normpath(src)
             path = pathlib.Path(target['destination'])
             if path.parts[0] in {'{py_platlib}', '{py_purelib}'}:
                 if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
