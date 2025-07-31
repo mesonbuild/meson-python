@@ -49,10 +49,11 @@ installation step to become effective.
 
 __ https://packaging.python.org/en/latest/specifications/entry-points/
 
-An editable install exposes at least all the files that would be
+An editable install exposes at least all of the Python files that would be
 available in a regular installation. However, depending on the file
 and directory organization in your project, it might also expose files
-that would not be normally available.
+that would not be normally available. Furthermore, some files written in
+other languages to Python may not be available.
 
 
 Build dependencies
