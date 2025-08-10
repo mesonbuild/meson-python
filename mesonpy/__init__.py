@@ -427,12 +427,6 @@ class _WheelBuilder():
 
         if self._has_internal_libs:
             if _is_native(origin):
-                # When an executable, libray, or Python extension module is
-                # dynamically linked to a library built as part of the project,
-                # Meson adds a library load path to it pointing to the build
-                # directory, in the form of a relative RPATH entry. meson-python
-                # relocates the shared libraries to the $project.mesonpy.libs
-                # folder. Rewrite the RPATH to point to that folder instead.
                 libspath = os.path.relpath(self._libs_dir, destination.parent)
                 mesonpy._rpath.fix_rpath(origin, libspath)
 

@@ -41,11 +41,21 @@ class RPATH:
     @classmethod
     def fix_rpath(cls, filepath: Path, libs_relative_path: str) -> None:
         old_rpath = cls.get_rpath(filepath)
-        new_rpath = []
-        for path in old_rpath:
-            if path.startswith(cls.origin):
-                path = os.path.join(cls.origin, libs_relative_path)
-            new_rpath.append(path)
+        new_rpath = old_rpath[:]
+
+        # When an executable, libray, or Python extension module is
+        # dynamically linked to a library built as part of the project, Meson
+        # adds a build RPATH pointing to the build directory, in the form of a
+        # relative RPATH entry. We can use the presence of any RPATH entries
+        # relative to ``$ORIGIN`` as an indicator that the installed object
+        # depends on shared libraries internal to the project. In this case we
+        # need to add an RPATH entry pointing to the meson-python shared
+        # library install location. This heuristic is not perfect: RPATH
+        # entries relative to ``$ORIGIN`` can exist for other reasons.
+        # However, this only results in harmless additional RPATH entries.
+        if any(path.startswith(cls.origin) for path in old_rpath):
+            new_rpath.append(os.path.join(cls.origin, libs_relative_path))
+
         new_rpath = unique(new_rpath)
         if new_rpath != old_rpath:
             cls.set_rpath(filepath, old_rpath, new_rpath)

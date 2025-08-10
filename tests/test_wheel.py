@@ -235,6 +235,8 @@ def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
+    # This RPATH entry should be removed by meson-python but it is not.
+    expected.add(f'{origin}/lib')
 
     rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     assert rpath == expected
@@ -250,10 +252,6 @@ def test_link_against_local_lib_rpath_ldflags(package_link_against_local_lib, tm
     filename = mesonpy.build_wheel(tmp_path)
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
     artifact.extractall(tmp_path)
-
-    # The RPATH entry relative to $ORIGIN added via $LDFLAGS is
-    # erroneusly stripped by meson-python.
-    extra_rpath = {'/usr/lib/test-ldflags',}
 
     rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     assert extra_rpath <= rpath
