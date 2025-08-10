@@ -427,12 +427,6 @@ class _WheelBuilder():
 
         if self._has_internal_libs:
             if _is_native(origin):
-                if sys.platform == 'win32' and not self._allow_windows_shared_libs:
-                    raise NotImplementedError(
-                        'Loading shared libraries bundled in the Python wheel on Windows requires '
-                        'setting the DLL load path or preloading. See the documentation for '
-                        'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
-
                 # When an executable, libray, or Python extension module is
                 # dynamically linked to a library built as part of the project,
                 # Meson adds a library load path to it pointing to the build
@@ -469,6 +463,12 @@ class _WheelBuilder():
                 whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
 
     def build(self, directory: Path) -> pathlib.Path:
+        if sys.platform == 'win32' and self._has_internal_libs and not self._allow_windows_shared_libs:
+            raise NotImplementedError(
+                'Loading shared libraries bundled in the Python wheel on Windows requires '
+                'setting the DLL load path or preloading. See the documentation for '
+                'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
+
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
