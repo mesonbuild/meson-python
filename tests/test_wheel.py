@@ -185,17 +185,17 @@ def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
     # This RPATH entry should be removed by meson-python but it is not.
     build_rpath = {f'{origin}/../src'}
     assert rpath == {origin, *build_rpath}
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
     # This RPATH entry should be removed by meson-python but it is not.
     build_rpath = {f'{origin}/'}
     assert rpath == {f'{origin}/sub', *build_rpath}
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
     assert rpath == set()
 
 
@@ -211,7 +211,7 @@ def test_sharedlib_in_package_rpath_ldflags(package_sharedlib_in_package, tmp_pa
     artifact.extractall(tmp_path)
 
     for path in f'_example{EXT_SUFFIX}', f'liblib{LIB_SUFFIX}', f'sub/libsublib{LIB_SUFFIX}':
-        rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'mypkg' / path))
+        rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / path))
         assert extra_rpath <= rpath
 
 
@@ -236,7 +236,7 @@ def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     assert rpath == expected
 
 
@@ -255,7 +255,7 @@ def test_link_against_local_lib_rpath_ldflags(package_link_against_local_lib, tm
     # erroneusly stripped by meson-python.
     extra_rpath = {'/usr/lib/test-ldflags',}
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     assert extra_rpath <= rpath
 
 
@@ -265,7 +265,7 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
-    rpath = mesonpy._rpath._get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
+    rpath = mesonpy._rpath.get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
     for path in rpath:
         assert origin not in path
 
