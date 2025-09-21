@@ -190,6 +190,14 @@ permanently in the project's ``pyproject.toml``:
    [tool.meson-python.args]
    setup = ['--vsenv']
 
+And in case you don't want to set ``--vsenv`` as the default, but do want to
+build Windows wheels with MSVC in CI using cibuildwheel:
+
+.. code-block:: toml
+
+   [tool.cibuildwheel.windows]
+   config-settings = { setup-args = ["--vsenv"] }
+
 To set this option temporarily at build-time:
 
 .. tab-set::
