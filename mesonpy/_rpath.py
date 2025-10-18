@@ -11,7 +11,7 @@ import typing
 
 
 if typing.TYPE_CHECKING:
-    from typing import List, TypeVar, Union
+    from typing import List, Optional, TypeVar, Union
     Path = Union[str, os.PathLike[str]]
     T = TypeVar('T')
 
@@ -37,7 +37,7 @@ class RPATH:
         raise NotImplementedError
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, libs_relative_path: str) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: List[str], libs_relative_path: Optional[str]) -> None:
         old_rpath = cls.get_rpath(filepath)
         new_rpath = old_rpath[:]
 
@@ -51,8 +51,11 @@ class RPATH:
         # library install location. This heuristic is not perfect: RPATH
         # entries relative to ``$ORIGIN`` can exist for other reasons.
         # However, this only results in harmless additional RPATH entries.
-        if any(path.startswith(cls.origin) for path in old_rpath):
+        if libs_relative_path and any(path.startswith(cls.origin) for path in old_rpath):
             new_rpath.append(os.path.join(cls.origin, libs_relative_path))
+
+        # Add install_rpath.
+        new_rpath += install_rpath
 
         new_rpath = unique(new_rpath)
         if new_rpath != old_rpath:
@@ -62,7 +65,7 @@ class RPATH:
 class _Windows(RPATH):
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, libs_relative_path: str) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: List[str], libs_relative_path: str) -> None:
         pass
 
 
