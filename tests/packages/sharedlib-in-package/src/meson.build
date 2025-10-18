@@ -23,6 +23,12 @@ sublib_dep = declare_dependency(
     link_with: sublib,
 )
 
+# install_rpath is not exposed in the Meson introspection data in
+# Meson versions prior to 1.6.0 and thus cannot be set by meson-python
+# when building the Python wheel. Use link_args to set the RPATH when
+# using older Meson.
+kwargs = meson.version().version_compare('< 1.6') ? {'link_args': f'-Wl,-rpath,@origin@/sub'} : {'install_rpath': f'@origin@/sub'}
+
 lib = shared_library(
     'lib',
     'lib.c',
@@ -30,11 +36,7 @@ lib = shared_library(
     c_args: export_dll_args,
     install: true,
     install_dir: py.get_install_dir() / 'mypkg',
-    # install_rpath is not exposed in the Meson introspection data in Meson
-    # versions prior to 1.6.0 and thus cannot be set by meson-python when
-    # building the Python wheel. Use link_args to set the RPATH.
-    # install_rpath: f'@origin@/sub',
-    link_args: f'-Wl,-rpath,@origin@/sub',
+    kwargs: kwargs,
 )
 
 lib_dep = declare_dependency(
