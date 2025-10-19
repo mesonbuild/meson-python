@@ -50,8 +50,8 @@ jobs:
           - macos-13
           - windows-latest
         python:
-          - '3.13'
           - '3.9'
+          - '3.14'
         meson:
           -
         dependencies:
