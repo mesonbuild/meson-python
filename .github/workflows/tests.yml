@@ -98,6 +98,9 @@ jobs:
             python: '3.12'
             meson: '~=1.7.0'
             dependencies: 'packaging==23.2'
+          - os: ubuntu-latest
+            python: '3.13'
+            meson: '~=1.8.0'
           # Test with Meson master branch.
           - os: ubuntu-latest
             python: '3.12'
