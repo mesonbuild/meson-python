@@ -217,6 +217,9 @@ def test_reproducible(package_pure, tmp_path):
     assert sdist_path_a == sdist_path_b
     assert tmp_path.joinpath('a', sdist_path_a).read_bytes() == tmp_path.joinpath('b', sdist_path_b).read_bytes()
 
+# ``meson dist`` does not handle tarballs containing symbolic links to absolute
+# paths on Python 3.14, see https://github.com/mesonbuild/meson/issues/15142
+@pytest.mark.skipif(sys.version_info >= (3, 14), reason='incompatible Python version')
 @pytest.mark.filterwarnings('ignore:symbolic link')
 def test_symlinks(tmp_path, sdist_symlinks):
     with tarfile.open(sdist_symlinks, 'r:gz') as sdist:
