@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import functools
 import importlib.resources
 import os
 import sys
@@ -17,12 +16,6 @@ if sys.version_info >= (3, 9):
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 else:
     from typing import Collection, Iterable, Iterator, Mapping, Sequence
-
-
-if sys.version_info >= (3, 8):
-    from functools import cached_property
-else:
-    cached_property = lambda x: property(functools.lru_cache(maxsize=None)(x))  # noqa: E731
 
 
 if sys.version_info >= (3, 9):
@@ -49,7 +42,6 @@ if typing.TYPE_CHECKING:
 
 
 __all__ = [
-    'cached_property',
     'read_binary',
     'Collection',
     'Iterable',
