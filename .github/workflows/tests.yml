@@ -50,8 +50,8 @@ jobs:
           - macos-13
           - windows-latest
         python:
-          - '3.8'
           - '3.13'
+          - '3.9'
         meson:
           -
         dependencies:
@@ -61,10 +61,6 @@ jobs:
             python: 'pypy-3.9'
           - os: ubuntu-latest
             python: 'pypy-3.11'
-          - os: ubuntu-latest
-            python: '3.8'
-          - os: ubuntu-latest
-            python: '3.9'
           - os: ubuntu-latest
             python: '3.10'
           # Test with older supported Meson version.  Meson up to

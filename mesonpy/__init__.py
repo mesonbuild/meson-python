@@ -36,6 +36,8 @@ import textwrap
 import typing
 import warnings
 
+from functools import cached_property
+
 
 if sys.version_info < (3, 11):
     import tomli as tomllib
@@ -46,13 +48,12 @@ import packaging.utils
 import packaging.version
 import pyproject_metadata
 
-import mesonpy._compat
 import mesonpy._rpath
 import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
 
-from mesonpy._compat import cached_property, read_binary
+from mesonpy._compat import read_binary
 
 
 try:
@@ -578,9 +579,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
         'meson': _string_or_path,
         'limited-api': _bool,
         'allow-windows-internal-shared-libs': _bool,
-        'args': _table({
-            name: _strings for name in _MESON_ARGS_KEYS
-        }),
+        'args': _table(dict.fromkeys(_MESON_ARGS_KEYS, _strings)),
     })
 
     table = pyproject.get('tool', {}).get('meson-python', {})
