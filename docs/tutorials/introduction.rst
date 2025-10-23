@@ -67,12 +67,10 @@ function ``foo`` that simply returns ``"bar"``.
    :class: seealso
 
    If you need help writing a native module using Python's C API, we recommend
-   checking out the following resources.
-
-   - `The official Python C API documentation <https://docs.python.org/3/extending/index.html>`_
-   - `RealPython's "Building a Python C Extension Module" introductory tutorial <https://realpython.com/build-python-c-extension-module/>`_
-   - `pysheeet's "C Extensions" page <https://www.pythonsheets.com/notes/python-c-extensions.html>`_
-   - `pysheeet-kr's "Python C API cheatsheet" page <https://pysheeet-kr.readthedocs.io/ko/latest/notes/python-capi.html>`_
+   checking out the :ref:`extending-index` guide in the Python documentation.
+   Also consider if you need to use the CPython C API directly, or are perhaps
+   better off using a binding generator tool like Cython_, pybind11_ or
+   nanobind_ which will take care of a lot of the low-level details for you.
 
 
 The Meson build description
@@ -324,3 +322,6 @@ pip_.
 .. _Test PyPI: https://test.pypi.org/
 .. _PyPI: https://pypi.org/
 .. _pip: https://github.com/pypa/pip
+.. _Cython: https://cython.readthedocs.io
+.. _pybind11: https://pybind11.readthedocs.io
+.. _nanobind: https://nanobind.readthedocs.io
