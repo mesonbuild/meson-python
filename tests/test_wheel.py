@@ -178,15 +178,50 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_sharedlib_in_package)
+    artifact.extractall(tmp_path)
+
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
+    # This RPATH entry should be removed by meson-python but it is not.
+    build_rpath = {f'{origin}/../src'}
+    assert rpath == {origin, *build_rpath}
+
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
+    # This RPATH entry should be removed by meson-python but it is not.
+    build_rpath = {f'{origin}/'}
+    assert rpath == {f'{origin}/sub', *build_rpath}
+
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
+    assert rpath == set()
+
+
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_sharedlib_in_package_rpath_ldflags(package_sharedlib_in_package, tmp_path, monkeypatch):
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    extra_rpath = {f'{origin}/test-ldflags', '/usr/lib/test-ldflags'}
+    ldflags = ' '.join(f'-Wl,-rpath,{p}' for p in extra_rpath)
+    monkeypatch.setenv('LDFLAGS', ldflags)
+
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    artifact.extractall(tmp_path)
+
+    for path in f'_example{EXT_SUFFIX}', f'liblib{LIB_SUFFIX}', f'sub/libsublib{LIB_SUFFIX}':
+        rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / path))
+        assert extra_rpath <= rpath
+
+
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
-    assert int(output) == 7
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_prod(6, 7))')
-    assert int(output) == 42
+    output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
+    assert int(output) == 11
 
 
-@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='meson too old')
 def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
     venv.pip('install', wheel_link_library_in_subproject)
     output = venv.python('-c', 'import foo; print(foo.example_sum(3, 6))')
@@ -194,17 +229,32 @@ def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_rpath(wheel_link_against_local_lib, tmp_path):
+def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
+    # This RPATH entry should be removed by meson-python but it is not.
+    expected.add(f'{origin}/lib')
 
-    rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
-    # Verify that rpath is a superset of the expected one: linking to
-    # the Python runtime may require additional rpath entries.
-    assert rpath >= expected
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
+    assert rpath == expected
+
+
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+def test_link_against_local_lib_rpath_ldflags(package_link_against_local_lib, tmp_path, monkeypatch):
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    extra_rpath = {f'{origin}/test-ldflags', '/usr/lib/test-ldflags'}
+    ldflags = ' '.join(f'-Wl,-rpath,{p}' for p in extra_rpath)
+    monkeypatch.setenv('LDFLAGS', ldflags)
+
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    artifact.extractall(tmp_path)
+
+    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
+    assert extra_rpath <= rpath
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
@@ -213,7 +263,7 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
-    rpath = mesonpy._rpath._get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
+    rpath = mesonpy._rpath.get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
     for path in rpath:
         assert origin not in path
 
