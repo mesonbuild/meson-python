@@ -9,7 +9,7 @@ if meson.get_compiler('c').get_id() in ['msvc', 'clang-cl', 'intel-cl']
     link_args = ['-DEXAMPLE_DLL_IMPORTS']
 else
     lib_compile_args = []
-    link_args = ['-Wl,-rpath,custom-rpath']
+    link_args = []
 endif
 
 subdir('lib')
@@ -26,6 +26,7 @@ py.extension_module(
     'examplemod.c',
     link_with: example_lib,
     link_args: link_args,
+    install_rpath: 'custom-rpath',
     install: true,
     subdir: 'example',
 )

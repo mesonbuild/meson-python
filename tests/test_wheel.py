@@ -178,15 +178,14 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
-    assert int(output) == 7
-    output = venv.python('-c', 'import mypkg; print(mypkg.example_prod(6, 7))')
-    assert int(output) == 42
+    output = venv.python('-c', 'import mypkg; print(mypkg.prodsum(2, 3, 4))')
+    assert int(output) == 11
 
 
-@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='meson too old')
 def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
     venv.pip('install', wheel_link_library_in_subproject)
     output = venv.python('-c', 'import foo; print(foo.example_sum(3, 6))')
@@ -199,7 +198,11 @@ def test_rpath(wheel_link_against_local_lib, tmp_path):
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
-    expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
+    expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs',}
+
+    # ``install_rpath`` is supported starting with meson 1.6.0
+    if MESON_VERSION >= (1, 6, 0):
+        expected.add('custom-rpath')
 
     rpath = set(mesonpy._rpath._get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
     # Verify that rpath is a superset of the expected one: linking to

@@ -11,19 +11,81 @@ import typing
 
 
 if typing.TYPE_CHECKING:
-    from typing import List
+    from typing import List, Optional, TypeVar
 
     from mesonpy._compat import Iterable, Path
 
+    T = TypeVar('T')
 
-if sys.platform == 'win32' or sys.platform == 'cygwin':
 
-    def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
+def unique(values: List[T]) -> List[T]:
+    r = []
+    for value in values:
+        if value not in r:
+            r.append(value)
+    return r
+
+
+class _Windows:
+
+    @staticmethod
+    def get_rpath(filepath: Path) -> List[str]:
+        return []
+
+    @classmethod
+    def fix_rpath(cls, filepath: Path, install_rpath: Optional[str], libs_rpath: Optional[str]) -> None:
         pass
 
-elif sys.platform == 'darwin':
 
-    def _get_rpath(filepath: Path) -> List[str]:
+class RPATH:
+    origin = '$ORIGIN'
+
+    @staticmethod
+    def get_rpath(filepath: Path) -> List[str]:
+        raise NotImplementedError
+
+    @staticmethod
+    def set_rpath(filepath: Path, old: List[str], rpath: List[str]) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    def fix_rpath(cls, filepath: Path, install_rpath: Optional[str], libs_rpath: Optional[str]) -> None:
+        old_rpath = cls.get_rpath(filepath)
+        new_rpath = []
+        if libs_rpath is not None:
+            if libs_rpath == '.':
+                libs_rpath = ''
+            for path in old_rpath:
+                if path.split('/', 1)[0] == cls.origin:
+                    # Any RPATH entry relative to ``$ORIGIN`` is interpreted as
+                    # pointing to a location in the build directory added by
+                    # Meson. These need to be removed. Their presence indicates
+                    # that the executable, shared library, or Python module
+                    # depends on libraries build as part of the package. These
+                    # entries are thus replaced with entries pointing to the
+                    # ``.<package-name>.mesonpy.libs`` folder where meson-python
+                    # relocates shared libraries distributed with the package.
+                    # The package may however explicitly install these in a
+                    # different location, thus this is not a perfect heuristic
+                    # and may add not required RPATH entries. These are however
+                    # harmless.
+                    path = f'{cls.origin}/{libs_rpath}'
+                # Any other RPATH entry is preserved.
+                new_rpath.append(path)
+        if install_rpath:
+            # Add the RPATH entry spcified with the ``install_rpath`` argument.
+            new_rpath.append(install_rpath)
+        # Make the RPATH entries unique.
+        new_rpath = unique(new_rpath)
+        if new_rpath != old_rpath:
+            cls.set_rpath(filepath, old_rpath, new_rpath)
+
+
+class _MacOS(RPATH):
+    origin = '@loader_path'
+
+    @staticmethod
+    def get_rpath(filepath: Path) -> List[str]:
         rpath = []
         r = subprocess.run(['otool', '-l', os.fspath(filepath)], capture_output=True, text=True)
         rpath_tag = False
@@ -35,17 +97,31 @@ elif sys.platform == 'darwin':
                 rpath_tag = False
         return rpath
 
-    def _replace_rpath(filepath: Path, old: str, new: str) -> None:
-        subprocess.run(['install_name_tool', '-rpath', old, new, os.fspath(filepath)], check=True)
+    @staticmethod
+    def set_rpath(filepath: Path, old: List[str], rpath: List[str]) -> None:
+        args: List[str] = []
+        for path in rpath:
+            if path not in old:
+                args += ['-add_rpath', path]
+        for path in old:
+            if path not in rpath:
+                args += ['-delete_rpath', path]
+        subprocess.run(['install_name_tool', *args, os.fspath(filepath)], check=True)
 
-    def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        for path in _get_rpath(filepath):
-            if path.startswith('@loader_path/'):
-                _replace_rpath(filepath, path, '@loader_path/' + libs_relative_path)
+    @classmethod
+    def fix_rpath(cls, filepath: Path, install_rpath: Optional[str], libs_rpath: Optional[str]) -> None:
+        if install_rpath is not None:
+            root, sep, stem = install_rpath.partition('/')
+            if root == '$ORIGIN':
+                install_rpath = f'{cls.origin}{sep}{stem}'
+                # warnings.warn('...')
+        super().fix_rpath(filepath, install_rpath, libs_rpath)
 
-elif sys.platform == 'sunos5':
 
-    def _get_rpath(filepath: Path) -> List[str]:
+class _SunOS(RPATH):
+
+    @staticmethod
+    def get_rpath(filepath: Path) -> List[str]:
         rpath = []
         r = subprocess.run(['/usr/bin/elfedit', '-r', '-e', 'dyn:rpath', os.fspath(filepath)],
             capture_output=True, check=True, text=True)
@@ -56,35 +132,31 @@ elif sys.platform == 'sunos5':
                         rpath.append(path)
         return rpath
 
-    def _set_rpath(filepath: Path, rpath: Iterable[str]) -> None:
+    @staticmethod
+    def set_rpath(filepath: Path, old: Iterable[str], rpath: Iterable[str]) -> None:
         subprocess.run(['/usr/bin/elfedit', '-e', 'dyn:rpath ' + ':'.join(rpath), os.fspath(filepath)], check=True)
 
-    def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        old_rpath = _get_rpath(filepath)
-        new_rpath = []
-        for path in old_rpath:
-            if path.startswith('$ORIGIN/'):
-                path = '$ORIGIN/' + libs_relative_path
-            new_rpath.append(path)
-        if new_rpath != old_rpath:
-            _set_rpath(filepath, new_rpath)
 
-else:
-    # Assume that any other platform uses ELF binaries.
+class _ELF(RPATH):
 
-    def _get_rpath(filepath: Path) -> List[str]:
+    @staticmethod
+    def get_rpath(filepath: Path) -> List[str]:
         r = subprocess.run(['patchelf', '--print-rpath', os.fspath(filepath)], capture_output=True, text=True)
         return r.stdout.strip().split(':')
 
-    def _set_rpath(filepath: Path, rpath: Iterable[str]) -> None:
+    @staticmethod
+    def set_rpath(filepath: Path, old: Iterable[str], rpath: Iterable[str]) -> None:
         subprocess.run(['patchelf','--set-rpath', ':'.join(rpath), os.fspath(filepath)], check=True)
 
-    def fix_rpath(filepath: Path, libs_relative_path: str) -> None:
-        old_rpath = _get_rpath(filepath)
-        new_rpath = []
-        for path in old_rpath:
-            if path.startswith('$ORIGIN/'):
-                path = '$ORIGIN/' + libs_relative_path
-            new_rpath.append(path)
-        if new_rpath != old_rpath:
-            _set_rpath(filepath, new_rpath)
+
+if sys.platform == 'win32' or sys.platform == 'cygwin':
+    _cls = _Windows
+elif sys.platform == 'darwin':
+    _cls = _MacOS
+elif sys.platform == 'sunos5':
+    _cls = _SunOS
+else:
+    _cls = _ELF
+
+_get_rpath = _cls.get_rpath
+fix_rpath = _cls.fix_rpath
