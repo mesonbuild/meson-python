@@ -109,6 +109,11 @@ known-first-party = [
   'mesonpy',
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# this file is included literally in the documentation and the double
+# empty lines forced by the import sorting style look odd there
+'tests/packages/install-data/__init__.py' = ['I001']
+
 
 [tool.coverage.run]
 disable_warnings = [
