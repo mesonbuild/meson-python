@@ -344,3 +344,9 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             del sys.meta_path[0]
             sys.modules.pop('pure', None)
             path.write_text(code)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason='importlib.resources is unusable on Python 3.9')
+def test_install_data(venv, editable_install_data, tmp_path):
+    venv.pip('install', os.fspath(editable_install_data))
+    venv.python('-c', 'import package')

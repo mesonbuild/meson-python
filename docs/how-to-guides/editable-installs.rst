@@ -108,6 +108,61 @@ An alternative build directory can be specified using the
 :option:`build-dir` config setting.
 
 
+Data files
+----------
+
+It is relatively common to install data files needed at runtime
+alongside the package's Python code or extension modules. For a Python
+package named ``package`` this would look like this:
+
+.. TODO the :force: option should be removed once the pygments meson lexer is
+   updated to fix https://github.com/pygments/pygments/issues/2918
+
+.. literalinclude:: ../../tests/packages/install-data/meson.build
+   :language: meson
+   :force:
+   :lines: 5-
+
+In most circumstances, these files can be accessed deriving their
+filesystem path from the filesystem path of the Python module next to
+them via the ``__file__`` special variable. For example, within the
+package ``__init__.py``:
+
+.. code-block:: python
+
+   import pathlib
+
+   data = pathlib.Path(__file__).parent.joinpath('data.txt').read_text()
+   uuid = pathlib.Path(__file__).parent.joinpath('uuid.txt').read_text()  # WRONG!
+
+However, this does not work when modules are not loaded from a package
+installed in the Python library path in the filesystem but with a
+special module loader, as used to implement editable installs in
+``meson-python``. In the example above, the second read would fail
+when the package is installed in editable mode.  For this reason, data
+files need to be accessed using :mod:`importlib.resources`. The code
+above should be replaced with:
+
+.. literalinclude:: ../../tests/packages/install-data/__init__.py
+   :lines: 5-
+
+:mod:`importlib.resources` implements a virtual filesystem that allows
+to access individual files as if they were in their install location.
+However, there is no way to expose this file structure outside of the
+python runtime. In the example above, it is not possible to make the
+``data.txt`` and ``uuid.txt`` files appear in the same fileystem
+directory.
+
+.. warning::
+
+   The :mod:`importlib.resources` appeared in Python 3.7 but it did not work
+   correctly for this use until Python 3.10. The `importlib-resources`_
+   backport version 5.10 or later can be used if support for earlier Python
+   versions is desired.
+
+.. _importlib-resources: https://importlib-resources.readthedocs.io/en/latest/index.html
+
+
 .. _how-to-guides-editable-installs-verbose:
 
 Verbose mode
