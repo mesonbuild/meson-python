@@ -280,7 +280,10 @@ jobs:
       - name: Install Homebrew Python
         run: |
           brew install --overwrite python@${{ matrix.python }}
-          echo /usr/local/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+          echo /opt/homebrew/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+
+      - name: Check Python version
+        run: python --version | grep ${{ matrix.python }}
 
       - name: Install Ninja
         run: brew install ninja
