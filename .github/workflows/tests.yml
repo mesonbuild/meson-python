@@ -281,6 +281,7 @@ jobs:
         run: |
           brew install --overwrite python@${{ matrix.python }}
           echo /opt/homebrew/opt/python@${{ matrix.python }}/libexec/bin/ >> $GITHUB_PATH
+          python${{ matrix.python }} -m pip config set global.break-system-packages true
 
       - name: Check Python version
         run: python --version | grep ${{ matrix.python }}
