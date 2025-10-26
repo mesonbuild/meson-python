@@ -288,10 +288,6 @@ jobs:
       - name: Install Ninja
         run: brew install ninja
 
-      - name: Update pip
-        # pip >= 23.0 fixes https://github.com/pypa/pip/issues/11539
-        run: python -m pip install --upgrade "pip >= 23.0"
-
       - name: Install Meson
         run: python -m pip install "meson ${{ matrix.meson }}"
         if: ${{ matrix.meson }}
