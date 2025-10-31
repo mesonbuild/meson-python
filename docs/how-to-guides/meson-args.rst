@@ -78,19 +78,19 @@ To set this option temporarily at build-time:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-        .. code-block:: console
+      .. code-block:: console
 
-           $ python -m build -Csetup-args="--default-library=static" .
+         $ python -m build -Csetup-args="--default-library=static" .
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-        .. code-block:: console
+      .. code-block:: console
 
-           $ python -m pip wheel --config-settings=setup-args="--default-library=static" .
+         $ python -m pip wheel --config-settings=setup-args="--default-library=static" .
 
 
 Select the build targets to include in the wheel
@@ -120,19 +120,19 @@ To set this option temporarily at build-time:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build -Cinstall-args="--tags=runtime,python-runtime" .
+         $ python -m build -Cinstall-args="--tags=runtime,python-runtime" .
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip wheel --config-settings=install-args="--tags=runtime,python-runtime" .
+         $ python -m pip wheel --config-settings=install-args="--tags=runtime,python-runtime" .
 
 
 Set the build optimization level
@@ -153,19 +153,19 @@ To set this option temporarily at build-time:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build -Csetup-args="-Doptimization=3" .
+         $ python -m build -Csetup-args="-Doptimization=3" .
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip wheel --config-settings=setup-args="-Doptimization=3" .
+         $ python -m pip wheel --config-settings=setup-args="-Doptimization=3" .
 
 
 .. _vsenv-example:
@@ -194,16 +194,16 @@ To set this option temporarily at build-time:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build -Csetup-args="--vsenv" .
+	 $ python -m build -Csetup-args="--vsenv" .
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-        .. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip wheel --config-settings=setup-args="--vsenv" .
+	 $ python -m pip wheel --config-settings=setup-args="--vsenv" .

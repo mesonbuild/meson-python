@@ -19,22 +19,22 @@ the ``-C`` short command line option:
 
 .. tab-set::
 
-    .. tab-item:: pypa/build
-        :sync: key_pypa_build
+   .. tab-item:: pypa/build
+      :sync: key_pypa_build
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m build \
+         $ python -m build \
                -Csetup-args="-Doption=true" \
                -Csetup-args="-Dvalue=1" \
                -Ccompile-args="-j6"
 
-    .. tab-item:: pip
-        :sync: key_pip
+   .. tab-item:: pip
+      :sync: key_pip
 
-	.. code-block:: console
+      .. code-block:: console
 
-	   $ python -m pip wheel . \
+	 $ python -m pip wheel . \
                --config-settings=setup-args="-Doption=disable" \
                --config-settings=compile-args="-j6"
 
