@@ -8,4 +8,4 @@ py = import('python').find_installation()
 
 py.install_sources('dep.py')
 
-install_data('data.txt')
+install_data('data.txt', install_dir: 'dep')
