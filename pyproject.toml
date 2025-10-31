@@ -52,7 +52,7 @@ changelog = 'https://mesonbuild.com/meson-python/changelog.html'
 test = [
   'build',
   'pytest >= 6.0',
-  'pytest-cov[toml]',
+  'pytest-cov',
   'pytest-mock',
   'cython >= 3.0.3', # required for Python 3.12 support
   'wheel',
