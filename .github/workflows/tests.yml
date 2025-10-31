@@ -102,10 +102,10 @@ jobs:
             meson: '~=1.8.0'
           # Test with Meson master branch.
           - os: ubuntu-latest
-            python: '3.12'
+            python: '3.14'
             meson: '@git+https://github.com/mesonbuild/meson.git'
           - os: windows-latest
-            python: '3.12'
+            python: '3.14'
             meson: '@git+https://github.com/mesonbuild/meson.git'
 
     steps:
