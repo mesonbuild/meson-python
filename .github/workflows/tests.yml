@@ -17,7 +17,6 @@ on:
       # This is spelt like this to do not ignore the docs/examples/ folder.
       - '**'
       - '!docs/**'
-      - 'docs/examples/**'
       - '!CHANGELOG.rst'
       - '!LICENSE'
       - '!LICENSES/**'
