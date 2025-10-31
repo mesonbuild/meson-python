@@ -35,8 +35,9 @@ the ``-C`` short command line option:
       .. code-block:: console
 
 	 $ python -m pip wheel . \
-               --config-settings=setup-args="-Doption=disable" \
-               --config-settings=compile-args="-j6"
+               -Csetup-args="-Doption=true" \
+               -Csetup-args="-Dvalue=1" \
+               -Ccompile-args="-j6"
 
 
 Refer to the `build`_ and `pip`_ documentation for details.  This
@@ -46,15 +47,16 @@ immediately install it, replace ``wheel`` with ``install``.  See the
 :ref:`how-to-guides-meson-args` guide for more examples.
 
 
-.. admonition:: Passing multiple settings
+.. admonition:: Older pip versions
    :class: caution
 
-   Please note that ``pip`` prior to 23.1 did not offer a way to set a
-   build config setting to a list of strings: later values for the
-   same key passed to ``--config-settings`` override earlier ones,
-   effectively limiting the number of options that can be passed to
-   each command invoked in the build process to one. This limitation
-   has been lifted in ``pip`` release 23.1.
+   Please note that prior to version 23.1 ``pip`` did not support the ``-C``
+   short command line switch for the ``--config-settings`` options and did not
+   offer a way to set a build config setting to a list of strings: later
+   values for the same key passed to ``--config-settings`` override earlier
+   ones, effectively limiting the number of options that can be passed to each
+   command invoked in the build process to one. This limitation has been
+   lifted in ``pip`` release 23.1.
 
 
 .. _build: https://pypa-build.readthedocs.io/en/stable/

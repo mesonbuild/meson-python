@@ -178,4 +178,4 @@ set to a non-null value when installing the package:
 
 .. code-block:: console
 
-   $ python -m pip install --no-build-isolation --config-settings=editable-verbose=true --editable .
+   $ python -m pip install --no-build-isolation -Ceditable-verbose=true --editable .
