@@ -84,6 +84,6 @@ freebsd_task:
 
 macos-arm64_task:
   macos_instance:
-    image: ghcr.io/cirruslabs/macos-sonoma-xcode
+    image: ghcr.io/cirruslabs/macos-runner:sonoma
   install_script: brew install git ninja python@3.11
   << : *test
