@@ -186,7 +186,7 @@ def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     assert int(output) == 42
 
 
-@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 3, 0), reason='meson too old')
 def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
     venv.pip('install', wheel_link_library_in_subproject)
     output = venv.python('-c', 'import foo; print(foo.example_sum(3, 6))')
@@ -306,7 +306,7 @@ def test_subprojects(package_subproject, tmp_path):
 
 
 # Requires Meson 1.2.0, see https://github.com/mesonbuild/meson/pull/11909.
-@pytest.mark.skipif(MESON_VERSION < (1, 1, 99), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 1, 99), reason='meson too old')
 @pytest.mark.parametrize(('arg'), ['--skip-subprojects', '--skip-subprojects=dep'])
 def test_skip_subprojects(package_subproject, tmp_path, arg):
     filename = mesonpy.build_wheel(tmp_path, {'install-args': [arg]})
@@ -320,7 +320,7 @@ def test_skip_subprojects(package_subproject, tmp_path, arg):
 
 
 # Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
-@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='meson too old')
 @pytest.mark.skipif(NOGIL_BUILD, reason='Free-threaded CPython does not support the limited API')
 @pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the abi3 platform tag for wheels')
 def test_limited_api(wheel_limited_api):
@@ -332,7 +332,7 @@ def test_limited_api(wheel_limited_api):
 
 
 # Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
-@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='meson too old')
 @pytest.mark.skipif(NOGIL_BUILD, reason='Free-threaded CPython does not support the limited API')
 @pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not use special modules suffix for stable ABI')
 def test_limited_api_bad(package_limited_api, tmp_path):
@@ -342,7 +342,7 @@ def test_limited_api_bad(package_limited_api, tmp_path):
 
 
 # Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
-@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='Meson version too old')
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='meson too old')
 def test_limited_api_disabled(package_limited_api, tmp_path):
     filename = mesonpy.build_wheel(tmp_path, {'setup-args': ['-Dpython.allow_limited_api=false']})
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
@@ -401,7 +401,7 @@ def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
     }
 
 # On Linux, Meson 1.10 or later is required, see https://github.com/mesonbuild/meson/pull/15141
-@pytest.mark.skipif(sys.platform == 'linux' and MESON_VERSION < (1, 9, 99), reason='Meson version too old')
+@pytest.mark.skipif(sys.platform == 'linux' and MESON_VERSION < (1, 9, 99), reason='meson too old')
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_cmake_subproject(wheel_cmake_subproject):
     artifact = wheel.wheelfile.WheelFile(wheel_cmake_subproject)
