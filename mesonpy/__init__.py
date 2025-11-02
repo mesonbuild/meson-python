@@ -838,8 +838,8 @@ class Project():
         if self._limited_api:
             # check whether limited API is disabled for the Meson project
             options = self._info('intro-buildoptions')
-            value = next((option['value'] for option in options if option['name'] == 'python.allow_limited_api'), None)
-            if not value:
+            allow_limited_api = next((opt['value'] for opt in options if opt['name'] == 'python.allow_limited_api'), None)
+            if not allow_limited_api:
                 self._limited_api = False
 
         if self._limited_api and bool(sysconfig.get_config_var('Py_GIL_DISABLED')):
