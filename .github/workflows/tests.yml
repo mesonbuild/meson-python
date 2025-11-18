@@ -41,12 +41,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          # actions/setup-python do not support Python 3.7 on macOS on
-          # arm64. The latest macOS version available is macOS 14 but
-          # it is arm64 only. Stick to macos-13 as long as we want to
-          # test Python 3.7 on macOS. macOS 14 on arm64 is covered by
-          # the Cirrus CI jobs.
-          - macos-13
+          # macOS 14 on arm64 is covered by the Cirrus CI jobs, stick to macOS
+          # on x86-64 here as long as we can: macOS 15 is currently planned as
+          # the last supported image based on Intel CPU on GitHub Actions.
+          - macos-15-intel
           - windows-latest
         python:
           - '3.9'
