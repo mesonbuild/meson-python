@@ -4,4 +4,4 @@
 
 # 20260108
 FROM debian:unstable
-RUN apt-get update && apt-get install -y gcc git ninja-build patchelf python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc g++ git ninja-build patchelf python3-pip python3-venv cmake && rm -rf /var/lib/apt/lists/*
