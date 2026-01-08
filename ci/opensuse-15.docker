@@ -4,4 +4,4 @@
 
 # 20240817
 FROM opensuse/leap:latest
-RUN zypper --non-interactive install python311 python311-pip python311-devel gcc gcc-c++ ninja git patchelf cmake && zypper clean --all && ln -s python3.11 /usr/bin/python3
+RUN zypper --non-interactive install python311 python311-pip python311-devel gcc gcc-c++ ninja git patchelf cmake && zypper clean --all && ln -fs python3.11 /usr/bin/python3
