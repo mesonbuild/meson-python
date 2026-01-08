@@ -786,15 +786,15 @@ class Project():
         # Handle cross compilation
         self._is_cross = any(s.startswith('--cross-file') for s in self._meson_args['setup'])
         self._build_details = None
-        if self._is_cross:
-            # Use build-details.json (PEP 739) to determine
-            # platform/interpreter/abi tags, if given.
-            for setup_arg in self._meson_args['setup']:
-                if setup_arg.startswith('-Dpython.build_config='):
-                    with open(setup_arg.split('-Dpython.build_config=')[1]) as f:
-                        self._build_details = json.load(f)
-                    break
-            else:
+        # Use build-details.json (PEP 739) to determine
+        # platform/interpreter/abi tags, if given.
+        for setup_arg in reversed(self._meson_args['setup']):
+            if setup_arg.startswith('-Dpython.build_config='):
+                with open(setup_arg.split('=', 1)[1]) as f:
+                    self._build_details = json.load(f)
+                break
+        else:
+            if self._is_cross:
                 # TODO: warn that interpreter details may be wrong. Get platform from cross file.
                 pass
 
