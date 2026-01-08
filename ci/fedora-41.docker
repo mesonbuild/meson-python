@@ -4,4 +4,4 @@
 
 # 20250127
 FROM fedora:41
-RUN dnf -y update && dnf -y install python3-devel python3-pip gcc ninja-build git patchelf && dnf clean all
+RUN dnf -y update && dnf -y install python3-devel python3-pip gcc gcc-c++ ninja-build git patchelf cmake && dnf clean all

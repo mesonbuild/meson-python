@@ -4,4 +4,4 @@
 
 # 20250127
 FROM archlinux:latest
-RUN pacman -Syu --noconfirm && pacman -S --noconfirm python python-pip gcc ninja git patchelf
+RUN pacman -Syu --noconfirm && pacman -S --noconfirm python python-pip gcc ninja git patchelf cmake

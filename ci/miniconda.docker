@@ -4,4 +4,4 @@
 
 # 20240204
 FROM continuumio/miniconda3
-RUN apt-get update && apt-get install -y gcc ninja-build git patchelf && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y gcc g++ ninja-build git patchelf cmake && rm -rf /var/lib/apt/lists/*
