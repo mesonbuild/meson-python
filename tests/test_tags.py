@@ -102,7 +102,7 @@ def test_ios_platform_tag(monkeypatch):
 def wheel_builder_test_factory(content, pure=True, limited_api=False):
     manifest = defaultdict(list)
     manifest.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})
-    return mesonpy._WheelBuilder(None, manifest, limited_api, False)
+    return mesonpy._WheelBuilder(None, manifest, limited_api, False, False, None)
 
 
 def test_tag_empty_wheel():
