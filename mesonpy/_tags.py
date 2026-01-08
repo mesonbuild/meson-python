@@ -204,7 +204,8 @@ def get_platform_tag(build_details: Optional[dict] = None) -> str:
 
 
 class Tag:
-    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None, build_details: Optional[dict] = None):
+    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None,
+                 build_details: Optional[dict] = None):
         self.interpreter = interpreter or get_interpreter_tag(build_details)
         self.abi = abi or get_abi_tag(build_details)
         self.platform = platform or get_platform_tag(build_details)
