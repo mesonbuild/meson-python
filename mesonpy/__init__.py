@@ -15,6 +15,7 @@ import argparse
 import collections
 import contextlib
 import copy
+import dataclasses
 import difflib
 import fnmatch
 import functools
@@ -120,13 +121,17 @@ def _compile_patterns(patterns: List[str]) -> Callable[[str], bool]:
     return typing.cast('Callable[[str], bool]', func)
 
 
+class _Entry(typing.NamedTuple):
+    dst: pathlib.Path
+    src: str
+
+
 def _map_to_wheel(
     sources: Dict[str, Dict[str, Any]],
-    exclude: List[str],
-    include: List[str],
-) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+    exclude: List[str], include: List[str]
+) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
-    wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
+    wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
@@ -151,7 +156,8 @@ def _map_to_wheel(
                 other = packages.setdefault(package, path)
                 if other != path:
                     this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
-                    that = os.fspath(other / next(d for d, s in wheel_files[other] if d.parts[0] == destination.parts[1]))
+                    module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
+                    that = os.fspath(other / module)
                     raise BuildError(
                         f'The {package} package is split between {path} and {other}: '
                         f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
@@ -174,9 +180,9 @@ def _map_to_wheel(
                         if relpath in exclude_files:
                             continue
                         filedst = dst / relpath
-                        wheel_files[path].append((filedst, filesrc))
+                        wheel_files[path].append(_Entry(filedst, filesrc))
             else:
-                wheel_files[path].append((dst, src))
+                wheel_files[path].append(_Entry(dst, src))
 
     return wheel_files
 
@@ -323,20 +329,14 @@ def _is_native(file: Path) -> bool:
             return f.read(4) == b'\x7fELF'  # ELF
 
 
+@dataclasses.dataclass
 class _WheelBuilder():
     """Helper class to build wheels from projects."""
 
-    def __init__(
-        self,
-        metadata: Metadata,
-        manifest: Dict[str, List[Tuple[pathlib.Path, str]]],
-        limited_api: bool,
-        allow_windows_shared_libs: bool,
-    ) -> None:
-        self._metadata = metadata
-        self._manifest = manifest
-        self._limited_api = limited_api
-        self._allow_windows_shared_libs = allow_windows_shared_libs
+    _metadata: Metadata
+    _manifest: Dict[str, List[_Entry]]
+    _limited_api: bool
+    _allow_windows_shared_libs: bool
 
     @property
     def _has_internal_libs(self) -> bool:
@@ -352,8 +352,8 @@ class _WheelBuilder():
         """Whether the wheel is architecture independent"""
         if self._manifest['platlib'] or self._manifest['mesonpy-libs']:
             return False
-        for _, file in self._manifest['scripts']:
-            if _is_native(file):
+        for entry in self._manifest['scripts']:
+            if _is_native(entry.src):
                 return False
         return True
 
@@ -430,14 +430,14 @@ class _WheelBuilder():
             # in {platlib} that look like extension modules, and raise
             # an exception if any of them has a Python version
             # specific extension filename suffix ABI tag.
-            for path, _ in self._manifest['platlib']:
-                match = _EXTENSION_SUFFIX_REGEX.match(path.name)
+            for entry in self._manifest['platlib']:
+                match = _EXTENSION_SUFFIX_REGEX.match(entry.dst.name)
                 if match:
                     abi = match.group('abi')
                     if abi is not None and abi != 'abi3':
                         raise BuildError(
                             f'The package declares compatibility with Python limited API but extension '
-                            f'module {os.fspath(path)!r} is tagged for a specific Python version.')
+                            f'module {os.fspath(entry.dst)!r} is tagged for a specific Python version.')
             return 'abi3'
         return None
 
@@ -519,8 +519,8 @@ class _EditableWheelBuilder(_WheelBuilder):
     def _top_level_modules(self) -> Collection[str]:
         modules = set()
         for type_ in self._manifest:
-            for path, _ in self._manifest[type_]:
-                name, dot, ext = path.parts[0].partition('.')
+            for entry in self._manifest[type_]:
+                name, dot, ext = entry.dst.parts[0].partition('.')
                 if dot:
                     # module
                     suffix = dot + ext
@@ -912,7 +912,7 @@ class Project():
         return json.loads(info.read_text(encoding='utf-8'))
 
     @property
-    def _manifest(self) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
+    def _manifest(self) -> DefaultDict[str, List[_Entry]]:
         """The files to be added to the wheel, organized by wheel path."""
 
         # Obtain the list of files Meson would install.
