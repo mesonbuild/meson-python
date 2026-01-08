@@ -333,7 +333,7 @@ class _WheelBuilder():
         limited_api: bool,
         allow_windows_shared_libs: bool,
         is_cross: bool,
-        build_details: Optional[Dict[str, str | Dict[str, Any]]] = None,
+        build_details: Optional[mesonpy._tags.BuildDetailsDict] = None,
     ) -> None:
         self._metadata = metadata
         self._manifest = manifest

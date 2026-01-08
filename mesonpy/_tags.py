@@ -15,6 +15,24 @@ import typing
 if typing.TYPE_CHECKING:  # pragma: no cover
     from typing import Optional, Union
 
+    from mesonpy._compat import TypedDict
+
+    class _AbiDict(TypedDict):
+        extension_suffix: str
+
+    class _ImplementationVersionDict(TypedDict):
+        major: int
+        minor: int
+
+    class _ImplementationDict(TypedDict):
+        name: str
+        version: _ImplementationVersionDict
+
+    class BuildDetailsDict(TypedDict):
+        abi: _AbiDict
+        implementation: _ImplementationDict
+        platform: str
+
 
 # https://peps.python.org/pep-0425/#python-tag
 INTERPRETERS = {
@@ -29,16 +47,17 @@ INTERPRETERS = {
 _32_BIT_INTERPRETER = struct.calcsize('P') == 4
 
 
-def get_interpreter_tag(build_details: Optional[dict] = None) -> str:
+def get_interpreter_tag(build_details: Optional[BuildDetailsDict] = None) -> str:
     if build_details is None:
         name = sys.implementation.name
-        version = sys.version_info
+        major, minor = sys.version_info[:2]
     else:
         name = build_details['implementation']['name']
         _v = build_details['implementation']['version']
-        version = (_v['major'], _v['minor'])
+        major = _v['major']
+        minor = _v['minor']
     name = INTERPRETERS.get(name, name)
-    return f'{name}{version[0]}{version[1]}'
+    return f'{name}{major}{minor}'
 
 
 def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[str, int, None]:
@@ -58,7 +77,7 @@ def _get_cpython_abi() -> str:
     return f'cp{version[0]}{version[1]}{debug}{pymalloc}'
 
 
-def get_abi_tag(build_details: Optional[dict] = None) -> str:
+def get_abi_tag(build_details: Optional[BuildDetailsDict] = None) -> str:
     if build_details is not None:
         ext_suffix = build_details['abi']['extension_suffix']
     else:
@@ -188,7 +207,7 @@ def _get_ios_platform_tag() -> str:
     return f'ios_{version[0]}_{version[1]}_{multiarch}'
 
 
-def get_platform_tag(build_details: Optional[dict] = None) -> str:
+def get_platform_tag(build_details: Optional[BuildDetailsDict] = None) -> str:
     platform = build_details['platform'] if build_details is not None else sysconfig.get_platform()
     if platform.startswith('macosx'):
         return _get_macosx_platform_tag()
@@ -205,7 +224,7 @@ def get_platform_tag(build_details: Optional[dict] = None) -> str:
 
 class Tag:
     def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None,
-                 build_details: Optional[dict] = None):
+                 build_details: Optional[BuildDetailsDict] = None):
         self.interpreter = interpreter or get_interpreter_tag(build_details)
         self.abi = abi or get_abi_tag(build_details)
         self.platform = platform or get_platform_tag(build_details)
