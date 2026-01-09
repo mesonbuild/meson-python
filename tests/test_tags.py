@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import importlib.machinery
+import json
 import os
 import pathlib
 import platform
@@ -36,8 +37,18 @@ def get_abi3_suffix():
             return suffix
 
 
+def get_build_details_json():
+    # Technically, this is only applicable to 3.14+, but we account for FileNotFoundError anyway.
+    try:
+        with open(pathlib.Path(sysconfig.get_path('stdlib')) / 'build-details.json') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+
 SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 ABI3SUFFIX = get_abi3_suffix()
+BUILD_DETAILS_JSON = get_build_details_json()
 
 
 def test_wheel_tag():
@@ -102,7 +113,7 @@ def test_ios_platform_tag(monkeypatch):
 def wheel_builder_test_factory(content, pure=True, limited_api=False):
     manifest = defaultdict(list)
     manifest.update({key: [(pathlib.Path(x), os.path.join('build', x)) for x in value] for key, value in content.items()})
-    return mesonpy._WheelBuilder(None, manifest, limited_api, False)
+    return mesonpy._WheelBuilder(None, manifest, limited_api, False, False, None)
 
 
 def test_tag_empty_wheel():
@@ -141,3 +152,8 @@ def test_tag_mixed_abi():
     }, pure=False, limited_api=True)
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
         assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
+
+
+@pytest.mark.skipif(BUILD_DETAILS_JSON is None, reason='No build-details.json for this interpreter')
+def test_system_build_details():
+    assert str(mesonpy._tags.Tag()) == str(mesonpy._tags.Tag(build_details=BUILD_DETAILS_JSON))
