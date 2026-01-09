@@ -744,6 +744,27 @@ class Project():
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
+        # Android requires cross compilation: synthesize the appropriate cross file.
+        elif sysconfig.get_platform().startswith('android-'):
+            cross_file_data = textwrap.dedent(f'''
+                # Binaries are controlled by environment variables, so they don't need
+                # to be repeated here.
+                [host_machine]
+                system = 'android'
+                subsystem = 'android'
+                kernel = 'linux'
+                cpu = {platform.machine()!r}
+                cpu_family = {platform.machine()!r}
+                endian = {sys.byteorder!r}
+
+                [properties]
+                # cibuildwheel's cross virtual environment will make Meson believe it's
+                # running on Android when it's actually running on Linux or macOS.
+                needs_exe_wrapper = true
+            ''')
+            self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
+            self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+
         # Support iOS targets. iOS does not have native build tools and always
         # requires cross compilation: synthesize the appropriate cross file.
         elif sysconfig.get_platform().startswith('ios-'):
