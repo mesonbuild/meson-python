@@ -49,6 +49,7 @@ jobs:
         python:
           - '3.9'
           - '3.14'
+          - '3.15.0-alpha.3'
         meson:
           -
         dependencies:
@@ -111,7 +112,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up target Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
@@ -162,7 +163,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up target Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
 
@@ -303,7 +304,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.9
 
