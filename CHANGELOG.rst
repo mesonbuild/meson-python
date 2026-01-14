@@ -11,6 +11,22 @@
 Changelog
 +++++++++
 
+0.19.0
+======
+
+- Drop Python 3.8 support.
+- Development-related extras were moved to dependency groups.
+- Add support for targeting the iOS platform.
+- The ``strip`` binary is now included in synthesized cross files.
+- Documentation improvements: add more examples for specific use cases, and a
+  contributing guide.
+- Use trusted publishing with digital attestations to upload release artifacts
+  to PyPI.
+
+Andrew Annex, Daniele Nicolodi, Michał Górny, Ralf Gommers, Russell
+Keith-Magee, Tobias Diez --- 14-01-2026.
+
+
 0.18.0
 ======
 
