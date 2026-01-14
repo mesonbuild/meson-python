@@ -83,7 +83,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
 
 
-__version__ = '0.19.0.dev0'
+__version__ = '0.19.0'
 
 
 _PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
