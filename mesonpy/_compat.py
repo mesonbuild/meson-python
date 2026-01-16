@@ -34,9 +34,9 @@ if typing.TYPE_CHECKING:
         from typing_extensions import ParamSpec
 
     if sys.version_info >= (3, 11):
-        from typing import Self
+        from typing import Self, TypedDict
     else:
-        from typing_extensions import Self
+        from typing_extensions import Self, TypedDict
 
     Path = Union[str, os.PathLike]
 
@@ -51,4 +51,5 @@ __all__ = [
     'ParamSpec',
     'Self',
     'Sequence',
+    'TypedDict',
 ]
