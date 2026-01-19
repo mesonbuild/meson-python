@@ -106,7 +106,6 @@ _INSTALLATION_PATH_MAP = {
     '{py_platlib}': 'platlib',
     '{moduledir_shared}': 'platlib',
     '{includedir}': 'headers',
-    '{datadir}': 'data',
     # custom location
     '{libdir}': 'mesonpy-libs',
     '{libdir_shared}': 'mesonpy-libs',
@@ -119,11 +118,42 @@ def _compile_patterns(patterns: List[str]) -> Callable[[str], bool]:
     func = re.compile('|'.join(fnmatch.translate(os.path.normpath(p)) for p in patterns)).match
     return typing.cast('Callable[[str], bool]', func)
 
+def _get_path_and_dst(target_destination: str, build_options: Dict[str, str]) -> Tuple[str, pathlib.Path]:
+    destination = pathlib.Path(target_destination)
+    anchor = destination.parts[0]
+
+    path: str | None
+    if anchor in _INSTALLATION_PATH_MAP:
+        path = _INSTALLATION_PATH_MAP[anchor]
+        dst = pathlib.Path(*destination.parts[1:])
+    else:
+        if anchor.startswith('{') and anchor.endswith('}'):
+            key = anchor[1:-1]
+            if key == 'prefix':
+                destination = pathlib.Path(*destination.parts[1:])
+            else:
+                value = build_options[key]
+                destination = pathlib.Path(value, *destination.parts[1:])
+        if destination.is_absolute():
+            # The path is not relative to prefix
+            path = None
+        else:
+            path = 'data'
+            dst = destination
+            if dst.parts[0] != 'share':
+                # For now we only allow directories starting with 'share', but this could change.
+                path = None
+
+    if path is None:
+        raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
+
+    return path, dst
 
 def _map_to_wheel(
     sources: Dict[str, Dict[str, Any]],
     exclude: List[str],
     include: List[str],
+    build_options: Dict[str, str],
 ) -> DefaultDict[str, List[Tuple[pathlib.Path, str]]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[Tuple[pathlib.Path, str]]] = collections.defaultdict(list)
@@ -138,20 +168,14 @@ def _map_to_wheel(
             if excluded(target_destination) and not included(target_destination):
                 continue
 
-            destination = pathlib.Path(target_destination)
-            anchor = destination.parts[0]
-            dst = pathlib.Path(*destination.parts[1:])
-
-            path = _INSTALLATION_PATH_MAP.get(anchor)
-            if path is None:
-                raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
+            path, dst = _get_path_and_dst(target_destination, build_options)
 
             if path == 'purelib' or path == 'platlib':
-                package = destination.parts[1]
+                package = dst.parts[0]
                 other = packages.setdefault(package, path)
                 if other != path:
-                    this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
-                    that = os.fspath(other / next(d for d, s in wheel_files[other] if d.parts[0] == destination.parts[1]))
+                    this = os.fspath(pathlib.Path(path, *dst.parts))
+                    that = os.fspath(other / next(d for d, s in wheel_files[other] if d.parts[0] == dst.parts[0]))
                     raise BuildError(
                         f'The {package} package is split between {path} and {other}: '
                         f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
@@ -918,6 +942,10 @@ class Project():
         # Obtain the list of files Meson would install.
         install_plan = self._info('intro-install_plan')
 
+        # Get build options, to convert `{anchor}` to a real path
+        build_options0 = self._info('intro-buildoptions')
+        build_options = {opt['name']: opt['value'] for opt in build_options0 if opt['type'] == 'string'}
+
         # Parse the 'meson install' args to extract --tags and --skip-subprojects
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('--tags')
@@ -941,7 +969,7 @@ class Project():
                 sources[key][target] = details
 
         # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources, self._excluded_files, self._included_files)
+        return _map_to_wheel(sources, self._excluded_files, self._included_files, build_options)
 
     @property
     def _meson_name(self) -> str:
