@@ -744,6 +744,38 @@ class Project():
                     self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
                     self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
 
+        # Simplify cross-compilation for Android with cibuildwheel: detect the
+        # cross-compilation environment set up by cibuildwheel and synthesize an
+        # appropriate cross file.
+        elif sysconfig.get_platform().startswith('android-') and 'CIBUILDWHEEL' in os.environ:
+            cpu = platform.machine()
+            cpu_family = 'x86' if cpu == 'i686' else 'arm' if cpu.startswith('arm') else cpu
+
+            # cibuildwheel uses environment variables to point to the cross
+            # compilation toolchain binaries thus the [binaries] section of
+            # the cross file is not needed.
+            cross_file_data = textwrap.dedent(f'''
+                [host_machine]
+                system = 'android'
+                subsystem = 'android'
+                kernel = 'linux'
+                cpu_family = {cpu_family!r}
+                cpu = {cpu!r}
+                endian = {sys.byteorder!r}
+
+                [properties]
+                # To obtain the correct wheel tags when cross-compiling
+                # cibuildwheel monkey-patches platform.system() and
+                # platform.machine() to simulate running on Android.
+                # This makes Meson believe that host and build machines
+                # match, and thus that host binaries can be run on the
+                # build machine when this is not actually the case.
+                # Override the auto-detection.
+                needs_exe_wrapper = true
+            ''')
+            self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
+            self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+
         # Support iOS targets. iOS does not have native build tools and always
         # requires cross compilation: synthesize the appropriate cross file.
         elif sysconfig.get_platform().startswith('ios-'):

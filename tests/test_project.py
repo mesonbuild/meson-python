@@ -378,6 +378,53 @@ def test_archflags_envvar_parsing_invalid(package_purelib_and_platlib, monkeypat
         os.environ.pop('_PYTHON_HOST_PLATFORM', None)
 
 
+@pytest.mark.parametrize(
+    ('cpu', 'cpu_family'),
+    [
+        ('aarch64', 'aarch64'),
+        ('armv7l', 'arm'),
+        ('armv8l', 'arm'),
+        ('i686', 'x86'),
+        ('x86_64', 'x86_64'),
+    ],
+)
+@pytest.mark.parametrize('cross', [True, False])
+def test_android_project(package_simple, monkeypatch, tmp_path, cpu, cpu_family, cross):
+    # Mock being on Android
+    monkeypatch.setattr(sys, 'platform', 'android')
+    monkeypatch.setattr(sys, 'byteorder', 'little')
+    monkeypatch.setattr(platform, 'system', Mock(return_value='Android'))
+    monkeypatch.setattr(platform, 'machine', Mock(return_value=cpu))
+    monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value='android-24'))
+    if cross:
+        monkeypatch.setenv('CIBUILDWHEEL', '1')
+
+        # Meson may require some tools to be configured when fatal warnings are enabled.
+        # Set the same set of variables as cibuildwheel.
+        for name in ['ar', 'as', 'cc', 'cxx', 'ld', 'nm', 'ranlib', 'readelf', 'strip']:
+            monkeypatch.setenv(name.upper(), f'/path/to/{name}')
+
+    # Create a project.
+    project = mesonpy.Project(source_dir=package_simple, build_dir=tmp_path)
+
+    # When cross-compiling, a cross file should be generated and used.
+    setup_args = project._meson_args['setup']
+    cross_path = tmp_path / 'meson-python-cross-file.ini'
+    if cross:
+        assert setup_args[-2:] == ['--cross-file', str(cross_path)]
+        cross_config = cross_path.read_text().splitlines()
+        assert "system = 'android'" in cross_config
+        assert "subsystem = 'android'" in cross_config
+        assert "kernel = 'linux'" in cross_config
+        assert f"cpu_family = '{cpu_family}'" in cross_config
+        assert f"cpu = '{cpu}'" in cross_config
+        assert "endian = 'little'" in cross_config
+        assert 'needs_exe_wrapper = true' in cross_config
+    else:
+        assert '--cross-file' not in setup_args
+        assert not cross_path.exists()
+
+
 @pytest.mark.skipif(sys.version_info < (3, 13), reason='requires Python 3.13 or higher')
 @pytest.mark.parametrize('multiarch', [
     'arm64-iphoneos',
