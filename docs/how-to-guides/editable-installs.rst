@@ -173,9 +173,19 @@ might be often useful to be able to inspect the compilation log.
 Setting the :envvar:`MESONPY_EDITABLE_VERBOSE` environment variable
 will result in the output of the build process to be emitted when a
 package is rebuilt on import.  To enable this verbose mode permanently
-for a package, the :option:`editable-verbose` config setting can be
-set to a non-null value when installing the package:
+for a package, the :option:`tool.meson-python.editable-verbose` option
+can be set in ``pyproject.toml`` or the :option:`editable-verbose`
+config setting can be set to a non-null value when installing the
+package:
 
 .. code-block:: console
 
    $ python -m pip install --no-build-isolation -Ceditable-verbose=true --editable .
+
+.. warning::
+
+   ``ninja`` outputs the compilation log on standard output thus it cannot be
+   separated from expected output from command line tools via output
+   redirection. This may make the output of command line tools that import
+   the package harder to use. Consider this carefully when enabling verbose
+   output in package configuration.

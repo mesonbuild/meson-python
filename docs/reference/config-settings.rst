@@ -44,5 +44,7 @@ them.
 
 .. option:: editable-verbose
 
-   Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>`
-   when building for an :ref:`editable install <how-to-guides-editable-installs>`.
+   Enable :ref:`verbose mode <how-to-guides-editable-installs-verbose>` when
+   building for an :ref:`editable install <how-to-guides-editable-installs>`.
+   Accepts an optional argument taking the values ``true`` or ``false``. This
+   config setting takes precedence over the project setting with the same name.

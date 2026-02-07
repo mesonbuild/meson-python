@@ -611,6 +611,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
             'exclude': _strings,
             'include': _strings,
         }),
+        'editable-verbose': _bool,
     })
 
     table = pyproject.get('tool', {}).get('meson-python', {})
@@ -625,8 +626,18 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
             raise ConfigError(f'Only one value for "{name}" can be specified')
         return value
 
-    def _bool(value: Any, name: str) -> bool:
-        return True
+    def _empty_or_bool(value: Any, name: str) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            if value == 'false':
+                return False
+            if value == 'true':
+                return True
+            # For backward compatibility, treat a missing value as True.
+            if value == '':
+                return True
+        raise ConfigError(f'Invalid value for "{name}": {value!r}')
 
     def _string_or_strings(value: Any, name: str) -> List[str]:
         return list([value,] if isinstance(value, str) else value)
@@ -634,7 +645,7 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
     options = {
         'builddir': _string,
         'build-dir': _string,
-        'editable-verbose': _bool,
+        'editable-verbose': _empty_or_bool,
         'dist-args': _string_or_strings,
         'setup-args': _string_or_strings,
         'compile-args': _string_or_strings,
@@ -675,11 +686,10 @@ class Project():
         source_dir: Path,
         build_dir: Path,
         meson_args: Optional[MesonArgs] = None,
-        editable_verbose: bool = False,
+        editable_verbose: Optional[bool] = None,
     ) -> None:
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._build_dir = pathlib.Path(build_dir).absolute()
-        self._editable_verbose = editable_verbose
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
         self._meson_cross_file = self._build_dir / 'meson-python-cross-file.ini'
         self._meson_args: MesonArgs = collections.defaultdict(list)
@@ -692,6 +702,12 @@ class Project():
         pyproject_config = _validate_pyproject_config(pyproject)
         for key, value in pyproject_config.get('args', {}).items():
             self._meson_args[key].extend(value)
+
+        # editable-verbose setting from build options takes precedence over
+        # setting in pyproject.toml
+        if editable_verbose is None:
+            editable_verbose = bool(pyproject_config.get('editable-verbose'))
+        self._editable_verbose = editable_verbose
 
         # meson arguments from the command line take precedence over
         # arguments from the configuration file thus are added later
@@ -1154,7 +1170,7 @@ def _project(config_settings: Optional[Dict[Any, Any]] = None) -> Iterator[Proje
     meson_args = typing.cast('MesonArgs', {name: settings.get(f'{name}-args', []) for name in _MESON_ARGS_KEYS})
     source_dir = os.path.curdir
     build_dir = settings.get('build-dir')
-    editable_verbose = bool(settings.get('editable-verbose'))
+    editable_verbose = settings.get('editable-verbose')
 
     with contextlib.ExitStack() as ctx:
         if build_dir is None:

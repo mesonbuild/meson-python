@@ -26,6 +26,13 @@ use them and examples.
    documentation. This option ensures that the package authors are aware of
    this requirement.
 
+.. option:: tool.meson-python.editable-verbose
+
+   A boolean indicating whether :ref:`verbose mode
+   <how-to-guides-editable-installs-verbose>` should be enabled when building
+   an :ref:`editable install <how-to-guides-editable-installs>`. This setting
+   can be overridden via the config option of the same name.
+
 .. option:: tool.meson-python.limited-api
 
    A boolean indicating whether the extension modules contained in the
