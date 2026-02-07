@@ -23,6 +23,8 @@ import pytest
 
 import mesonpy
 
+from mesonpy._util import chdir
+
 from .conftest import MESON_VERSION, in_git_repo_context, metadata, package_dir
 
 
@@ -457,3 +459,55 @@ def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     assert "\nsystem = 'ios'\n" in cross_config
     assert f"\nc = '{arch}-apple-{subsystem}-clang'\n" in cross_config
     assert f"\nsubsystem = '{subsystem}'\n" in cross_config
+
+
+@pytest.mark.parametrize('verbose', ['true', 'false'])
+def test_editable_verbose_pyproject(tmp_path, verbose):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent(f'''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+
+        [tool.meson-python]
+        editable-verbose = {verbose}
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test')
+    '''), encoding='utf8')
+
+    project = mesonpy.Project(tmp_path, tmp_path / 'build')
+    assert project._editable_verbose == (verbose == 'true')
+
+
+@pytest.mark.parametrize('settings,expected', [
+    ({}, True),
+    ({'editable-verbose': ''}, True),
+    ({'editable-verbose': 'true'}, True),
+    ({'editable-verbose': 'false'}, False),
+], ids=['', '-Ceditable-verbose', '-Ceditable-verbose=true', '-Ceditable-verbose=false'])
+def test_editable_verbose_settings(tmp_path, settings, expected):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+
+        [tool.meson-python]
+        editable-verbose = true
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test')
+    '''), encoding='utf8')
+
+    with chdir(tmp_path):
+        with mesonpy._project(settings) as project:
+            assert project._editable_verbose == expected
