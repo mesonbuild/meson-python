@@ -35,13 +35,8 @@ else:
 
 if sys.version_info >= (3, 12):
     from importlib.resources.abc import Traversable, TraversableResources
-elif sys.version_info >= (3, 9):
-    from importlib.abc import Traversable, TraversableResources
 else:
-    class Traversable:
-        pass
-    class TraversableResources:
-        pass
+    from importlib.abc import Traversable, TraversableResources
 
 
 MARKER = 'MESONPY_EDITABLE_SKIP'
@@ -101,7 +96,7 @@ class MesonpyTraversable(Traversable):
 
     def iterdir(self) -> Iterator[Traversable]:
         for name, node in self._tree.items():
-            yield MesonpyTraversable(name, node) if isinstance(node, dict) else pathlib.Path(node)  # type: ignore
+            yield MesonpyTraversable(name, node) if isinstance(node, dict) else pathlib.Path(node)
 
     def open(self, *args, **kwargs):  # type: ignore
         raise IsADirectoryError()
@@ -147,7 +142,7 @@ class ExtensionFileLoader(importlib.machinery.ExtensionFileLoader):
         super().__init__(name, path)
         self._tree = tree
 
-    def get_resource_reader(self, name: str) -> TraversableResources:
+    def get_resource_reader(self, name: str) -> TraversableResources:  # type: ignore[override]
         return MesonpyReader(name, self._tree)
 
 
@@ -160,7 +155,7 @@ class SourceFileLoader(importlib.machinery.SourceFileLoader):
         # disable saving bytecode
         pass
 
-    def get_resource_reader(self, name: str) -> TraversableResources:
+    def get_resource_reader(self, name: str) -> TraversableResources:  # type: ignore[override]
         return MesonpyReader(name, self._tree)
 
 
@@ -169,7 +164,7 @@ class SourcelessFileLoader(importlib.machinery.SourcelessFileLoader):
         super().__init__(name, path)
         self._tree = tree
 
-    def get_resource_reader(self, name: str) -> TraversableResources:
+    def get_resource_reader(self, name: str) -> TraversableResources:  # type: ignore[override]
         return MesonpyReader(name, self._tree)
 
 

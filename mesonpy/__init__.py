@@ -207,7 +207,7 @@ def _use_ansi_escapes() -> bool:
     # names containing characters that cannot be represented in the
     # stdout encoding. Use replacement markers for those instead than
     # raising UnicodeEncodeError.
-    sys.stdout.reconfigure(errors='replace')  # type: ignore[attr-defined]
+    sys.stdout.reconfigure(errors='replace')  # type: ignore[union-attr]
 
     if 'NO_COLOR' in os.environ:
         return False
@@ -598,7 +598,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(value, str):
             raise ConfigError(f'Configuration entry "{name}" must be a string')
         if os.path.isfile(value):
-            value = os.path.abspath(value)
+            return os.path.abspath(value)
         return value
 
     scheme = _table({
@@ -1033,7 +1033,7 @@ class Project():
         meson_dist_name = f'{self._meson_name}-{meson_version}'
         meson_dist_path = pathlib.Path(self._build_dir, 'meson-dist', f'{meson_dist_name}.tar.gz')
         sdist_path = pathlib.Path(directory, f'{dist_name}.tar.gz')
-        pyproject_toml_mtime = 0
+        pyproject_toml_mtime: Union[int, float] = 0
 
         with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist_path) as sdist:
             for member in meson_dist.getmembers():
