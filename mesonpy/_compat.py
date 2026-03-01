@@ -38,7 +38,7 @@ if typing.TYPE_CHECKING:
     else:
         from typing_extensions import Self
 
-    Path = Union[str, os.PathLike]
+    Path = Union[str, os.PathLike[str]]
 
 
 __all__ = [
