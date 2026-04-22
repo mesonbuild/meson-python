@@ -158,6 +158,27 @@ def test_license_pep639(wheel_license_pep639):
     '''))
 
 
+def test_dist_info_sboms(wheel_dist_info_sboms):
+    artifact = wheel.wheelfile.WheelFile(wheel_dist_info_sboms)
+
+    assert wheel_contents(artifact) == {
+        'dist_info_sboms-1.0.0.dist-info/METADATA',
+        'dist_info_sboms-1.0.0.dist-info/RECORD',
+        'dist_info_sboms-1.0.0.dist-info/WHEEL',
+        'dist_info_sboms-1.0.0.dist-info/sboms/static.cdx.json',
+        'dist_info_sboms-1.0.0.dist-info/sboms/generated.cdx.json',
+        'dist_info_sboms-1.0.0.dist-info/licenses/license-extra.txt',
+    }
+
+    # Static SBOM file content preserved verbatim.
+    static_sbom = artifact.read('dist_info_sboms-1.0.0.dist-info/sboms/static.cdx.json')
+    assert b'CycloneDX' in static_sbom
+
+    # Dynamically-generated SBOM produced by the custom_target ran.
+    generated_sbom = artifact.read('dist_info_sboms-1.0.0.dist-info/sboms/generated.cdx.json')
+    assert b'CycloneDX' in generated_sbom
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)

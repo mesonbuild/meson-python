@@ -108,6 +108,10 @@ _INSTALLATION_PATH_MAP = {
     '{moduledir_shared}': 'platlib',
     '{includedir}': 'headers',
     '{datadir}': 'data',
+    # files routed by Meson's python.dist_info_install_dir() helper into
+    # the wheel's .dist-info/<subdir>/ directory (PEP 770 SBOMs, etc.).
+    # Requires meson >= 1.12.0.
+    '{py_distinfo}': 'distinfo',
     # custom location
     '{libdir}': 'mesonpy-libs',
     '{libdir_shared}': 'mesonpy-libs',
@@ -495,6 +499,10 @@ class _WheelBuilder():
             with _clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self._pure else 'platlib'
+                # Track basenames written under each .dist-info/<subdir>/ to
+                # surface collisions (two files with the same basename would
+                # silently clobber each other in the wheel).
+                distinfo_seen: Dict[str, str] = {}
 
                 for path, entries in self._manifest.items():
                     for dst, src in entries:
@@ -505,6 +513,20 @@ class _WheelBuilder():
                         elif path == 'mesonpy-libs':
                             # custom installation path for bundled libraries
                             dst = pathlib.Path(self._libs_dir, dst)
+                        elif path == 'distinfo':
+                            # files routed by Meson's
+                            # python.dist_info_install_dir() helper.
+                            target = pathlib.Path(self._distinfo_dir, dst).as_posix()
+                            previous = distinfo_seen.get(target)
+                            if previous is not None:
+                                raise BuildError(
+                                    f'Two files would be installed to {target!r} '
+                                    f'in the wheel: {previous!r} and {os.fspath(src)!r}. '
+                                    f'Files placed in .dist-info/ via '
+                                    f'python.dist_info_install_dir() must have '
+                                    f'unique basenames within their subdirectory.')
+                            distinfo_seen[target] = os.fspath(src)
+                            dst = pathlib.Path(self._distinfo_dir, dst)
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
