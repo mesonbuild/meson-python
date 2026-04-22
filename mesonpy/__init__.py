@@ -472,37 +472,60 @@ class _WheelBuilder():
             if not os.fspath(origin).endswith('.pdb'):
                 raise
 
-    def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
+    def _wheel_write_metadata(
+        self,
+        whl: mesonpy._wheelfile.WheelFile,
+        distinfo_seen: Optional[Dict[str, str]] = None,
+    ) -> None:
         # add metadata
         whl.writestr(f'{self._distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
         whl.writestr(f'{self._distinfo_dir}/WHEEL', self.wheel)
         if self.entrypoints_txt:
             whl.writestr(f'{self._distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
+        def _record(target: str, origin: str) -> None:
+            if distinfo_seen is None:
+                return
+            previous = distinfo_seen.get(target)
+            if previous is not None:
+                raise BuildError(
+                    f'Two files would be installed to {target!r} in the '
+                    f'wheel: {previous!r} and {origin!r}. Files placed in '
+                    f'.dist-info/ must have unique basenames within their '
+                    f'subdirectory; check your project.license-files list '
+                    f'and any python.dist_info_install_dir() uses.')
+            distinfo_seen[target] = origin
+
         # Add pre-PEP-639 license files.
         if isinstance(self._metadata.license, pyproject_metadata.License):
             license_file = self._metadata.license.file
             if license_file:
-                whl.write(license_file, f'{self._distinfo_dir}/{os.path.basename(license_file)}')
+                target = f'{self._distinfo_dir}/{os.path.basename(license_file)}'
+                _record(target, str(license_file))
+                whl.write(license_file, target)
 
         # Add PEP-639 license-files. Use ``getattr()`` for compatibility with pyproject-metadata < 0.9.0.
         license_files = getattr(self._metadata, 'license_files', None)
         if license_files:
             for f in license_files:
-                whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
+                target = f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}'
+                _record(target, str(f))
+                whl.write(f, target)
 
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            self._wheel_write_metadata(whl)
+            # Track files written under .dist-info/ to surface collisions
+            # (two files at the same wheel path would silently clobber
+            # each other in the archive). Populated by both
+            # _wheel_write_metadata (license files) and the manifest loop
+            # below (files routed via python.dist_info_install_dir()).
+            distinfo_seen: Dict[str, str] = {}
+            self._wheel_write_metadata(whl, distinfo_seen)
 
             with _clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self._pure else 'platlib'
-                # Track basenames written under each .dist-info/<subdir>/ to
-                # surface collisions (two files with the same basename would
-                # silently clobber each other in the wheel).
-                distinfo_seen: Dict[str, str] = {}
 
                 for path, entries in self._manifest.items():
                     for dst, src in entries:
@@ -521,11 +544,10 @@ class _WheelBuilder():
                             if previous is not None:
                                 raise BuildError(
                                     f'Two files would be installed to {target!r} '
-                                    f'in the wheel: {previous!r} and {os.fspath(src)!r}. '
-                                    f'Files placed in .dist-info/ via '
-                                    f'python.dist_info_install_dir() must have '
+                                    f'in the wheel: {previous!r} and {str(src)!r}. '
+                                    f'Files placed in .dist-info/ must have '
                                     f'unique basenames within their subdirectory.')
-                            distinfo_seen[target] = os.fspath(src)
+                            distinfo_seen[target] = str(src)
                             dst = pathlib.Path(self._distinfo_dir, dst)
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)

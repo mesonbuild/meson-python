@@ -1,0 +1,2 @@
+Second LICENSE.txt routed via py.dist_info_install_dir('licenses').
+Colliding basename should trigger a BuildError.

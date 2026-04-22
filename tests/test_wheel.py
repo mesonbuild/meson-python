@@ -179,6 +179,17 @@ def test_dist_info_sboms(wheel_dist_info_sboms):
     assert b'CycloneDX' in generated_sbom
 
 
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_dist_info_sboms_collision(package_dist_info_sboms_collision, tmp_path):
+    # Verifies the collision check catches the case where a file routed
+    # via python.dist_info_install_dir('licenses') targets the same wheel
+    # path as a PEP 639 license-files entry. Before the shared seen-set
+    # fix, this silently produced a wheel with duplicate zip entries.
+    with pytest.raises(mesonpy.BuildError, match='Two files would be installed to'):
+        with mesonpy._project() as project:
+            project.wheel(tmp_path)
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
