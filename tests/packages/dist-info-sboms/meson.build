@@ -19,6 +19,10 @@ custom_target('generated-sbom',
   install: true,
   install_dir: py.dist_info_install_dir('sboms'))
 
-# Different subdirectory — proves the helper's parameterization works.
-install_data('sboms/license-extra.txt',
-  install_dir: py.dist_info_install_dir('licenses'))
+# Different subdirectory — proves the helper's parameterization works
+# and that files routed to two subdirs land in distinct wheel paths.
+# 'extras' (rather than 'licenses') avoids suggesting this is a PEP 639
+# alternative; PEP 639 license-files still flow through
+# pyproject_metadata + the existing _wheel_write_metadata path.
+install_data('sboms/extra.txt',
+  install_dir: py.dist_info_install_dir('extras'))

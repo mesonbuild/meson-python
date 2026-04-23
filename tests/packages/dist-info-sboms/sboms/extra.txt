@@ -1,0 +1,1 @@
+Sample extras file routed via py.dist_info_install_dir('extras').

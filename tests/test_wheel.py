@@ -167,7 +167,7 @@ def test_dist_info_sboms(wheel_dist_info_sboms):
         'dist_info_sboms-1.0.0.dist-info/WHEEL',
         'dist_info_sboms-1.0.0.dist-info/sboms/static.cdx.json',
         'dist_info_sboms-1.0.0.dist-info/sboms/generated.cdx.json',
-        'dist_info_sboms-1.0.0.dist-info/licenses/license-extra.txt',
+        'dist_info_sboms-1.0.0.dist-info/extras/extra.txt',
     }
 
     # Static SBOM file content preserved verbatim.
