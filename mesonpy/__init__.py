@@ -580,7 +580,10 @@ class _EditableWheelBuilder(_WheelBuilder):
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            self._wheel_write_metadata(whl)
+            # Pass a registry so duplicate license-files in pyproject
+            # still surface clearly even though editable wheels have no
+            # manifest loop and no dist_info_install_dir() routing.
+            self._wheel_write_metadata(whl, distinfo_seen={})
             whl.writestr(
                 f'{self._distinfo_dir}/direct_url.json',
                 source_dir.as_uri().encode('utf-8'))
