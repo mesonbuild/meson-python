@@ -127,13 +127,7 @@ class _Entry(typing.NamedTuple):
 
 
 def _canonicalize_distinfo(dir_name: str) -> str:
-    """Canonicalize a `<name>-<version>.dist-info` directory for equality
-    comparison. Collapses runs of ``-``, ``_``, ``.`` to a single ``-`` and
-    lowercases, so that e.g. ``dist-info-sboms-1.0.dist-info`` and
-    ``dist_info_sboms-1.0.dist-info`` compare equal. PEP 491 uses ``_`` as
-    the separator while users typing ``meson.project_name()`` often carry
-    hyphens from their original name.
-    """
+    """Canonical form for .dist-info directory equality comparison."""
     return re.sub(r'[-_.]+', '-', dir_name).lower()
 
 
@@ -142,15 +136,7 @@ def _map_to_wheel(
     exclude: List[str], include: List[str],
     distinfo_dir: str,
 ) -> DefaultDict[str, List[_Entry]]:
-    """Map files to the wheel, organized by wheel installation directory.
-
-    ``distinfo_dir`` is the ``<name>-<version>.dist-info`` directory name this
-    wheel will carry, derived from PEP 621 metadata. Files staged under
-    ``{py_purelib}/<distinfo_dir>/...`` are rerouted into the wheel's
-    ``.dist-info/`` at pack time — this is the mechanism projects use to
-    place PEP 770 SBOMs and other dist-info-bound metadata files in the
-    wheel.
-    """
+    """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
@@ -172,14 +158,8 @@ def _map_to_wheel(
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
 
-            # Files staged under {py_purelib}/<our-distinfo>/... or
-            # {py_platlib}/<our-distinfo>/... are routed into the wheel's
-            # .dist-info/ at pack time. Both roots are recognized because a
-            # project built with pure: false installs into platlib (pandas,
-            # numpy, scipy) while a pure-Python project uses purelib.
-            # Authority for the distinfo dir name is the PEP 621 metadata;
-            # the user's meson.build can write the name with either hyphens
-            # or underscores and we compare canonically.
+            # Route <distinfo>/... staged under purelib or platlib into
+            # the wheel's .dist-info/.
             if (
                 path in ('purelib', 'platlib')
                 and dst.parts
@@ -544,11 +524,7 @@ class _WheelBuilder():
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            # Track files written under .dist-info/ to surface collisions
-            # (two files at the same wheel path would silently clobber
-            # each other in the archive). Populated by both
-            # _wheel_write_metadata (license files) and the manifest loop
-            # below (files routed via python.dist_info_install_dir()).
+            # Collision tracker for files written under .dist-info/.
             distinfo_seen: Dict[str, str] = {}
             self._wheel_write_metadata(whl, distinfo_seen)
 
@@ -566,16 +542,12 @@ class _WheelBuilder():
                             # custom installation path for bundled libraries
                             dst = pathlib.Path(self._libs_dir, dst)
                         elif path == 'distinfo':
-                            # files detected under {purelib}/<distinfo>/... in
-                            # the install plan; see _map_to_wheel().
                             target = pathlib.Path(self._distinfo_dir, dst).as_posix()
-                            previous = distinfo_seen.get(target)
-                            if previous is not None:
+                            if target in distinfo_seen:
                                 raise BuildError(
-                                    f'Two files would be installed to {target!r} '
-                                    f'in the wheel: {previous!r} and {str(src)!r}. '
-                                    f'Files placed in .dist-info/ must have '
-                                    f'unique basenames within their subdirectory.')
+                                    f'Two files would be installed to {target!r} in the wheel: '
+                                    f'{distinfo_seen[target]!r} and {str(src)!r}. '
+                                    f'Files placed in .dist-info/ must have unique paths.')
                             distinfo_seen[target] = str(src)
                             dst = pathlib.Path(self._distinfo_dir, dst)
                         else:
