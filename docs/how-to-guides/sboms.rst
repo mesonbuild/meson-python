@@ -30,9 +30,9 @@ source-vendored components):
 
 .. code-block:: meson
 
-   project('my-project', version: '1.0.0')
+   project('my-project', 'c', version: '1.0.0')
 
-   py = import('python').find_installation()
+   py = import('python').find_installation(pure: false)
    distinfo = meson.project_name() + '-' + meson.project_version() + '.dist-info'
 
    install_data(
@@ -40,6 +40,11 @@ source-vendored components):
      'sboms/component2.cdx.json',
      install_dir: py.get_install_dir() / distinfo / 'sboms',
    )
+
+``py.get_install_dir()`` returns a path under ``{py_purelib}`` for
+``pure: true`` projects and ``{py_platlib}`` for ``pure: false``
+(the common case when shipping C extensions). ``meson-python``
+recognises the distinfo prefix under either root.
 
 The files end up in the wheel at
 ``my_project-1.0.0.dist-info/sboms/component1.cdx.json`` and

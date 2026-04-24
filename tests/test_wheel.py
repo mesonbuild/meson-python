@@ -179,6 +179,20 @@ def test_dist_info_sboms(wheel_dist_info_sboms):
     assert b'CycloneDX' in generated_sbom
 
 
+def test_dist_info_sboms_platlib(wheel_dist_info_sboms_platlib):
+    # Covers `pure: false` projects (pandas, numpy, scipy): meson's
+    # install plan emits {py_platlib}/<distinfo>/... rather than
+    # {py_purelib}/..., and the distinfo-prefix detection has to fire
+    # for both roots. Without that coverage the file can land at the
+    # right wheel path by accident but bypass the collision check.
+    artifact = wheel.wheelfile.WheelFile(wheel_dist_info_sboms_platlib)
+    names = wheel_contents(artifact)
+    # The wheel is a platlib wheel (cpNN-abi-plat tag); its .dist-info
+    # directory name may vary with python interpreter tag, so check
+    # the payload by suffix.
+    assert any(n.endswith('.dist-info/sboms/static.cdx.json') for n in names), names
+
+
 @pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
 def test_dist_info_sboms_collision(package_dist_info_sboms_collision, tmp_path):
     # Verifies the collision check catches the case where a file routed

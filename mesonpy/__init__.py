@@ -172,13 +172,16 @@ def _map_to_wheel(
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
 
-            # Files staged under {py_purelib}/<our-distinfo>/... are routed
-            # into the wheel's .dist-info/ at pack time. Authority for the
-            # distinfo dir name is the PEP 621 metadata (distinfo_dir); the
-            # user's meson.build can write the name with either hyphens or
-            # underscores and we compare canonically.
+            # Files staged under {py_purelib}/<our-distinfo>/... or
+            # {py_platlib}/<our-distinfo>/... are routed into the wheel's
+            # .dist-info/ at pack time. Both roots are recognised because a
+            # project built with pure: false installs into platlib (pandas,
+            # numpy, scipy) while a pure-Python project uses purelib.
+            # Authority for the distinfo dir name is the PEP 621 metadata;
+            # the user's meson.build can write the name with either hyphens
+            # or underscores and we compare canonically.
             if (
-                path == 'purelib'
+                path in ('purelib', 'platlib')
                 and dst.parts
                 and _canonicalize_distinfo(dst.parts[0]) == canonical_distinfo
             ):
