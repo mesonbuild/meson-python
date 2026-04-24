@@ -158,26 +158,22 @@ def _map_to_wheel(
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
 
-            # Route <distinfo>/... staged under purelib or platlib into
-            # the wheel's .dist-info/.
-            if (
-                path in ('purelib', 'platlib')
-                and dst.parts
-                and _canonicalize_distinfo(dst.parts[0]) == canonical_distinfo
-            ):
-                path = 'distinfo'
-                dst = pathlib.Path(*dst.parts[1:])
-            elif path == 'purelib' or path == 'platlib':
-                package = destination.parts[1]
-                other = packages.setdefault(package, path)
-                if other != path:
-                    this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
-                    module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
-                    that = os.fspath(other / module)
-                    raise BuildError(
-                        f'The {package} package is split between {path} and {other}: '
-                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
-                        f'It is recommended to set it in "import(\'python\').find_installation()"')
+            if path in ('purelib', 'platlib'):
+                if dst.parts and _canonicalize_distinfo(dst.parts[0]) == canonical_distinfo:
+                    # Route <distinfo>/... into the wheel's .dist-info/.
+                    path = 'distinfo'
+                    dst = pathlib.Path(*dst.parts[1:])
+                else:
+                    package = destination.parts[1]
+                    other = packages.setdefault(package, path)
+                    if other != path:
+                        this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
+                        module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
+                        that = os.fspath(other / module)
+                        raise BuildError(
+                            f'The {package} package is split between {path} and {other}: '
+                            f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                            f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
                 exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
