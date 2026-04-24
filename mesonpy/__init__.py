@@ -174,7 +174,7 @@ def _map_to_wheel(
 
             # Files staged under {py_purelib}/<our-distinfo>/... or
             # {py_platlib}/<our-distinfo>/... are routed into the wheel's
-            # .dist-info/ at pack time. Both roots are recognised because a
+            # .dist-info/ at pack time. Both roots are recognized because a
             # project built with pure: false installs into platlib (pandas,
             # numpy, scipy) while a pure-Python project uses purelib.
             # Authority for the distinfo dir name is the PEP 621 metadata;
