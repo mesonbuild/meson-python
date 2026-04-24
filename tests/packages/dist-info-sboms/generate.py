@@ -7,6 +7,7 @@
 import json
 import sys
 
+
 with open(sys.argv[1], 'w') as f:
     json.dump({
         'bomFormat': 'CycloneDX',
