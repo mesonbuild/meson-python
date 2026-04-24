@@ -14,13 +14,16 @@ Changelog
 Unreleased
 ==========
 
-- Recognize the ``{py_distinfo}`` install path placeholder emitted by Meson's
-  ``python.dist_info_install_dir()`` helper (added in Meson 1.12.0). Files
-  installed to that placeholder are routed into the wheel's
-  ``<distname>-<version>.dist-info/<subdir>/`` directory. This is the
+- Route files staged under ``{py_purelib}/<name>-<version>.dist-info/...``
+  into the wheel's ``.dist-info/`` directory at pack time. This is the
   recommended mechanism for placing PEP 770 SBOMs and other dist-info-bound
-  metadata files in the wheel. Routing is enforced for non-editable wheels;
-  editable wheels do not include dist-info-bound files (a known limitation).
+  metadata files in the wheel, removing the need for post-build wheel
+  surgery. Works with both static ``install_data()`` and dynamic
+  ``custom_target(install: true)``; requires no new meson API. The collision
+  check surfaces overlaps between files routed here and PEP 639
+  ``license-files`` written by the metadata layer. Routing is enforced for
+  non-editable wheels; editable wheels do not include dist-info-bound files
+  (a known limitation).
 
 
 0.19.0

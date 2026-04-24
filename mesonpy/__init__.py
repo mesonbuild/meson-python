@@ -108,10 +108,6 @@ _INSTALLATION_PATH_MAP = {
     '{moduledir_shared}': 'platlib',
     '{includedir}': 'headers',
     '{datadir}': 'data',
-    # files routed by Meson's python.dist_info_install_dir() helper into
-    # the wheel's .dist-info/<subdir>/ directory (PEP 770 SBOMs, etc.).
-    # Requires meson >= 1.12.0.
-    '{py_distinfo}': 'distinfo',
     # custom location
     '{libdir}': 'mesonpy-libs',
     '{libdir_shared}': 'mesonpy-libs',
@@ -130,15 +126,36 @@ class _Entry(typing.NamedTuple):
     src: str
 
 
+def _canonicalize_distinfo(dir_name: str) -> str:
+    """Canonicalize a `<name>-<version>.dist-info` directory for equality
+    comparison. Collapses runs of ``-``, ``_``, ``.`` to a single ``-`` and
+    lowercases, so that e.g. ``dist-info-sboms-1.0.dist-info`` and
+    ``dist_info_sboms-1.0.dist-info`` compare equal. PEP 491 uses ``_`` as
+    the separator while users typing ``meson.project_name()`` often carry
+    hyphens from their original name.
+    """
+    return re.sub(r'[-_.]+', '-', dir_name).lower()
+
+
 def _map_to_wheel(
     sources: Dict[str, Dict[str, Any]],
-    exclude: List[str], include: List[str]
+    exclude: List[str], include: List[str],
+    distinfo_dir: str,
 ) -> DefaultDict[str, List[_Entry]]:
-    """Map files to the wheel, organized by wheel installation directory."""
+    """Map files to the wheel, organized by wheel installation directory.
+
+    ``distinfo_dir`` is the ``<name>-<version>.dist-info`` directory name this
+    wheel will carry, derived from PEP 621 metadata. Files staged under
+    ``{py_purelib}/<distinfo_dir>/...`` are rerouted into the wheel's
+    ``.dist-info/`` at pack time — this is the mechanism projects use to
+    place PEP 770 SBOMs and other dist-info-bound metadata files in the
+    wheel.
+    """
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
+    canonical_distinfo = _canonicalize_distinfo(distinfo_dir)
 
     for key, group in sources.items():
         for src, target in group.items():
@@ -155,7 +172,19 @@ def _map_to_wheel(
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
 
-            if path == 'purelib' or path == 'platlib':
+            # Files staged under {py_purelib}/<our-distinfo>/... are routed
+            # into the wheel's .dist-info/ at pack time. Authority for the
+            # distinfo dir name is the PEP 621 metadata (distinfo_dir); the
+            # user's meson.build can write the name with either hyphens or
+            # underscores and we compare canonically.
+            if (
+                path == 'purelib'
+                and dst.parts
+                and _canonicalize_distinfo(dst.parts[0]) == canonical_distinfo
+            ):
+                path = 'distinfo'
+                dst = pathlib.Path(*dst.parts[1:])
+            elif path == 'purelib' or path == 'platlib':
                 package = destination.parts[1]
                 other = packages.setdefault(package, path)
                 if other != path:
@@ -537,8 +566,8 @@ class _WheelBuilder():
                             # custom installation path for bundled libraries
                             dst = pathlib.Path(self._libs_dir, dst)
                         elif path == 'distinfo':
-                            # files routed by Meson's
-                            # python.dist_info_install_dir() helper.
+                            # files detected under {purelib}/<distinfo>/... in
+                            # the install plan; see _map_to_wheel().
                             target = pathlib.Path(self._distinfo_dir, dst).as_posix()
                             previous = distinfo_seen.get(target)
                             if previous is not None:
@@ -1019,8 +1048,12 @@ class Project():
                     continue
                 sources[key][target] = details
 
-        # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources, self._excluded_files, self._included_files)
+        # Map Meson installation locations to wheel paths. Pass the
+        # wheel's dist-info directory name so files staged under
+        # {purelib}/<name>-<version>.dist-info/... get rerouted to the
+        # wheel's own .dist-info/ at pack time.
+        distinfo_dir = f'{self._metadata.distribution_name}-{self._metadata.version}.dist-info'
+        return _map_to_wheel(sources, self._excluded_files, self._included_files, distinfo_dir)
 
     @property
     def _meson_name(self) -> str:
