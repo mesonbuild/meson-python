@@ -507,7 +507,7 @@ class _WheelBuilder():
     def _wheel_write_metadata(
         self,
         whl: mesonpy._wheelfile.WheelFile,
-        distinfo_seen: Optional[Dict[str, str]] = None,
+        distinfo_seen: Dict[str, str],
     ) -> None:
         # add metadata
         whl.writestr(f'{self._distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
@@ -515,25 +515,17 @@ class _WheelBuilder():
         if self.entrypoints_txt:
             whl.writestr(f'{self._distinfo_dir}/entry_points.txt', self.entrypoints_txt)
 
-        def _record(target: str, origin: str) -> None:
-            if distinfo_seen is None:
-                return
-            previous = distinfo_seen.get(target)
-            if previous is not None:
-                raise BuildError(
-                    f'Two files would be installed to {target!r} in the '
-                    f'wheel: {previous!r} and {origin!r}. Files placed in '
-                    f'.dist-info/ must have unique basenames within their '
-                    f'subdirectory; check your project.license-files list '
-                    f'and any python.dist_info_install_dir() uses.')
-            distinfo_seen[target] = origin
-
         # Add pre-PEP-639 license files.
         if isinstance(self._metadata.license, pyproject_metadata.License):
             license_file = self._metadata.license.file
             if license_file:
                 target = f'{self._distinfo_dir}/{os.path.basename(license_file)}'
-                _record(target, str(license_file))
+                if target in distinfo_seen:
+                    raise BuildError(
+                        f'Two files would be installed to {target!r} in the wheel: '
+                        f'{distinfo_seen[target]!r} and {str(license_file)!r}. '
+                        f'Files placed in .dist-info/ must have unique paths.')
+                distinfo_seen[target] = str(license_file)
                 whl.write(license_file, target)
 
         # Add PEP-639 license-files. Use ``getattr()`` for compatibility with pyproject-metadata < 0.9.0.
@@ -541,7 +533,12 @@ class _WheelBuilder():
         if license_files:
             for f in license_files:
                 target = f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}'
-                _record(target, str(f))
+                if target in distinfo_seen:
+                    raise BuildError(
+                        f'Two files would be installed to {target!r} in the wheel: '
+                        f'{distinfo_seen[target]!r} and {str(f)!r}. '
+                        f'Files placed in .dist-info/ must have unique paths.')
+                distinfo_seen[target] = str(f)
                 whl.write(f, target)
 
     def build(self, directory: Path) -> pathlib.Path:
