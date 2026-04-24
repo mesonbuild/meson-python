@@ -63,6 +63,13 @@ writes the file and installs it to the same location:
 The generator runs during the build, and the output is routed into
 ``my_project-1.0.0.dist-info/sboms/vendored.cdx.json``.
 
+The generator is provided by the project; ``meson-python`` does not
+ship one. It can be a script checked into the source tree
+(``scripts/`` is a common convention) or a third-party generator
+installed via ``[build-system] requires``. For guidance on generator
+implementations and the SBOM format itself, see the PSF
+`SBOMs for Python packages`_ proposal.
+
 Other ``.dist-info`` subdirectories
 ===================================
 
