@@ -10,11 +10,10 @@ Including SBOMs in wheels (PEP 770)
 
 `PEP 770`_ defines a location for Software Bill of Materials (SBOM)
 files inside the wheel's ``.dist-info/sboms/`` directory.
-``meson-python`` routes any file installed under
-``{py_purelib}/<name>-<version>.dist-info/<subdir>/...`` or
-``{py_platlib}/<name>-<version>.dist-info/<subdir>/...`` into the
-wheel's own ``.dist-info/<subdir>/`` at pack time, giving projects a
-way to ship SBOMs and other dist-info-bound metadata files without
+``meson-python`` routes any file installed to
+``py.get_install_dir() / <name>-<version>.dist-info / <subdir>`` into
+the wheel's own ``.dist-info/<subdir>/`` at pack time, giving projects
+a way to ship SBOMs and other dist-info-bound metadata files without
 post-build wheel surgery.
 
 .. _PEP 770: https://peps.python.org/pep-0770/
@@ -40,9 +39,7 @@ source-vendored components:
 
 The files end up in the wheel at
 ``my_project-1.0.0.dist-info/sboms/component1.cdx.json`` and
-``component2.cdx.json``. ``py.get_install_dir()`` returns a path under
-``{py_purelib}`` for ``pure: true`` projects and ``{py_platlib}`` for
-``pure: false`` projects; both roots are recognized.
+``component2.cdx.json``.
 
 Dynamically generated SBOMs
 ===========================
