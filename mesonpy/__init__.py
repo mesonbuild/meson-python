@@ -126,15 +126,22 @@ class _Entry(typing.NamedTuple):
     src: str
 
 
+def _canonicalize_distinfo(dir_name: str) -> str:
+    """Canonical form for .dist-info directory equality comparison."""
+    return re.sub(r'[-_.]+', '-', dir_name).lower()
+
+
 def _map_to_wheel(
     sources: Dict[str, Dict[str, Any]],
-    exclude: List[str], include: List[str]
+    exclude: List[str], include: List[str],
+    distinfo_dir: str,
 ) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
+    canonical_distinfo = _canonicalize_distinfo(distinfo_dir)
 
     for key, group in sources.items():
         for src, target in group.items():
@@ -151,17 +158,22 @@ def _map_to_wheel(
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
 
-            if path == 'purelib' or path == 'platlib':
-                package = destination.parts[1]
-                other = packages.setdefault(package, path)
-                if other != path:
-                    this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
-                    module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
-                    that = os.fspath(other / module)
-                    raise BuildError(
-                        f'The {package} package is split between {path} and {other}: '
-                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
-                        f'It is recommended to set it in "import(\'python\').find_installation()"')
+            if path in ('purelib', 'platlib'):
+                if dst.parts and _canonicalize_distinfo(dst.parts[0]) == canonical_distinfo:
+                    # Route <distinfo>/... into the wheel's .dist-info/.
+                    path = 'distinfo'
+                    dst = pathlib.Path(*dst.parts[1:])
+                else:
+                    package = destination.parts[1]
+                    other = packages.setdefault(package, path)
+                    if other != path:
+                        this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
+                        module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
+                        that = os.fspath(other / module)
+                        raise BuildError(
+                            f'The {package} package is split between {path} and {other}: '
+                            f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                            f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
                 exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
@@ -468,7 +480,11 @@ class _WheelBuilder():
             if not os.fspath(origin).endswith('.pdb'):
                 raise
 
-    def _wheel_write_metadata(self, whl: mesonpy._wheelfile.WheelFile) -> None:
+    def _wheel_write_metadata(
+        self,
+        whl: mesonpy._wheelfile.WheelFile,
+        distinfo_seen: Dict[str, str],
+    ) -> None:
         # add metadata
         whl.writestr(f'{self._distinfo_dir}/METADATA', bytes(self._metadata.as_rfc822()))
         whl.writestr(f'{self._distinfo_dir}/WHEEL', self.wheel)
@@ -479,18 +495,34 @@ class _WheelBuilder():
         if isinstance(self._metadata.license, pyproject_metadata.License):
             license_file = self._metadata.license.file
             if license_file:
-                whl.write(license_file, f'{self._distinfo_dir}/{os.path.basename(license_file)}')
+                target = f'{self._distinfo_dir}/{os.path.basename(license_file)}'
+                if target in distinfo_seen:
+                    raise BuildError(
+                        f'Two files would be installed to {target!r} in the wheel: '
+                        f'{distinfo_seen[target]!r} and {str(license_file)!r}. '
+                        f'Files placed in .dist-info/ must have unique paths.')
+                distinfo_seen[target] = str(license_file)
+                whl.write(license_file, target)
 
         # Add PEP-639 license-files. Use ``getattr()`` for compatibility with pyproject-metadata < 0.9.0.
         license_files = getattr(self._metadata, 'license_files', None)
         if license_files:
             for f in license_files:
-                whl.write(f, f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}')
+                target = f'{self._distinfo_dir}/licenses/{pathlib.Path(f).as_posix()}'
+                if target in distinfo_seen:
+                    raise BuildError(
+                        f'Two files would be installed to {target!r} in the wheel: '
+                        f'{distinfo_seen[target]!r} and {str(f)!r}. '
+                        f'Files placed in .dist-info/ must have unique paths.')
+                distinfo_seen[target] = str(f)
+                whl.write(f, target)
 
     def build(self, directory: Path) -> pathlib.Path:
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            self._wheel_write_metadata(whl)
+            # Collision tracker for files written under .dist-info/.
+            distinfo_seen: Dict[str, str] = {}
+            self._wheel_write_metadata(whl, distinfo_seen)
 
             with _clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
@@ -505,6 +537,15 @@ class _WheelBuilder():
                         elif path == 'mesonpy-libs':
                             # custom installation path for bundled libraries
                             dst = pathlib.Path(self._libs_dir, dst)
+                        elif path == 'distinfo':
+                            target = pathlib.Path(self._distinfo_dir, dst).as_posix()
+                            if target in distinfo_seen:
+                                raise BuildError(
+                                    f'Two files would be installed to {target!r} in the wheel: '
+                                    f'{distinfo_seen[target]!r} and {str(src)!r}. '
+                                    f'Files placed in .dist-info/ must have unique paths.')
+                            distinfo_seen[target] = str(src)
+                            dst = pathlib.Path(self._distinfo_dir, dst)
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
@@ -536,7 +577,10 @@ class _EditableWheelBuilder(_WheelBuilder):
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
-            self._wheel_write_metadata(whl)
+            # Pass a registry so duplicate license-files in pyproject
+            # still surface clearly even though editable wheels have no
+            # manifest loop and no dist_info_install_dir() routing.
+            self._wheel_write_metadata(whl, distinfo_seen={})
             whl.writestr(
                 f'{self._distinfo_dir}/direct_url.json',
                 source_dir.as_uri().encode('utf-8'))
@@ -972,8 +1016,12 @@ class Project():
                     continue
                 sources[key][target] = details
 
-        # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources, self._excluded_files, self._included_files)
+        # Map Meson installation locations to wheel paths. Pass the
+        # wheel's dist-info directory name so files staged under
+        # {purelib}/<name>-<version>.dist-info/... get rerouted to the
+        # wheel's own .dist-info/ at pack time.
+        distinfo_dir = f'{self._metadata.distribution_name}-{self._metadata.version}.dist-info'
+        return _map_to_wheel(sources, self._excluded_files, self._included_files, distinfo_dir)
 
     @property
     def _meson_name(self) -> str:

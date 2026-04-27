@@ -1,0 +1,1 @@
+Top-level LICENSE.txt referenced by project.license-files in pyproject.toml.

@@ -158,6 +158,52 @@ def test_license_pep639(wheel_license_pep639):
     '''))
 
 
+def test_dist_info_sboms(wheel_dist_info_sboms):
+    artifact = wheel.wheelfile.WheelFile(wheel_dist_info_sboms)
+
+    assert wheel_contents(artifact) == {
+        'dist_info_sboms-1.0.0.dist-info/METADATA',
+        'dist_info_sboms-1.0.0.dist-info/RECORD',
+        'dist_info_sboms-1.0.0.dist-info/WHEEL',
+        'dist_info_sboms-1.0.0.dist-info/sboms/static.cdx.json',
+        'dist_info_sboms-1.0.0.dist-info/sboms/generated.cdx.json',
+        'dist_info_sboms-1.0.0.dist-info/extras/extra.txt',
+    }
+
+    # Static SBOM file content preserved verbatim.
+    static_sbom = artifact.read('dist_info_sboms-1.0.0.dist-info/sboms/static.cdx.json')
+    assert b'CycloneDX' in static_sbom
+
+    # Dynamically-generated SBOM produced by the custom_target ran.
+    generated_sbom = artifact.read('dist_info_sboms-1.0.0.dist-info/sboms/generated.cdx.json')
+    assert b'CycloneDX' in generated_sbom
+
+
+def test_dist_info_sboms_platlib(wheel_dist_info_sboms_platlib):
+    # Covers `pure: false` projects (pandas, numpy, scipy): meson's
+    # install plan emits {py_platlib}/<distinfo>/... rather than
+    # {py_purelib}/..., and the distinfo-prefix detection has to fire
+    # for both roots. Without that coverage the file can land at the
+    # right wheel path by accident but bypass the collision check.
+    artifact = wheel.wheelfile.WheelFile(wheel_dist_info_sboms_platlib)
+    names = wheel_contents(artifact)
+    # The wheel is a platlib wheel (cpNN-abi-plat tag); its .dist-info
+    # directory name may vary with python interpreter tag, so check
+    # the payload by suffix.
+    assert any(n.endswith('.dist-info/sboms/static.cdx.json') for n in names), names
+
+
+@pytest.mark.filterwarnings('ignore:canonicalization and validation of license expression')
+def test_dist_info_sboms_collision(package_dist_info_sboms_collision, tmp_path):
+    # Verifies the collision check catches the case where a file routed
+    # via python.dist_info_install_dir('licenses') targets the same wheel
+    # path as a PEP 639 license-files entry. Before the shared seen-set
+    # fix, this silently produced a wheel with duplicate zip entries.
+    with pytest.raises(mesonpy.BuildError, match='Two files would be installed to'):
+        with mesonpy._project() as project:
+            project.wheel(tmp_path)
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)

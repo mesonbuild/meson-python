@@ -11,6 +11,15 @@
 Changelog
 +++++++++
 
+Unreleased
+==========
+
+- Add support for including PEP 770 SBOMs and other dist-info-bound metadata
+  files in the wheel. Files installed to
+  ``py.get_install_dir() / <name>-<version>.dist-info / <subdir>`` are
+  routed into the wheel's ``.dist-info/<subdir>/`` at pack time.
+
+
 0.19.0
 ======
 
