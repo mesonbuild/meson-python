@@ -288,11 +288,20 @@ def find_spec(fullname: str, tree: Node) -> Optional[importlib.machinery.ModuleS
 
 
 class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
-    def __init__(self, package: str, names: Set[str], path: str, cmd: List[str], verbose: bool = False):
+    def __init__(
+        self,
+        package: str,
+        names: Set[str],
+        path: str,
+        cmd: List[str],
+        env: Optional[Dict[str, str]] = None,
+        verbose: bool = False,
+    ):
         self._name = package
         self._top_level_modules = names
         self._build_path = path
         self._build_cmd = cmd
+        self._build_env = env or {}
         self._verbose = verbose
         self._loaders: List[Tuple[type, str]] = []
 
@@ -334,6 +343,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             # the module we are rebuilding might be imported causing a
             # rebuild loop.
             env = os.environ.copy()
+            env.update(self._build_env)
             env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
             if self._verbose or bool(env.get(VERBOSE, '')):
@@ -389,7 +399,14 @@ class MesonpyPathFinder(importlib.abc.PathEntryFinder):
                 yield prefix + modname, False
 
 
-def install(package: str, names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
-    finder = MesonpyMetaFinder(package, names, path, cmd, verbose)
+def install(
+    package: str,
+    names: Set[str],
+    path: str,
+    cmd: List[str],
+    env: Dict[str, str],
+    verbose: bool,
+) -> None:
+    finder = MesonpyMetaFinder(package, names, path, cmd, env, verbose)
     sys.meta_path.insert(0, finder)
     sys.path_hooks.insert(0, finder._path_hook)

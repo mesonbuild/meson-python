@@ -531,8 +531,15 @@ class _EditableWheelBuilder(_WheelBuilder):
                     modules.add(name)
         return modules
 
-    def build(self, directory: Path, source_dir: pathlib.Path, build_dir: pathlib.Path,  # type: ignore[override]
-              build_command: List[str], verbose: bool = False) -> pathlib.Path:
+    def build( # type: ignore[override]
+        self,
+        directory: Path,
+        source_dir: pathlib.Path,
+        build_dir: pathlib.Path,
+        build_command: List[str],
+        build_env: Dict[str, str],
+        verbose: bool = False,
+    ) -> pathlib.Path:
 
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
@@ -551,6 +558,7 @@ class _EditableWheelBuilder(_WheelBuilder):
                        {self._top_level_modules!r},
                        {os.fspath(build_dir)!r},
                        {build_command!r},
+                       {build_env!r},
                        {verbose!r},
                    )''').encode('utf-8'))
 
@@ -587,6 +595,11 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
             raise ConfigError(f'Configuration entry "{name}" must be a boolean')
         return value
 
+    def _strings_table(value: Any, name: str) -> Dict[str, str]:
+        if not isinstance(value, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in value.items()):
+            raise ConfigError(f'Configuration entry "{name}" must be a table with string values')
+        return value
+
     def _string_or_path(value: Any, name: str) -> str:
         if not isinstance(value, str):
             raise ConfigError(f'Configuration entry "{name}" must be a string')
@@ -598,6 +611,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
         'meson': _string_or_path,
         'limited-api': _bool,
         'allow-windows-internal-shared-libs': _bool,
+        'env': _strings_table,
         'args': _table(dict.fromkeys(_MESON_ARGS_KEYS, _strings)),
         'wheel': _table({
             'exclude': _strings,
@@ -682,6 +696,9 @@ class Project():
 
         # load meson args from pyproject.toml
         pyproject_config = _validate_pyproject_config(pyproject)
+        self._config_env = pyproject_config.get('env', {})
+        self._env = os.environ.copy()
+        self._env.update(self._config_env)
         for key, value in pyproject_config.get('args', {}).items():
             self._meson_args[key].extend(value)
 
@@ -692,12 +709,12 @@ class Project():
                 self._meson_args[key].extend(value)
 
         # determine command to invoke meson
-        self._meson = _get_meson_command(pyproject_config.get('meson'))
+        self._meson = _get_meson_command(pyproject_config.get('meson'), env=self._env)
 
-        self._ninja = _env_ninja_command()
+        self._ninja = _env_ninja_command(env=self._env)
         if self._ninja is None:
             raise ConfigError(f'Could not find ninja version {_NINJA_REQUIRED_VERSION} or newer.')
-        os.environ.setdefault('NINJA', self._ninja)
+        self._env.setdefault('NINJA', self._ninja)
 
         # make sure the build dir exists
         self._build_dir.mkdir(exist_ok=True, parents=True)
@@ -708,7 +725,7 @@ class Project():
 
         # setuptools-like ARCHFLAGS environment variable support
         if sysconfig.get_platform().startswith('macosx-'):
-            archflags = os.environ.get('ARCHFLAGS', '').strip()
+            archflags = self._env.get('ARCHFLAGS', '').strip()
             if archflags:
 
                 # parse the ARCHFLAGS environment variable
@@ -723,7 +740,7 @@ class Project():
 
                 macver, _, nativearch = platform.mac_ver()
                 if arch != nativearch:
-                    x = os.environ.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
+                    x = self._env.setdefault('_PYTHON_HOST_PLATFORM', f'macosx-{macver}-{arch}')
                     if not x.endswith(arch):
                         raise ConfigError(f'$ARCHFLAGS={archflags!r} and $_PYTHON_HOST_PLATFORM={x!r} do not agree')
                     family = 'aarch64' if arch == 'arm64' else arch
@@ -747,7 +764,7 @@ class Project():
         # Simplify cross-compilation for Android with cibuildwheel: detect the
         # cross-compilation environment set up by cibuildwheel and synthesize an
         # appropriate cross file.
-        elif sysconfig.get_platform().startswith('android-') and 'CIBUILDWHEEL' in os.environ:
+        elif sysconfig.get_platform().startswith('android-') and 'CIBUILDWHEEL' in self._env:
             cpu = platform.machine()
             cpu_family = 'x86' if cpu == 'i686' else 'arm' if cpu.startswith('arm') else cpu
 
@@ -893,7 +910,7 @@ class Project():
         # command line appears before the command output. Without it,
         # the lines appear in the wrong order in pip output.
         _log('{style.INFO}+ {cmd}{style.RESET}'.format(style=style, cmd=' '.join(cmd)), flush=True)
-        r = subprocess.run(cmd, cwd=self._build_dir)
+        r = subprocess.run(cmd, cwd=self._build_dir, env=self._env)
         if r.returncode != 0:
             raise SystemExit(r.returncode)
 
@@ -1135,7 +1152,14 @@ class Project():
         """Generates an editable wheel in the specified directory."""
         self.build()
         builder = _EditableWheelBuilder(self._metadata, self._manifest, self._limited_api, self._allow_windows_shared_libs)
-        return builder.build(directory, self._source_dir, self._build_dir, self._build_command, self._editable_verbose)
+        return builder.build(
+            directory,
+            self._source_dir,
+            self._build_dir,
+            self._build_command,
+            self._config_env,
+            self._editable_verbose,
+        )
 
 
 @contextlib.contextmanager
@@ -1163,13 +1187,14 @@ def _parse_version_string(string: str) -> Tuple[int, ...]:
 
 
 def _get_meson_command(
-        meson: Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION
+        meson: Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION, env: Optional[Dict[str, str]] = None
     ) -> List[str]:
     """Return the command to invoke meson."""
+    env = os.environ if env is None else env
 
     # The MESON env var, if set, overrides the config value from pyproject.toml.
     # The config value, if given, is an absolute path or the name of an executable.
-    meson = os.environ.get('MESON', meson or 'meson')
+    meson = env.get('MESON', meson or 'meson')
 
     # If the specified Meson string ends in `.py`, we run it with the current
     # Python executable. This avoids problems for users on Windows, where
@@ -1188,7 +1213,7 @@ def _get_meson_command(
     # but the corresponding meson command is not available in $PATH. Implement
     # a runtime check to verify that the build environment is setup correcly.
     try:
-        r = subprocess.run(cmd + ['--version'], text=True, capture_output=True)
+        r = subprocess.run(cmd + ['--version'], text=True, capture_output=True, env=env)
     except FileNotFoundError as err:
         raise ConfigError(f'meson executable "{meson}" not found') from err
     if r.returncode != 0:
@@ -1201,15 +1226,16 @@ def _get_meson_command(
     return cmd
 
 
-def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION) -> Optional[str]:
+def _env_ninja_command(*, version: str = _NINJA_REQUIRED_VERSION, env: Optional[Dict[str, str]] = None) -> Optional[str]:
     """Returns the path to ninja, or None if no ninja found."""
     required_version = _parse_version_string(version)
-    env_ninja = os.environ.get('NINJA')
+    env = os.environ if env is None else env
+    env_ninja = env.get('NINJA')
     ninja_candidates = [env_ninja] if env_ninja else ['ninja', 'ninja-build', 'samu']
     for ninja in ninja_candidates:
         ninja_path = shutil.which(ninja)
         if ninja_path is not None:
-            version = subprocess.run([ninja_path, '--version'], check=False, text=True, capture_output=True).stdout
+            version = subprocess.run([ninja_path, '--version'], check=False, text=True, capture_output=True, env=env).stdout
             if _parse_version_string(version) >= required_version:
                 return ninja_path
     return None

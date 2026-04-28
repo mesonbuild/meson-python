@@ -9,6 +9,7 @@ import pkgutil
 import re
 import subprocess
 import sys
+import builtins
 
 from contextlib import redirect_stdout
 
@@ -82,7 +83,7 @@ def test_mesonpy_meta_finder(package_complex, tmp_path):
     project = mesonpy.Project(package_complex, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, True)
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, verbose=True)
 
     # check repr
     assert repr(finder) == f'MesonpyMetaFinder(\'complex\', {str(tmp_path)!r})'
@@ -146,7 +147,7 @@ def test_resources(tmp_path):
     project = mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, True)
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, verbose=True)
 
     # verify that we can look up resources
     spec = finder.find_spec('simple')
@@ -165,7 +166,7 @@ def test_importlib_resources(tmp_path):
     project = mesonpy.Project(package_path, tmp_path)
 
     # point the meta finder to the build directory
-    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, True)
+    finder = _editable.MesonpyMetaFinder('simple', {'simple'}, os.fspath(tmp_path), project._build_command, verbose=True)
 
     try:
         # install the finder in the meta path
@@ -216,7 +217,7 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
     # build a package in a temporary directory
     project = mesonpy.Project(package_complex, tmp_path)
 
-    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, True)
+    finder = _editable.MesonpyMetaFinder('complex', {'complex'}, os.fspath(tmp_path), project._build_command, verbose=True)
 
     try:
         # install editable hooks
@@ -249,7 +250,7 @@ def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
 
 def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
     project = mesonpy.Project(package_custom_target_dir, tmp_path)
-    finder = _editable.MesonpyMetaFinder('package', {'package'}, os.fspath(tmp_path), project._build_command, True)
+    finder = _editable.MesonpyMetaFinder('package', {'package'}, os.fspath(tmp_path), project._build_command, verbose=True)
     try:
         sys.meta_path.insert(0, finder)
         import package.generated.one
@@ -312,6 +313,32 @@ def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
 
     # Another import without file changes should not show any output
     assert venv.python('-c', 'import complex') == ''
+
+
+def test_editable_rebuild_uses_configured_env(monkeypatch):
+    finder = _editable.MesonpyMetaFinder(
+        'test',
+        {'test'},
+        os.getcwd(),
+        ['ninja'],
+        {'MESONPY_TEST_ENV': 'inner'},
+    )
+    captured = []
+
+    def work_to_do(env):
+        captured.append(env['MESONPY_TEST_ENV'])
+        return False
+
+    def open_mock(*args, **kwargs):
+        return io.StringIO('{}')
+
+    monkeypatch.setenv('MESONPY_TEST_ENV', 'outer')
+    monkeypatch.setattr(finder, '_work_to_do', work_to_do)
+    monkeypatch.setattr(builtins, 'open', open_mock)
+    finder._verbose = True
+    finder._rebuild()
+
+    assert captured == ['inner']
 
 
 @pytest.mark.parametrize('verbose', [False, True], ids=('', 'verbose'))

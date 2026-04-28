@@ -47,6 +47,20 @@ use them and examples.
    ``meson-python`` itself. It can be overridden by the :envvar:`MESON`
    environment variable.
 
+.. option:: tool.meson-python.env
+
+   A table mapping environment variable names to string values. These
+   variables are applied automatically to Meson invocations started by
+   ``meson-python``, including editable rebuilds triggered during import.
+
+   For example:
+
+   .. code-block:: toml
+
+      [tool.meson-python.env]
+      CC = 'clang'
+      CFLAGS = '-O0 -g'
+
 .. option:: tool.meson-python.args.dist
 
    Extra arguments to be passed to the ``meson dist`` command.

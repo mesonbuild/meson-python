@@ -107,6 +107,11 @@ with different ABIs.
 An alternative build directory can be specified using the
 :option:`build-dir` config setting.
 
+If the project needs specific environment variables for Meson, they can
+be declared in ``pyproject.toml`` via
+:option:`tool.meson-python.env`. Those values are applied both when the
+editable wheel is created and when import-time rebuilds are triggered.
+
 
 Data files
 ----------

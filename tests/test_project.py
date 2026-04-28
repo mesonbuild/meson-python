@@ -263,6 +263,9 @@ def test_validate_pyproject_config_one():
 
 def test_validate_pyproject_config_all():
     pyproject_config = tomllib.loads(textwrap.dedent('''
+        [tool.meson-python.env]
+        FOO = 'bar'
+
         [tool.meson-python.args]
         setup = ['-Dfoo=true']
         dist = []
@@ -270,11 +273,21 @@ def test_validate_pyproject_config_all():
         install = ['--tags=python']
     '''))
     conf = mesonpy._validate_pyproject_config(pyproject_config)
+    assert conf['env'] == {'FOO': 'bar'}
     assert conf['args'] == {
         'setup': ['-Dfoo=true'],
         'dist': [],
         'compile': ['-j4'],
         'install': ['--tags=python']}
+
+
+def test_validate_pyproject_config_env_invalid():
+    pyproject_config = tomllib.loads(textwrap.dedent('''
+        [tool.meson-python.env]
+        FOO = 1
+    '''))
+    with pytest.raises(mesonpy.ConfigError, match='Configuration entry "tool.meson-python.env" must be a table with string values'):
+        mesonpy._validate_pyproject_config(pyproject_config)
 
 
 def test_validate_pyproject_config_unknown():
@@ -290,6 +303,43 @@ def test_validate_pyproject_config_empty():
     pyproject_config = tomllib.loads(textwrap.dedent(''))
     config = mesonpy._validate_pyproject_config(pyproject_config)
     assert config == {}
+
+
+def test_project_env_vars(tmp_path, monkeypatch):
+    captured_envs = []
+    subprocess_run = mesonpy.subprocess.run
+
+    def run(cmd, **kwargs):
+        env = kwargs.get('env')
+        assert env is not None, f'Expected environment variables to be passed to subprocess.run {cmd}'
+        assert 'MESONPY_TEST_ENV' in env and env['MESONPY_TEST_ENV'] == 'inner', f'Expected MESONPY_TEST_ENV to be set in the environment for subprocess.run {cmd}'
+        captured_envs.append(env)
+        return subprocess_run(cmd, **kwargs)
+
+    monkeypatch.setattr(mesonpy.subprocess, 'run', run)
+    monkeypatch.setenv('MESONPY_TEST_ENV', 'outer')
+    source_dir = tmp_path / 'src'
+    build_dir = tmp_path / 'build'
+    source_dir.mkdir()
+
+    source_dir.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'pure'
+        version = '1.0.0'
+
+        [tool.meson-python.env]
+        MESONPY_TEST_ENV = 'inner'
+    '''), encoding='utf-8')
+    source_dir.joinpath('meson.build').write_text("project('pure', version: '1.0.0')\n", encoding='utf-8')
+
+    project = mesonpy.Project(source_dir, build_dir)
+    project.build()
+
+    assert captured_envs
 
 
 @pytest.mark.skipif(
