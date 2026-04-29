@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[build-system]
+build-backend = 'mesonpy'
+requires = ['meson-python', 'setuptools-scm[simple]']
+
+[project]
+name = 'version-setuptools-scm'
+dynamic = ['version']
+
+[tool.setuptools_scm]
+# Configured like this to have a reproducible sdist/wheel filename for tests
+fallback_version = '1.2.3'
+local_scheme = 'no-local-version'

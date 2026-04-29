@@ -26,6 +26,7 @@ python-build = "*"
 cython = "*"
 pytest = "*"
 pytest-mock = "*"
+setuptools-scm = "*"
 wheel = "*"
 
 [tasks]
