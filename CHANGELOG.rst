@@ -11,6 +11,14 @@
 Changelog
 +++++++++
 
+0.20.0
+======
+
+- Add support for targeting the Android platform.
+
+Daniele Nicolodi, Malcolm Smith, Ralf Gommers --- 10-06-2026.
+
+
 0.19.0
 ======
 
