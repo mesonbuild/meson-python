@@ -899,13 +899,26 @@ class Project():
 
     def _configure(self, reconfigure: bool = False) -> None:
         """Configure Meson project."""
+        # Override Meson default build options to adjust the build
+        # process to the task of building Python wheels. These
+        # defaults can be overridden by user options. To preserve
+        # user specified build options, do not pass these defaults
+        # when reconfiguring an existing build directory.
+        defaults = (
+            [
+                '-Dbuildtype=release',
+                '-Db_ndebug=if-release',
+                '-Db_vscrt=md',
+            ]
+            if not reconfigure
+            else []
+        )
+
         setup_args = [
             os.fspath(self._source_dir),
             os.fspath(self._build_dir),
             # default build options
-            '-Dbuildtype=release',
-            '-Db_ndebug=if-release',
-            '-Db_vscrt=md',
+            *defaults,
             # user build options
             *self._meson_args['setup'],
             # pass native file last to have it override the python
