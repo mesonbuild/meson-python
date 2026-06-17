@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2022 The meson-python developers
-#
-# SPDX-License-Identifier: MIT
-
-# 20260108
-FROM debian:bullseye
-RUN apt-get update && apt-get install -y git ninja-build patchelf python3-pip python3-venv cmake && rm -rf /var/lib/apt/lists/*

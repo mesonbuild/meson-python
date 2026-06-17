@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2022 The meson-python developers
-#
-# SPDX-License-Identifier: MIT
-
-# 20260108
-FROM archlinux:latest
-RUN pacman -Syu --noconfirm && pacman -S --noconfirm python python-pip gcc ninja git patchelf cmake

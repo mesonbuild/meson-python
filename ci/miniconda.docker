@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2022 The meson-python developers
-#
-# SPDX-License-Identifier: MIT
-
-# 20260108
-FROM continuumio/miniconda3
-RUN apt-get update && apt-get install -y gcc g++ ninja-build git patchelf cmake && rm -rf /var/lib/apt/lists/*
