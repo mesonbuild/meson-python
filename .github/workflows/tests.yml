@@ -41,11 +41,12 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          # macOS 14 on arm64 is covered by the Cirrus CI jobs, stick to macOS
-          # on x86-64 here as long as we can: macOS 15 is currently planned as
-          # the last supported image based on Intel CPU on GitHub Actions.
-          - macos-15-intel
+          - macos-latest
           - windows-latest
+          - macos-latest
+          # GitHub Actions switched to macOS on amr64 by default. Keep
+          # a job running on macOS on x86-64 for a while longer.
+          - macos-15-intel
         python:
           - '3.9'
           - '3.14'
