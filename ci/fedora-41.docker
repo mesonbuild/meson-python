@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2022 The meson-python developers
-#
-# SPDX-License-Identifier: MIT
-
-# 20260108
-FROM fedora:41
-RUN dnf -y update && dnf -y install python3-devel python3-pip gcc gcc-c++ ninja-build git patchelf cmake && dnf clean all

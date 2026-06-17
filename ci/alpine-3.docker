@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2022 The meson-python developers
-#
-# SPDX-License-Identifier: MIT
-
-# 20260108
-FROM alpine:3
-RUN apk add --no-cache python3-dev py3-pip build-base ninja-is-really-ninja git patchelf cmake
