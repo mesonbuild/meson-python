@@ -1038,7 +1038,15 @@ class Project():
                 # in all cases.
                 while member.issym():
                     name = member.name
-                    target = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
+                    # Normalize the link target to use forward slashes.  On
+                    # Windows on Python 3.15 rewrites slashes to backslashes in
+                    # symbolic link targets when extracting tar archives (see
+                    # CPython gh-57911), and Meson propagates these backslashed
+                    # targets into the dist tarball. Without this normalization
+                    # the ``posixpath`` resolution below would fail to match the
+                    # link target, dropping links that point inside the archive.
+                    linkname = member.linkname.replace('\\', '/')
+                    target = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), linkname))
                     try:
                         # This can be implemented using the .replace() method
                         # in Python 3.12 and later. The .replace() method was
