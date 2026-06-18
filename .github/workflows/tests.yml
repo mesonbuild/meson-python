@@ -49,7 +49,7 @@ jobs:
           - macos-15-intel
         python:
           - '3.9'
-          - '3.14'
+          - '3.15'
         meson:
           -
         dependencies:
@@ -115,6 +115,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Ninja
         run: sudo apt-get install ninja-build
