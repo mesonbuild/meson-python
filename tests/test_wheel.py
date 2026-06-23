@@ -412,3 +412,14 @@ def test_cmake_subproject(wheel_cmake_subproject):
         f'.cmake_subproject.mesonpy.libs/libcmaketest{LIB_SUFFIX}',
         f'cmakesubproject{EXT_SUFFIX}',
     }
+
+
+# Requires Meson 1.3.0, see https://github.com/mesonbuild/meson/pull/11745.
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 99), reason='meson too old')
+@pytest.mark.skipif(sys.version_info < (3, 15), reason='Requires PEP 820 API, present since Python 3.15')
+def test_limited_api_free_threaded(wheel_limited_api_free_threaded):
+    artifact = wheel.wheelfile.WheelFile(wheel_limited_api_free_threaded)
+    name = artifact.parsed_filename
+    assert name.group('pyver') == INTERPRETER
+    assert name.group('abi') == 'abi3.abi3t' if NOGIL_BUILD else 'abi3'
+    assert name.group('plat') == PLATFORM
