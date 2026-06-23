@@ -426,6 +426,13 @@ class _WheelBuilder():
         # not use the stable ABI filename suffix and wheels should not
         # be tagged with the abi3 tag.
         if self._limited_api and '__pypy__' not in sys.builtin_module_names:
+            # On free-threaded Python 3.15.0b2+, we expect to be
+            # building 'abi3t' wheels for the time being. In the future
+            # we will want an option to target 'abi3t' from GIL-enabled
+            # Python too.
+            abi3t = bool(sysconfig.get_config_var('Py_GIL_DISABLED')) and sys.version_info >= (3, 15)
+            expected_abi = 'abi3t' if abi3t else 'abi3'
+
             # Verify stable ABI compatibility: examine files installed
             # in {platlib} that look like extension modules, and raise
             # an exception if any of them has a Python version
@@ -434,11 +441,11 @@ class _WheelBuilder():
                 match = _EXTENSION_SUFFIX_REGEX.match(entry.dst.name)
                 if match:
                     abi = match.group('abi')
-                    if abi is not None and abi != 'abi3':
+                    if abi is not None and abi != expected_abi:
                         raise BuildError(
                             f'The package declares compatibility with Python limited API but extension '
                             f'module {os.fspath(entry.dst)!r} is tagged for a specific Python version.')
-            return 'abi3'
+            return 'abi3.abi3t' if abi3t else 'abi3'
         return None
 
     def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path) -> None:
@@ -874,10 +881,10 @@ class Project():
             if not allow_limited_api:
                 self._limited_api = False
 
-        if self._limited_api and bool(sysconfig.get_config_var('Py_GIL_DISABLED')):
+        if self._limited_api and bool(sysconfig.get_config_var('Py_GIL_DISABLED')) and sys.version_info < (3, 15):
             raise BuildError(
-                'The package targets Python\'s Limited API, which is not supported by free-threaded CPython. '
-                'The "python.allow_limited_api" Meson build option may be used to override the package default.')
+                'The package targets Python\'s Limited API, which is not supported by free-threaded CPython before version '
+                '3.15. The "python.allow_limited_api" Meson build option may be used to override the package default.')
 
         # Shared library support on Windows requires collaboration
         # from the package, make sure the developers acknowledge this.
