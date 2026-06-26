@@ -222,6 +222,11 @@ def test_reproducible(package_pure, tmp_path):
 # containing symbolic links to absolute paths on Python 3.14.
 # See https://github.com/mesonbuild/meson/issues/15142
 @pytest.mark.skipif(sys.version_info >= (3, 14) and MESON_VERSION < (1, 9, 2), reason='incompatible Python version')
+# Python 3.15 tarfile module translates POSIX paths to Windows paths
+# when extracting tar archives on Windows, but does not implement the
+# inverse when creating archives. This results in invalid tar archives
+# and breaks this test. See https://github.com/python/cpython/pull/151671
+@pytest.mark.xfail(sys.version_info >= (3, 15) and sys.platform == 'win32', reason='Python 3.15 tarfile module bug')
 @pytest.mark.filterwarnings('ignore:symbolic link')
 def test_symlinks(tmp_path, sdist_symlinks):
     with tarfile.open(sdist_symlinks, 'r:gz') as sdist:
