@@ -73,9 +73,10 @@ except ImportError:
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Collection, Iterator, Mapping
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
-    from mesonpy._compat import Collection, Iterator, Mapping, ParamSpec, Path, Self
+    from mesonpy._compat import ParamSpec, Path, Self
 
     P = ParamSpec('P')
     T = TypeVar('T')

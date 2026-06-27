@@ -13,12 +13,6 @@ import typing
 
 
 if sys.version_info >= (3, 9):
-    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
-else:
-    from typing import Collection, Iterable, Iterator, Mapping, Sequence
-
-
-if sys.version_info >= (3, 9):
     def read_binary(package: str, resource: str) -> bytes:
         return importlib.resources.files(package).joinpath(resource).read_bytes()
 else:
@@ -43,12 +37,7 @@ if typing.TYPE_CHECKING:
 
 __all__ = [
     'read_binary',
-    'Collection',
-    'Iterable',
-    'Iterator',
-    'Mapping',
     'Path',
     'ParamSpec',
     'Self',
-    'Sequence',
 ]

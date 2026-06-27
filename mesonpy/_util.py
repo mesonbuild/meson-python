@@ -16,7 +16,9 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from mesonpy._compat import Iterator, Path
+    from typing import Iterator
+
+    from mesonpy._compat import Path
 
 
 @contextlib.contextmanager
