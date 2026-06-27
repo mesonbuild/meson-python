@@ -75,7 +75,9 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Collection, Iterator, Mapping
     from typing import Any, Callable, DefaultDict, Dict, List, Literal, Optional, Sequence, TextIO, Tuple, Type, TypeVar, Union
 
-    from mesonpy._compat import ParamSpec, Path, Self
+    from typing_extensions import ParamSpec, Self
+
+    from mesonpy._compat import Path
 
     P = ParamSpec('P')
     T = TypeVar('T')
