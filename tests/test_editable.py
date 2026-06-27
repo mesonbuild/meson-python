@@ -158,7 +158,6 @@ def test_resources(tmp_path):
     assert text == 'ABC'
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason='importlib.resources not available')
 def test_importlib_resources(tmp_path):
     # build a package in a temporary directory
     package_path = pathlib.Path(__file__).parent / 'packages' / 'simple'
