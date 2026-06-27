@@ -128,6 +128,7 @@ class _Entry(typing.NamedTuple):
     dst: pathlib.Path
     src: str
     install_rpath: List[str] = []
+    build_rpath: List[str] = []
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
@@ -186,7 +187,8 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
             else:
                 rpath = target.get('install_rpath')
                 install_rpath = rpath.split(':') if rpath else []
-                wheel_files[path].append(_Entry(dst, src, install_rpath))
+                build_rpath = target.get('build_rpaths') or []
+                wheel_files[path].append(_Entry(dst, src, install_rpath, build_rpath))
 
     return wheel_files
 
@@ -444,15 +446,16 @@ class _WheelBuilder():
             return 'abi3.abi3t' if abi3t else 'abi3'
         return None
 
-    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile, origin: Path, destination: pathlib.Path,
-                      install_rpath: List[str]) -> None:
+    def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile,
+                      origin: Path, destination: pathlib.Path,
+                      install_rpath: List[str], build_rpath: List[str]) -> None:
         """Add a file to the wheel."""
 
         if self._has_internal_libs and _is_native(origin):
             libspath = os.path.relpath(self._libs_dir, destination.parent)
-            mesonpy._rpath.fix_rpath(origin, install_rpath, libspath)
-        elif install_rpath:
-            mesonpy._rpath.fix_rpath(origin, install_rpath, None)
+            mesonpy._rpath.fix_rpath(origin, install_rpath, build_rpath, libspath)
+        elif install_rpath or build_rpath:
+            mesonpy._rpath.fix_rpath(origin, install_rpath, build_rpath, None)
 
         try:
             wheel_file.write(origin, destination.as_posix())
@@ -496,7 +499,7 @@ class _WheelBuilder():
                 root = 'purelib' if self._pure else 'platlib'
 
                 for path, entries in self._manifest.items():
-                    for dst, src, install_rpath in entries:
+                    for dst, src, install_rpath, build_rpath in entries:
                         counter.update(src)
 
                         if path == root:
@@ -507,7 +510,7 @@ class _WheelBuilder():
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
-                        self._install_path(whl, src, dst, install_rpath)
+                        self._install_path(whl, src, dst, install_rpath, build_rpath)
 
         return wheel_file
 

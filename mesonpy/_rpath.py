@@ -33,11 +33,17 @@ class RPATH:
         raise NotImplementedError
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: list[str], libs_relative_path: str | None) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: list[str], build_rpath: list[str], libs_path: str | None) -> None:
         old_rpath = cls.get_rpath(filepath)
 
         # Prepend install_rpath entries.
-        new_rpath = install_rpath + old_rpath
+        new_rpath = install_rpath
+
+        # Merge with existing entries, excluding build_rpath entries.  Meson
+        # adds a padding entry to RPATH composed of enough ``X`` characters
+        # to reserve enough space in the ELF header to hold the the final
+        # installation RPATH. Remove this entry and empty entries too.
+        new_rpath += [path for path in old_rpath if path.strip('X') and path not in build_rpath]
 
         # When an executable, library, or Python extension module is
         # dynamically linked to a library built as part of the project, Meson
@@ -49,8 +55,8 @@ class RPATH:
         # library install location. This heuristic is not perfect: RPATH
         # entries relative to ``$ORIGIN`` can exist for other reasons.
         # However, this only results in harmless additional RPATH entries.
-        if libs_relative_path and any(path.startswith(cls.origin) for path in old_rpath):
-            new_rpath.append(os.path.join(cls.origin, libs_relative_path))
+        if libs_path and any(path.startswith(cls.origin) for path in old_rpath):
+            new_rpath.append(os.path.join(cls.origin, libs_path))
 
         new_rpath = unique(new_rpath)
         if new_rpath != old_rpath:
@@ -60,7 +66,7 @@ class RPATH:
 class _Windows(RPATH):
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: list[str], libs_relative_path: str) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: list[str], build_rpath: list[str], libs_path: str | None) -> None:
         pass
 
 
