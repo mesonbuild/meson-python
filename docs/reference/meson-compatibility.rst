@@ -61,6 +61,12 @@ versions.
 
    Meson 1.9.0 or later is required to support building for iOS.
 
+   Meson 1.9.0 or later is also required to remove RPATH entries that
+   are added by Meson to allow to execute parts of the project from
+   the build directory and that are normally removed during ``meson
+   install``. On older Meson versions, these entries are not removed,
+   but this should not have any adverse effect.
+
 Build front-ends by default build packages in an isolated Python
 environment where build dependencies are installed. Most often, unless
 a package or its build dependencies declare explicitly a version
