@@ -20,6 +20,7 @@ import difflib
 import fnmatch
 import functools
 import importlib.machinery
+import importlib.resources
 import io
 import itertools
 import json
@@ -54,8 +55,6 @@ import mesonpy._rpath
 import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
-
-from mesonpy._compat import read_binary
 
 
 try:
@@ -553,7 +552,7 @@ class _EditableWheelBuilder(_WheelBuilder):
             loader_module_name = f'_{self._metadata.distribution_name}_editable_loader'
             whl.writestr(
                 f'{loader_module_name}.py',
-                read_binary('mesonpy', '_editable.py') + textwrap.dedent(f'''
+                importlib.resources.files('mesonpy').joinpath('_editable.py').read_bytes() + textwrap.dedent(f'''
                    install(
                        {self._metadata.name!r},
                        {self._top_level_modules!r},
