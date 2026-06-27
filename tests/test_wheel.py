@@ -33,6 +33,9 @@ ABI = tag.abi
 INTERPRETER = tag.interpreter
 PLATFORM = adjust_packaging_platform_tag(tag.platform)
 
+# Support for removing build RPATH entries requires Meson 1.9 or later.
+BUILD_RPATH_SUPPORT = MESON_VERSION >= (1, 9)
+
 
 def wheel_contents(artifact):
     # Sometimes directories have entries, sometimes not, so we filter them out.
@@ -177,22 +180,35 @@ def test_sharedlib_in_package_legacy(venv, wheel_sharedlib_in_package_legacy):
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_sharedlib_in_package_rpath(wheel_sharedlib_in_package, tmp_path):
-    artifact = wheel.wheelfile.WheelFile(wheel_sharedlib_in_package)
+def test_sharedlib_in_package_rpath(package_sharedlib_in_package, tmp_path):
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
 
-    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}'))
-    # FIXME: RPATH entries added by Meson to point to the build directory are not removed.
-    assert rpath >= {origin}
+    def check(rpath, *expected):
+        entries = []
+        for path in rpath:
+            if path.startswith(origin):
+                entries.append(path)
+                continue
+            # There may be RPATH entries added by the build environment.
+            # However, these should be absolute paths and not point into
+            # the source or build directory.
+            assert not os.path.commonpath((path, str(package_sharedlib_in_package))) == str(package_sharedlib_in_package)
+            assert not os.path.commonpath((path, str(tmp_path))) == str(tmp_path)
 
-    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}'))
-    # FIXME: RPATH entries added by Meson to point to the build directory are not removed.
-    assert rpath >= {f'{origin}/sub'}
+        assert entries == list(expected) or not BUILD_RPATH_SUPPORT and set(entries) >= set(expected)
 
-    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}'))
-    assert rpath == set()
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'_example{EXT_SUFFIX}')
+    check(rpath, origin)
+
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / f'liblib{LIB_SUFFIX}')
+    check(rpath, f'{origin}/sub')
+
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'mypkg' / 'sub' / f'libsublib{LIB_SUFFIX}')
+    check(rpath)
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
@@ -225,17 +241,29 @@ def test_link_library_in_subproject(venv, wheel_link_library_in_subproject):
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_link_against_local_lib_rpath(wheel_link_against_local_lib, tmp_path):
-    artifact = wheel.wheelfile.WheelFile(wheel_link_against_local_lib)
+def test_link_against_local_lib_rpath(package_link_against_local_lib, tmp_path):
+    filename = mesonpy.build_wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
     artifact.extractall(tmp_path)
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
-    expected = {f'{origin}/../.link_against_local_lib.mesonpy.libs', 'custom-rpath',}
 
-    rpath = set(mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}'))
-    # Verify that rpath is a superset of the expected one: linking to
-    # the Python runtime may require additional rpath entries.
-    assert rpath >= expected
+    def check(rpath, *expected):
+        entries = []
+        for path in rpath:
+            if path.startswith(origin) or path in expected:
+                entries.append(path)
+                continue
+            # There may be RPATH entries added by the build environment.
+            # However, these should be absolute paths and not point into
+            # the source or build directory.
+            assert not os.path.commonpath((path, str(package_link_against_local_lib))) == str(package_link_against_local_lib)
+            assert not os.path.commonpath((path, str(tmp_path))) == str(tmp_path)
+
+        assert entries == list(expected) or not BUILD_RPATH_SUPPORT and set(entries) >= set(expected)
+
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'example' / f'_example{EXT_SUFFIX}')
+    check(rpath, 'custom-rpath', f'{origin}/../.link_against_local_lib.mesonpy.libs')
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
