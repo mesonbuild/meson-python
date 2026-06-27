@@ -6,17 +6,8 @@
 
 from __future__ import annotations
 
-import importlib.resources
 import os
-import sys
 import typing
-
-
-if sys.version_info >= (3, 9):
-    def read_binary(package: str, resource: str) -> bytes:
-        return importlib.resources.files(package).joinpath(resource).read_bytes()
-else:
-    read_binary = importlib.resources.read_binary
 
 
 if typing.TYPE_CHECKING:
@@ -36,7 +27,6 @@ if typing.TYPE_CHECKING:
 
 
 __all__ = [
-    'read_binary',
     'Path',
     'ParamSpec',
     'Self',
