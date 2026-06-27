@@ -16,9 +16,8 @@ from typing import IO
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Iterator
-
-    from mesonpy._compat import Path
+    from typing import Iterator, Union
+    Path = Union[str, os.PathLike[str]]
 
 
 @contextlib.contextmanager

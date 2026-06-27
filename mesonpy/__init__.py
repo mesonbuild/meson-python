@@ -77,13 +77,12 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
     from typing_extensions import ParamSpec, Self
 
-    from mesonpy._compat import Path
-
     P = ParamSpec('P')
     T = TypeVar('T')
 
     MesonArgsKeys = Literal['dist', 'setup', 'compile', 'install']
     MesonArgs = Mapping[MesonArgsKeys, List[str]]
+    Path = Union[str, os.PathLike[str]]
 
 
 __version__ = '0.21.0.dev0'
