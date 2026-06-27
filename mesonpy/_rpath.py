@@ -37,9 +37,14 @@ class RPATH:
         raise NotImplementedError
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: List[str], libs_relative_path: Optional[str]) -> None:
+    def fix_rpath(cls, filepath: Path, add: List[str], remove: List[str], libs_relative_path: Optional[str]) -> None:
         old_rpath = cls.get_rpath(filepath)
-        new_rpath = old_rpath[:]
+
+        # Meson adds a padding entry to RPATH composed of enough `X`
+        # characters to reserve enough space in the ELF header to hold
+        # the final installation RPATH. Remove this entry and other
+        # entries to be removed.
+        new_rpath = [path for path in old_rpath if path.strip('X') and path not in remove]
 
         # When an executable, libray, or Python extension module is
         # dynamically linked to a library built as part of the project, Meson
@@ -55,7 +60,7 @@ class RPATH:
             new_rpath.append(os.path.join(cls.origin, libs_relative_path))
 
         # Add install_rpath.
-        new_rpath += install_rpath
+        new_rpath += add
 
         new_rpath = unique(new_rpath)
         if new_rpath != old_rpath:
@@ -65,7 +70,7 @@ class RPATH:
 class _Windows(RPATH):
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: List[str], libs_relative_path: str) -> None:
+    def fix_rpath(cls, filepath: Path, add: List[str], remove: List[str], libs_relative_path: Optional[str]) -> None:
         pass
 
 
