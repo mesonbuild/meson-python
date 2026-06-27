@@ -84,6 +84,7 @@ def in_git_repo_context(path=os.path.curdir):
         subprocess.run(['git', 'config', 'user.name', 'A U Thor'], cwd=path, check=True)
         subprocess.run(['git', 'add', '*'], cwd=path, check=True)
         subprocess.run(['git', 'commit', '-q', '-m', 'Test'], cwd=path, check=True)
+        subprocess.run(['git', 'tag', 'v1.2.3'], cwd=path, check=True)
         yield
     finally:
         # PermissionError raised on Windows.
