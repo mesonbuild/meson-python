@@ -11,9 +11,8 @@ import typing
 
 
 if typing.TYPE_CHECKING:
-    from typing import Iterable, List
-
-    from mesonpy._compat import Path
+    from typing import Iterable, List, Union
+    Path = Union[str, os.PathLike[str]]
 
 
 if sys.platform == 'win32' or sys.platform == 'cygwin':
