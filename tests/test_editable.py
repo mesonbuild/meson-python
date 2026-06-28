@@ -18,7 +18,7 @@ import mesonpy
 
 from mesonpy import _editable
 
-from .test_wheel import EXT_SUFFIX, NOGIL_BUILD
+from .conftest import EXT_SUFFIX, FREE_THREADED_BUILD
 
 
 def find_cython_version():
@@ -75,7 +75,7 @@ def test_collect(package_complex):
     assert tree['complex']['more']['__init__.py'] == os.path.join(root, 'complex', 'more', '__init__.py')
 
 
-@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+@pytest.mark.skipif(FREE_THREADED_BUILD and CYTHON_VERSION < (3, 1, 0),
                     reason='Cython version too old, no free-threaded CPython support')
 def test_mesonpy_meta_finder(package_complex, tmp_path):
     # build a package in a temporary directory
@@ -209,7 +209,7 @@ def test_editble_reentrant(venv, editable_imports_itself_during_build):
         path.write_text(code)
 
 
-@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+@pytest.mark.skipif(FREE_THREADED_BUILD and CYTHON_VERSION < (3, 1, 0),
                     reason='Cython version too old, no free-threaded CPython support')
 def test_editable_pkgutils_walk_packages(package_complex, tmp_path):
     # build a package in a temporary directory
@@ -295,7 +295,7 @@ def test_editable_rebuild(package_purelib_and_platlib, tmp_path, verbose, args):
             sys.modules.pop('pure', None)
 
 
-@pytest.mark.skipif(NOGIL_BUILD and CYTHON_VERSION < (3, 1, 0),
+@pytest.mark.skipif(FREE_THREADED_BUILD and CYTHON_VERSION < (3, 1, 0),
                     reason='Cython version too old, no free-threaded CPython support')
 def test_editable_verbose(venv, package_complex, editable_complex, monkeypatch):
     monkeypatch.setenv('MESONPY_EDITABLE_VERBOSE', '1')
