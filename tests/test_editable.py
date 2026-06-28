@@ -335,9 +335,10 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match='re-building the purelib-and-platlib '):
+                with pytest.raises(ImportError, match='re-building the purelib-and-platlib ') as exc:
                     import plat  # noqa: F401
             assert not verbose or stdout.getvalue().startswith('meson-python: building ')
+            assert verbose or 'ninja: build stopped: subcommand failed.' in exc.value.msg
 
         finally:
             del sys.meta_path[0]
