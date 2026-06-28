@@ -319,7 +319,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             dry_run_build_cmd = self._build_cmd + ['-n']
         # Check adapted from
         # https://github.com/mesonbuild/meson/blob/a35d4d368a21f4b70afa3195da4d6292a649cb4c/mesonbuild/mtest.py#L1635-L1636
-        p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, capture_output=True)
+        p = subprocess.run(dry_run_build_cmd, cwd=self._build_path, env=env, check=False, capture_output=True)
         return b'ninja: no work to do.' not in p.stdout and b'samu: nothing to do' not in p.stdout
 
     @functools.lru_cache(maxsize=1)
@@ -332,15 +332,43 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
             if self._verbose or bool(env.get(VERBOSE, '')):
+                log_path = None
                 # We want to show some output only if there is some work to do.
                 if self._work_to_do(env):
                     build_command = ' '.join(self._build_cmd)
                     print(f'meson-python: building {self._name}: {build_command}', flush=True)
                     subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True)
             else:
-                subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
-        except subprocess.CalledProcessError as exc:
-            raise ImportError(f're-building the {self._name} meson-python editable wheel package failed') from exc
+                # Redirect build log to file.
+                log_path = os.path.join(self._build_path, 'meson-logs', 'meson-python-build-log.txt')
+                with open(log_path, 'w') as log:
+                    subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True,
+                                   stderr=subprocess.STDOUT, stdout=log)
+        except subprocess.CalledProcessError as err:
+            msg = f're-building the {self._name} meson-python editable wheel package failed'
+            if log_path:
+                with open(log_path, 'r', encoding='utf8') as log:
+                    # Skip to the error.
+                    for line in log:
+                        if line.startswith('FAILED: '):
+                            break
+                    else:
+                        # When no `FAILED: ` line is found, rewind to the
+                        # beginning of the log.
+                        log.seek(0)
+                    if line.strip().endswith(' build.ninja'):
+                        # When the error occurred when rebuilding `ninja.build`,
+                        # the meson output appears before the `FAILED: ` line.
+                        # Rewind the build log to the beginning to report the
+                        # error.
+                        log.seek(0)
+                    error = log.read()
+                if sys.version_info >= (3, 11):
+                    exc = ImportError(msg)
+                    exc.add_note(error)
+                    raise exc from err
+                msg = f'{msg}:\n{error}'
+            raise ImportError(msg) from err
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:

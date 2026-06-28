@@ -335,9 +335,49 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match='re-building the purelib-and-platlib '):
+                with pytest.raises(ImportError, match='re-building the purelib-and-platlib ') as exc:
                     import plat  # noqa: F401
             assert not verbose or stdout.getvalue().startswith('meson-python: building ')
+
+            if sys.version_info >= (3, 11):
+                assert verbose or hasattr(exc.value, '__notes__')
+                assert verbose or 'ninja: build stopped: subcommand failed.' in exc.value.__notes__[0]
+            else:
+                assert verbose or 'ninja: build stopped: subcommand failed.' in exc.value.msg
+
+        finally:
+            del sys.meta_path[0]
+            sys.modules.pop('pure', None)
+            path.write_text(code)
+
+
+def test_editable_reconfigure_error(package_purelib_and_platlib, tmp_path):
+    with mesonpy._project({'builddir': os.fspath(tmp_path)}) as project:
+
+        finder = _editable.MesonpyMetaFinder(
+            project._metadata.name, {'plat', 'pure'},
+            os.fspath(tmp_path), project._build_command,
+            verbose=False,
+        )
+        path = package_purelib_and_platlib / 'meson.build'
+        code = path.read_text()
+
+        try:
+            # Install editable hooks
+            sys.meta_path.insert(0, finder)
+
+            # Emit an error (with unicode characters) during reconfigure
+            with open(path, 'a', encoding='utf8') as f:
+                f.write('\n\nerror(\'injected error \N{BOMB}\')\n')
+
+            # Import module and trigger rebuild: the build fails and ImportErrror is raised
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                with pytest.raises(ImportError, match='re-building the purelib-and-platlib ') as exc:
+                    import plat  # noqa: F401
+            msg = exc.value.__notes__[0] if sys.version_info >= (3, 11) else exc.value.msg
+            assert 'ERROR: Problem encountered: injected error' in msg
+            assert 'ninja: error: rebuilding \'build.ninja\': subcommand failed' in msg
 
         finally:
             del sys.meta_path[0]
