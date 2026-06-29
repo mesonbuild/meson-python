@@ -45,7 +45,7 @@ _append_to_sharedlib_load_path()
 # end-literalinclude
 
 
-from ._example import example_prod, example_sum  #noqa: E402
+from ._example import prodsum  # noqa: E402
 
 
-__all__ = ['example_prod', 'example_sum']
+__all__ = ['prodsum']
