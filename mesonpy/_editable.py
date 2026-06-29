@@ -332,15 +332,28 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             env[MARKER] = os.pathsep.join((env.get(MARKER, ''), self._build_path))
 
             if self._verbose or bool(env.get(VERBOSE, '')):
+                log_path = None
                 # We want to show some output only if there is some work to do.
                 if self._work_to_do(env):
                     build_command = ' '.join(self._build_cmd)
                     print(f'meson-python: building {self._name}: {build_command}', flush=True)
                     subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True)
             else:
-                subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=subprocess.DEVNULL, check=True)
+                # Redirect build log to file.
+                log_path = os.path.join(self._build_path, 'meson-python-build-log.txt')
+                with open(log_path, 'w') as log:
+                    subprocess.run(self._build_cmd, cwd=self._build_path, env=env, stdout=log, check=True)
         except subprocess.CalledProcessError as exc:
-            raise ImportError(f're-building the {self._name} meson-python editable wheel package failed') from exc
+            msg = f're-building the {self._name} meson-python editable wheel package failed'
+            if log_path:
+                with open(log_path, 'r') as log:
+                    # Skip to the error.
+                    for line in log:
+                        if line.startswith('FAILED: '):
+                            break
+                    error = log.read()
+                msg = f'{msg}:\n{error}'
+            raise ImportError(msg) from exc
 
         install_plan_path = os.path.join(self._build_path, 'meson-info', 'intro-install_plan.json')
         with open(install_plan_path, 'r', encoding='utf8') as f:
