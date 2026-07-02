@@ -202,7 +202,7 @@ class style:
         return re.sub(r'\033\[[;?0-9]*[a-zA-Z]', '', string)
 
 
-@functools.lru_cache()
+@functools.cache
 def _use_ansi_escapes() -> bool:
     """Determine whether logging should use ANSI escapes."""
 
@@ -955,12 +955,12 @@ class Project():
             return cmd
         return [self._ninja, *self._meson_args['compile']]
 
-    @functools.lru_cache(maxsize=None)
+    @functools.cache
     def build(self) -> None:
         """Build the Meson project."""
         self._run(self._build_command)
 
-    @functools.lru_cache()
+    @functools.cache
     def _info(self, name: str) -> Any:
         """Read info from meson-info directory."""
         info = self._build_dir.joinpath('meson-info', f'{name}.json')
