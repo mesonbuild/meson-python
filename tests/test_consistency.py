@@ -5,6 +5,8 @@
 import pathlib
 import sys
 
+from packaging import requirements, specifiers
+
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -30,3 +32,13 @@ def test_pyproject_dependencies():
     # verify that all build dependencies are project dependencies
     assert not set(build_dependencies) - set(project_dependencies), \
         'pyproject.toml is inconsistent: not all "build-system.requires" are in "project.dependencies"'
+
+
+def test_meson_version_requirement():
+    pyproject = pathlib.Path(__file__).parent.parent.joinpath('pyproject.toml')
+    with open(pyproject, 'rb') as f:
+        data = tomllib.load(f)
+    for dep in data['project']['dependencies']:
+        req = requirements.Requirement(dep)
+        if req.name == 'meson' and req.marker.evaluate():
+            assert req.specifier == specifiers.SpecifierSet(f'>= {mesonpy._MESON_REQUIRED_VERSION}')

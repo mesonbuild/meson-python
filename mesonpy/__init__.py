@@ -92,7 +92,9 @@ _PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.spli
 _SUPPORTED_DYNAMIC_FIELDS = {'version', } if _PYPROJECT_METADATA_VERSION < (0, 9) else {'version', 'license', 'license-files'}
 
 _NINJA_REQUIRED_VERSION = '1.8.2'
-_MESON_REQUIRED_VERSION = '0.63.3' # keep in sync with the version requirement in pyproject.toml
+
+# Keep in sync with the version requirement in pyproject.toml
+_MESON_REQUIRED_VERSION = '0.64.0' if sys.version_info < (3, 12) else '1.2.3'
 
 _MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
 
