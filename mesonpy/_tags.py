@@ -96,7 +96,7 @@ def _get_macosx_platform_tag() -> str:
         version = tuple(map(int, ver.split('.')))[:2]
 
     # Python built with older macOS SDK on macOS 11, reports an
-    # unexising macOS 10.16 version instead of the real version.
+    # nonexistent macOS 10.16 version instead of the real version.
     #
     # The packaging module introduced a workaround
     # https://github.com/pypa/packaging/commit/67c4a2820c549070bbfc4bfbf5e2a250075048da
@@ -125,7 +125,7 @@ def _get_macosx_platform_tag() -> str:
     major, minor = version
 
     if major >= 11:
-        # For macOS reelases up to 10.15, the major version number is
+        # For macOS releases up to 10.15, the major version number is
         # actually part of the OS name and the minor version is the
         # actual OS release.  Starting with macOS 11, the major
         # version number is the OS release and the minor version is
@@ -153,7 +153,7 @@ def _get_ios_platform_tag() -> str:
 
     # Although _multiarch is an internal implementation detail, it's a core part
     # of how CPython is implemented on iOS; this attribute is also relied upon
-    # by `packaging` as part of tag determiniation.
+    # by `packaging` as part of tag determination.
     multiarch = sys.implementation._multiarch.replace('-', '_')
 
     return f'ios_{version[0]}_{version[1]}_{multiarch}'
