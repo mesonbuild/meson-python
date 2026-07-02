@@ -23,7 +23,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
 
 
 MIN_TIMESTAMP = 315532800  # 1980-01-01 00:00:00 UTC
-WHEEL_FILENAME_REGEX = re.compile(r'^(?P<name>[^-]+)-(?P<version>[^-]+)(:?-(?P<build>[^-]+))?-(?P<tag>[^-]+-[^-]+-[^-]+).whl$')
+WHEEL_FILENAME_REGEX = re.compile(r'^(?P<name>[^-]+)-(?P<version>[^-]+)(?:-(?P<build>[^-]+))?-(?P<tag>[^-]+-[^-]+-[^-]+).whl$')
 
 
 def _b64encode(data: bytes) -> bytes:
