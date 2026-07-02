@@ -639,7 +639,7 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
         raise ConfigError(f'Invalid value for "{name}": {value!r}')
 
     def _string_or_strings(value: Any, name: str) -> List[str]:
-        return list([value,] if isinstance(value, str) else value)
+        return [value] if isinstance(value, str) else list(value)
 
     options = {
         'builddir': _string,
