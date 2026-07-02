@@ -225,8 +225,8 @@ def walk(src: str, exclude_files: Set[str], exclude_dirs: Set[str]) -> Iterator[
             relpath = os.path.relpath(dirsrc, src)
             if relpath in exclude_dirs:
                 dirnames.remove(name)
-            # sort to process directories determninistically
-            dirnames.sort()
+        # sort to process directories determninistically
+        dirnames.sort()
         for name in sorted(filenames):
             filesrc = os.path.join(root, name)
             relpath = os.path.relpath(filesrc, src)
