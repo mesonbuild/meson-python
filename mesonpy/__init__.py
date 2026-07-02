@@ -175,7 +175,7 @@ def _map_to_wheel(
                         relpath = os.path.relpath(dirsrc, src)
                         if relpath in exclude_dirs:
                             dirnames.remove(name)
-                    # sort to process directories determninistically
+                    # sort to process directories deterministically
                     dirnames.sort()
                     for name in sorted(filenames):
                         filesrc = os.path.join(root, name)
@@ -223,7 +223,7 @@ def _use_ansi_escapes() -> bool:
     return False
 
 
-def _log(string: str , **kwargs: Any) -> None:
+def _log(string: str, **kwargs: Any) -> None:
     if not _use_ansi_escapes():
         string = style.strip(string)
     print(string, **kwargs)
@@ -462,7 +462,7 @@ class _WheelBuilder():
                         'setting the DLL load path or preloading. See the documentation for '
                         'the "tool.meson-python.allow-windows-internal-shared-libs" option.')
 
-                # When an executable, libray, or Python extension module is
+                # When an executable, library, or Python extension module is
                 # dynamically linked to a library built as part of the project,
                 # Meson adds a library load path to it pointing to the build
                 # directory, in the form of a relative RPATH entry. meson-python
@@ -1209,7 +1209,7 @@ def _get_meson_command(
     # The meson Python package is a dependency of the meson-python Python
     # package, however, it may occur that the meson Python package is installed
     # but the corresponding meson command is not available in $PATH. Implement
-    # a runtime check to verify that the build environment is setup correcly.
+    # a runtime check to verify that the build environment is setup correctly.
     try:
         r = subprocess.run(cmd + ['--version'], text=True, capture_output=True)
     except FileNotFoundError as err:
