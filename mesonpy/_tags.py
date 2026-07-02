@@ -43,16 +43,6 @@ def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[s
     return value
 
 
-def _get_cpython_abi() -> str:
-    version = sys.version_info
-    debug = pymalloc = ''
-    if _get_config_var('Py_DEBUG', hasattr(sys, 'gettotalrefcount')):
-        debug = 'd'
-    if version < (3, 8) and _get_config_var('WITH_PYMALLOC', True):
-        pymalloc = 'm'
-    return f'cp{version[0]}{version[1]}{debug}{pymalloc}'
-
-
 def get_abi_tag() -> str:
     # The best solution to obtain the Python ABI is to parse the
     # $SOABI or $EXT_SUFFIX sysconfig variables as defined in PEP-314.
@@ -61,16 +51,7 @@ def get_abi_tag() -> str:
     # Using $EXT_SUFFIX will not break when PyPy will fix this.
     # See https://foss.heptapod.net/pypy/pypy/-/issues/3816 and
     # https://github.com/pypa/packaging/pull/607.
-    try:
-        empty, abi, ext = str(sysconfig.get_config_var('EXT_SUFFIX')).split('.')
-    except ValueError as exc:
-        # CPython <= 3.8.7 on Windows does not implement PEP3149 and
-        # uses '.pyd' as $EXT_SUFFIX, which does not allow to extract
-        # the interpreter ABI.  Check that the fallback is not hit for
-        # any other Python implementation.
-        if sys.implementation.name != 'cpython':
-            raise NotImplementedError from exc
-        return _get_cpython_abi()
+    empty, abi, ext = str(sysconfig.get_config_var('EXT_SUFFIX')).split('.')
 
     # The packaging module initially based his understanding of the
     # $SOABI variable on the inconsistent value reported by PyPy, and
