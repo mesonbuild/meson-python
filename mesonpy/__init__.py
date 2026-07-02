@@ -545,9 +545,6 @@ class _EditableWheelBuilder(_WheelBuilder):
         wheel_file = pathlib.Path(directory, f'{self.name}.whl')
         with mesonpy._wheelfile.WheelFile(wheel_file, 'w') as whl:
             self._wheel_write_metadata(whl)
-            whl.writestr(
-                f'{self._distinfo_dir}/direct_url.json',
-                source_dir.as_uri().encode('utf-8'))
 
             # install loader module
             loader_module_name = f'_{self._metadata.distribution_name}_editable_loader'
