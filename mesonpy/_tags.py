@@ -9,11 +9,6 @@ import platform
 import struct
 import sys
 import sysconfig
-import typing
-
-
-if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Optional
 
 
 # https://peps.python.org/pep-0425/#python-tag
@@ -168,7 +163,7 @@ def get_platform_tag() -> str:
 
 
 class Tag:
-    def __init__(self, interpreter: Optional[str] = None, abi: Optional[str] = None, platform: Optional[str] = None):
+    def __init__(self, interpreter: str | None = None, abi: str | None = None, platform: str | None = None):
         self.interpreter = interpreter or get_interpreter_tag()
         self.abi = abi or get_abi_tag()
         self.platform = platform or get_platform_tag()
