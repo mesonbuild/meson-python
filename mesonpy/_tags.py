@@ -13,7 +13,7 @@ import typing
 
 
 if typing.TYPE_CHECKING:  # pragma: no cover
-    from typing import Optional, Union
+    from typing import Optional
 
 
 # https://peps.python.org/pep-0425/#python-tag
@@ -34,13 +34,6 @@ def get_interpreter_tag() -> str:
     name = INTERPRETERS.get(name, name)
     version = sys.version_info
     return f'{name}{version[0]}{version[1]}'
-
-
-def _get_config_var(name: str, default: Union[str, int, None] = None) -> Union[str, int, None]:
-    value: Union[str, int, None] = sysconfig.get_config_var(name)
-    if value is None:
-        return default
-    return value
 
 
 def get_abi_tag() -> str:
