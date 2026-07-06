@@ -148,6 +148,52 @@ def test_license_pep639(wheel_license_pep639):
     '''))
 
 
+def test_sbom_files(wheel_sbom_files):
+    artifact = wheel.wheelfile.WheelFile(wheel_sbom_files)
+
+    assert wheel_contents(artifact) == {
+        'sbom_files-1.0.0.data/data/sbom-files/data.txt',
+        'sbom_files-1.0.0.dist-info/METADATA',
+        'sbom_files-1.0.0.dist-info/RECORD',
+        'sbom_files-1.0.0.dist-info/WHEEL',
+        'sbom_files-1.0.0.dist-info/sboms/generated.cdx.json',
+        'sbom_files-1.0.0.dist-info/sboms/static.cdx.json',
+    }
+
+    # SBOM file content is preserved verbatim.
+    static_sbom = artifact.read('sbom_files-1.0.0.dist-info/sboms/static.cdx.json')
+    assert b'CycloneDX' in static_sbom
+
+    # The SBOM generated at build time by the custom_target.
+    generated_sbom = artifact.read('sbom_files-1.0.0.dist-info/sboms/generated.cdx.json')
+    assert b'CycloneDX' in generated_sbom
+
+
+def test_sbom_files_custom(wheel_sbom_files_custom):
+    artifact = wheel.wheelfile.WheelFile(wheel_sbom_files_custom)
+
+    assert wheel_contents(artifact) == {
+        # matched by the sbom-files pattern declared in pyproject.toml
+        'sbom_files_custom-1.0.0.dist-info/sboms/custom.cdx.json',
+        # the declared patterns replace the default one: files in the
+        # default location are not treated specially anymore
+        'sbom_files_custom-1.0.0.data/data/sbom-files-custom/sboms/other.cdx.json',
+        # not matching the *.cdx.json glob
+        'sbom_files_custom-1.0.0.data/data/custom/readme.txt',
+        'sbom_files_custom-1.0.0.dist-info/METADATA',
+        'sbom_files_custom-1.0.0.dist-info/RECORD',
+        'sbom_files_custom-1.0.0.dist-info/WHEEL',
+    }
+
+
+def test_sbom_files_collision(package_sbom_files_collision, tmp_path):
+    # Two files matching the sbom-files patterns and with the same
+    # name cannot both be moved to .dist-info/sboms/.
+    with pytest.raises(mesonpy.BuildError, match='sbom-files'):
+        with mesonpy._project() as project:
+            project.wheel(tmp_path)
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)

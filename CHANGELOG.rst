@@ -11,6 +11,15 @@
 Changelog
 +++++++++
 
+Unreleased
+==========
+
+- Add support for PEP 770 SBOM files. Files installed at a location matching
+  one of the glob patterns in the ``tool.meson-python.sbom-files`` setting,
+  by default the ``sboms/`` subdirectory of the project's data directory,
+  are moved to the ``.dist-info/sboms/`` directory in the wheel.
+
+
 0.20.0
 ======
 
