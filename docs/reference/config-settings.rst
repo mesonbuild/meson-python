@@ -40,7 +40,9 @@ them.
 
 .. option:: install-args
 
-   Extra arguments to be passed to the ``meson install`` command.
+   Options interpreted by ``meson-python`` when filtering Meson's
+   install plan. See :ref:`how-to-guides-meson-args-install` for the
+   supported options.
 
 .. option:: editable-verbose
 

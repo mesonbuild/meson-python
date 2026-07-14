@@ -8,18 +8,20 @@
 Passing arguments to Meson
 **************************
 
-``meson-python`` invokes the ``meson setup``, ``ninja``, and ``meson
-install`` commands to build the files that will be included in the
+``meson-python`` invokes ``meson setup`` and either ``ninja`` or
+``meson compile`` to build the files that will be included in the
 Python wheel, and ``meson dist`` to collect the files that will be
-included in the Python sdist. Arguments can be passed to these
-commands to modify their behavior. Refer to the `Meson documentation`_
-and to the `ninja documentation`_ for details.
+included in the Python sdist. It does not invoke ``meson install``;
+instead, it reads Meson's install plan and maps the files listed there
+into the wheel. Arguments can be passed to the invoked commands or
+used to filter the install plan, as described below. Refer to the
+`Meson documentation`_ and to the `ninja documentation`_ for details.
 
 .. _Meson documentation: https://mesonbuild.com/Commands.html
 .. _ninja documentation: https://ninja-build.org/manual.html#_running_ninja
 
-Command line arguments for ``meson`` and ``ninja`` can be specified
-via tool specific settings in ``pyproject.toml`` as lists of strings
+Arguments can be specified via tool specific settings in
+``pyproject.toml`` as lists of strings
 for the ``setup``, ``compile``, ``install``, and ``dist`` keys in the
 ``tool.meson-python.args`` table. For example:
 
@@ -57,6 +59,29 @@ independent of how the build is initiated. Refer to the `Meson
 documentation`__ for more details.
 
 __ https://mesonbuild.com/Commands.html#backend-specific-arguments
+
+
+.. _how-to-guides-meson-args-install:
+
+Install arguments
+=================
+
+The ``install`` project setting and ``install-args`` build config
+setting do not pass arguments to a ``meson install`` command.
+``meson-python`` recognizes these options while filtering Meson's
+install plan:
+
+``--tags=TAG,...``
+   Include only files whose install tag is listed.
+
+``--skip-subprojects[=NAME,...]``
+   Exclude files installed by every subproject when no name is given,
+   or by the named subprojects otherwise. This requires Meson 1.2.0
+   or later.
+
+All other ``meson install`` options are ignored with a warning.
+Because the command is not run, scripts registered with
+``meson.add_install_script()`` are not executed when building a wheel.
 
 
 Examples
@@ -97,10 +122,9 @@ Select the build targets to include in the wheel
 ------------------------------------------------
 
 It is possible to include in the Python wheel only a subset of the
-installable files using Meson `installation tags`_ via the ``meson
-install``'s ``--tags`` command line option. When ``--tags`` is
-specified, only files that have one of the specified the tags are
-going to be installed.
+installable files using Meson `installation tags`_ and the ``--tags``
+install argument. When ``--tags`` is specified, only files with one of
+the specified tags are included in the wheel.
 
 Meson sets predefined tags on some files. Custom installation tags can
 be set using the ``install_tag`` keyword argument passed to the target

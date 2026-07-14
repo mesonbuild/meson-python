@@ -68,7 +68,9 @@ use them and examples.
 
 .. option:: tool.meson-python.args.install
 
-   Extra arguments to be passed to the ``meson install`` command.
+   Options interpreted by ``meson-python`` when filtering Meson's
+   install plan. See :ref:`how-to-guides-meson-args-install` for the
+   supported options.
 
 .. option:: tool.meson-python.wheel.exclude
 

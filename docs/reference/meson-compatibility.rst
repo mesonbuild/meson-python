@@ -28,9 +28,9 @@ versions.
 
 .. option:: 1.2.0
 
-   Meson 1.2.0 or later is required to support the ``--skip-subprojects``
-   option that can be passed to ``meson install`` to not include files
-   installed by some or all subprojects in the Python wheel.
+   Meson 1.2.0 or later is required for ``meson-python`` to honor the
+   ``--skip-subprojects`` option when filtering files for the Python
+   wheel.
 
 .. option:: 1.2.3
 
