@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import stat
+import subprocess
 import sys
 import textwrap
 
@@ -17,6 +18,11 @@ import mesonpy
 
 from .conftest import EXT_SUFFIX, FREE_THREADED_BUILD, MESON_VERSION, adjust_packaging_platform_tag, metadata
 
+if shutil.which('rustc'):
+    _rustc_ver_str = subprocess.run(['rustc', '--version'], check=True, stdout=subprocess.PIPE, text=True).stdout
+    RUSTC_VERSION = tuple(map(int, re.search(r'[0-9]+\.[0-9]+\.[0-9]', _rustc_ver_str).group(0).split('.')))
+else:
+    RUSTC_VERSION = (0, )
 
 if sys.platform in {'win32', 'cygwin'}:
     EXT_IMP_SUFFIX = re.sub(r'.(pyd|dll)$', '.lib' if shutil.which('cl.exe') else '.dll.a', EXT_SUFFIX)
@@ -413,3 +419,12 @@ def test_limited_api_free_threaded(wheel_limited_api_free_threaded):
     assert name.group('pyver') == INTERPRETER
     assert name.group('abi') == 'abi3.abi3t' if FREE_THREADED_BUILD else 'abi3'
     assert name.group('plat') == PLATFORM
+
+
+@pytest.mark.skipif(MESON_VERSION < (1, 12, 0), reason='meson too old')
+@pytest.mark.skipif(RUSTC_VERSION < (1, 99, 0), reason='rustc not found or too old')
+@pytest.mark.skipif(sys.platform == 'win32' and not os.getenv('CI'), reason='requires MSVC')
+def test_rust_pyo3(venv, wheel_rust_pyo3):
+    venv.pip('install', wheel_rust_pyo3)
+    output = venv.python('-c', 'import rust_pyo3; print(rust_pyo3.sum(1, 2))')
+    assert int(output) == 3
