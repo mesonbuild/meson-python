@@ -335,7 +335,7 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match='re-building the purelib-and-platlib ') as exc:
+                with pytest.raises(ImportError, match='rebuilding the "purelib-and-platlib" ') as exc:
                     import plat  # noqa: F401
             assert not verbose or stdout.getvalue().startswith('meson-python: building ')
 
@@ -373,7 +373,7 @@ def test_editable_reconfigure_error(package_purelib_and_platlib, tmp_path):
             # Import module and trigger rebuild: the build fails and ImportErrror is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
-                with pytest.raises(ImportError, match='re-building the purelib-and-platlib ') as exc:
+                with pytest.raises(ImportError, match='rebuilding the "purelib-and-platlib" ') as exc:
                     import plat  # noqa: F401
             msg = exc.value.__notes__[0] if sys.version_info >= (3, 11) else exc.value.msg
             assert 'ERROR: Problem encountered: injected error' in msg

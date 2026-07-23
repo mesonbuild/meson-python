@@ -345,7 +345,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
                     subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True,
                                    stderr=subprocess.STDOUT, stdout=log)
         except subprocess.CalledProcessError as err:
-            msg = f're-building the {self._name} meson-python editable wheel package failed'
+            msg = f'rebuilding the "{self._name}" editable package failed'
             if log_path:
                 with open(log_path, 'r', encoding='utf8') as log:
                     # Skip to the error.
