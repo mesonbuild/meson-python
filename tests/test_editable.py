@@ -332,7 +332,7 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
             # Insert invalid code in the extension module source code
             path.write_text('return')
 
-            # Import module and trigger rebuild: the build fails and ImportErrror is raised
+            # Import module and trigger rebuild: the build fails and ImportError is raised
             stdout = io.StringIO()
             with redirect_stdout(stdout):
                 with pytest.raises(ImportError, match='rebuilding the "purelib-and-platlib" ') as exc:
