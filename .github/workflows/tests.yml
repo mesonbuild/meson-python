@@ -105,6 +105,14 @@ jobs:
           - os: windows-latest
             python: '3.14'
             meson: '@git+https://github.com/mesonbuild/meson.git'
+          # Test free-threaded builds to verify the correct handling of the
+          # 'abi3t' stable ABI, see PEP 803. Test on Linux and Windows to cover
+          # the case where stable ABI extension modules use a dedicated
+          # filename suffix and the case where they do not.
+          - os: ubuntu-latest
+            python: '3.15t'
+          - os: windows-latest
+            python: '3.15t'
 
     steps:
       - name: Checkout
