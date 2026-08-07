@@ -99,7 +99,7 @@ _MESON_REQUIRED_VERSION = '0.64.0' if sys.version_info < (3, 12) else '1.2.3'
 _MESON_ARGS_KEYS = ['dist', 'setup', 'compile', 'install']
 
 _SUFFIXES = importlib.machinery.all_suffixes()
-_EXTENSION_SUFFIX_REGEX = re.compile(r'^[^.]+\.(?:(?P<abi>[^.]+)\.)?(?:so|pyd|dll)$')
+_EXTENSION_SUFFIX_REGEX = re.compile(r'^[^.]+\.(?:(?P<abi>[^.-]+)(?:-[^.]+)?\.)?(?:so|pyd|dll)$')
 assert all(re.match(_EXTENSION_SUFFIX_REGEX, f'foo{x}') for x in importlib.machinery.EXTENSION_SUFFIXES)
 
 # Map Meson installation path placeholders to wheel installation paths.
