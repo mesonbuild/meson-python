@@ -429,7 +429,7 @@ class _WheelBuilder():
         # not use the stable ABI filename suffix and wheels should not
         # be tagged with the abi3 tag.
         if self._limited_api and '__pypy__' not in sys.builtin_module_names:
-            # On free-threaded Python 3.15.0b2+, we expect to be
+            # On free-threaded Python 3.15 or later, we expect to be
             # building 'abi3t' wheels for the time being. In the future
             # we will want an option to target 'abi3t' from GIL-enabled
             # Python too.
