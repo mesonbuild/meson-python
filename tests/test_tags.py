@@ -29,14 +29,27 @@ PLATFORM = adjust_packaging_platform_tag(tag.platform)
 
 
 def get_abi3_suffix():
-    # EXTENSION_SUFFIXES are ordered in preference order, and more specific ABI is preferred.
-    # On free-threaded 3.15+, this will match ".abi3t" as the only supported stable ABI.
-    # On GIL-enabled 3.15+, it will match plain ".abi3" first, since that ABI is more specific.
+    """Get the filename suffix identifying stable ABI extension modules."""
+
+    # EXTENSION_SUFFIXES is ordered from the more to the less specific ABI.
+    # On Python 3.15 or later, this resolves to ``.abi3t-${arch}`` for
+    # free-threaded builds and to ``.abi3-${arch}`` on regular builds.
+    #
+    # Older Python versions do not support a stable ABI for free-threaded
+    # builds, and do not support a platform-specific filename suffix, and
+    # this resolves to simply ``.abi3``.
+    #
+    # On Windows, Python does not use a dedicated filename suffix for stable
+    # ABI extension modules, and this resolves to ``.pyd``.
+    #
+    # Returns None on platforms not supporting the stable ABI (notably PyPy).
+
     for suffix in importlib.machinery.EXTENSION_SUFFIXES:
-        if '.abi3' in suffix:  # Unix
+        if suffix.startswith('.abi3'):
             return suffix
-        elif suffix == '.pyd':  # Windows
+        if suffix == '.pyd':
             return suffix
+    return None
 
 
 SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
@@ -130,10 +143,10 @@ def test_tag_platlib_wheel():
 
 def test_tag_stable_abi():
     builder = wheel_builder_test_factory({
-        'platlib': [f'extension{ABI3SUFFIX}'],
+        'platlib': [f'extension{ABI3SUFFIX or SUFFIX}'],
     }, limited_api=True)
     # PyPy does not support the stable ABI.
-    if '__pypy__' in sys.builtin_module_names:
+    if not ABI3SUFFIX:
         abi = ABI
     elif FREE_THREADED_BUILD and sys.version_info >= (3, 15):
         abi = 'abi3.abi3t'
@@ -142,10 +155,10 @@ def test_tag_stable_abi():
     assert str(builder.tag) == f'{INTERPRETER}-{abi}-{PLATFORM}'
 
 
-@pytest.mark.xfail('__pypy__' in sys.builtin_module_names, reason='PyPy does not support the stable ABI')
+@pytest.mark.xfail(not ABI3SUFFIX, reason='interpreter does not support the stable ABI')
 def test_tag_mixed_abi():
     builder = wheel_builder_test_factory({
-        'platlib': [f'extension{ABI3SUFFIX}', f'another{SUFFIX}'],
+        'platlib': [f'extension{ABI3SUFFIX or SUFFIX}', f'another{SUFFIX}'],
     }, pure=False, limited_api=True)
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
         assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
