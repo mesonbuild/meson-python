@@ -270,6 +270,29 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
             project.wheel(tmp_path)
 
 
+def test_purelib_platlib_split_empty(tmp_path):
+    # An empty install_subdirs entry registers the package without adding a wheel file.
+    empty = tmp_path / 'empty'
+    empty.mkdir()
+    plat = tmp_path / 'plat.py'
+    plat.touch()
+    sources = {
+        'install_subdirs': {
+            os.fspath(empty): {'destination': os.path.join('{py_purelib}', 'split')},
+        },
+        'targets': {
+            os.fspath(plat): {'destination': os.path.join('{py_platlib}', 'split', 'plat.py')},
+        },
+    }
+
+    with pytest.raises(mesonpy.BuildError, match='The split package is split') as exc_info:
+        mesonpy._map_to_wheel(sources, [], [])
+
+    message = str(exc_info.value)
+    assert repr(os.path.join('platlib', 'split', 'plat.py')) in message
+    assert 'a "pure: false" argument may be missing' in message
+
+
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 @pytest.mark.parametrize('arch', ['x86_64', 'arm64'])
 def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):

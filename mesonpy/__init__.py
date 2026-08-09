@@ -159,11 +159,15 @@ def _map_to_wheel(
                 other = packages.setdefault(package, path)
                 if other != path:
                     this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
-                    module = next(entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1])
-                    that = os.fspath(other / module)
+                    module = next((entry.dst for entry in wheel_files[other]
+                                   if entry.dst.parts[0] == destination.parts[1]), None)
+                    locations = f'{this!r}'
+                    if module is not None:
+                        that = os.fspath(other / module)
+                        locations += f' and {that!r}'
                     raise BuildError(
                         f'The {package} package is split between {path} and {other}: '
-                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                        f'{locations}, a "pure: false" argument may be missing in meson.build. '
                         f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
