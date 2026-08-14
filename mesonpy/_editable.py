@@ -349,7 +349,7 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
 
     def _path_hook(self, path: str) -> MesonpyPathFinder:
         if os.altsep:
-            path.replace(os.altsep, os.sep)
+            path = path.replace(os.altsep, os.sep)
         path, _, key = path.rpartition(os.sep)
         if path == __file__:
             tree = self._rebuild()

@@ -349,3 +349,34 @@ def test_editable_rebuild_error(package_purelib_and_platlib, tmp_path, verbose):
 def test_install_data(venv, editable_install_data, tmp_path):
     venv.pip('install', os.fspath(editable_install_data))
     venv.python('-c', 'import package')
+
+
+def test_path_hook_assigns_altsep_normalization(monkeypatch):
+    """The Windows path hook must assign the result of str.replace.
+
+    Import machinery can pass paths that use os.altsep. Without assigning
+    the replace, rpartition(os.sep) does not split the path and the hook
+    never matches __file__.
+    """
+    monkeypatch.setattr(os, 'sep', '\\')
+    monkeypatch.setattr(os, 'altsep', '/')
+
+    win_file = _editable.__file__.replace('/', '\\')
+    monkeypatch.setattr(_editable, '__file__', win_file)
+
+    finder = _editable.MesonpyMetaFinder('pkg', {'pkg'}, '/build', ['true'])
+    rebuilt = []
+
+    def fake_rebuild():
+        rebuilt.append(True)
+        tree = _editable.Node()
+        tree[('subpkg',)] = _editable.Node()
+        return tree
+
+    finder._rebuild = fake_rebuild  # type: ignore[method-assign]
+
+    hook_path = win_file.replace('\\', '/') + '/subpkg'
+    result = finder._path_hook(hook_path)
+    assert rebuilt
+    assert isinstance(result, _editable.MesonpyPathFinder)
+
