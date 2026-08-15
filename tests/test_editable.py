@@ -351,32 +351,43 @@ def test_install_data(venv, editable_install_data, tmp_path):
     venv.python('-c', 'import package')
 
 
-def test_path_hook_assigns_altsep_normalization(monkeypatch):
-    """The Windows path hook must assign the result of str.replace.
+@pytest.mark.skipif(not os.altsep, reason='os.altsep is only set on Windows')
+@pytest.mark.skipif(FREE_THREADED_BUILD and CYTHON_VERSION < (3, 1, 0),
+                    reason='Cython version too old, no free-threaded CPython support')
+def test_path_hook_altsep_search_path(package_complex, tmp_path):
+    """The path hook must match submodule search paths that use os.altsep.
 
-    Import machinery can pass paths that use os.altsep. Without assigning
-    the replace, rpartition(os.sep) does not split the path and the hook
-    never matches __file__.
+    After a real editable build, importlib/pkgutil look up subpackages via
+    path hooks. On Windows those paths may use '/' (PYTHONPATH, pathlib,
+    Meson) even though __file__ uses '\\'. The hook normalizes altsep
+    before rpartition(os.sep); discarding the replace means the hook
+    never matches __file__ and subpackage discovery fails.
     """
-    monkeypatch.setattr(os, 'sep', '\\')
-    monkeypatch.setattr(os, 'altsep', '/')
+    if os.altsep in _editable.__file__:
+        pytest.skip('__file__ already uses altsep; hook compares to it as-is')
 
-    win_file = _editable.__file__.replace('/', '\\')
-    monkeypatch.setattr(_editable, '__file__', win_file)
+    project = mesonpy.Project(package_complex, tmp_path)
+    finder = _editable.MesonpyMetaFinder(
+        'complex', {'complex'}, os.fspath(tmp_path), project._build_command, True
+    )
 
-    finder = _editable.MesonpyMetaFinder('pkg', {'pkg'}, '/build', ['true'])
-    rebuilt = []
+    try:
+        sys.meta_path.insert(0, finder)
+        sys.path_hooks.insert(0, finder._path_hook)
 
-    def fake_rebuild():
-        rebuilt.append(True)
-        tree = _editable.Node()
-        tree[('subpkg',)] = _editable.Node()
-        return tree
+        import complex
+        assert complex.__name__ == 'complex'
 
-    finder._rebuild = fake_rebuild  # type: ignore[method-assign]
+        # Same location importlib would use, but spelled with os.altsep.
+        altsep_path = _editable.__file__.replace(os.sep, os.altsep) + os.altsep + 'complex'
+        importer = pkgutil.get_importer(altsep_path)
+        assert isinstance(importer, _editable.MesonpyPathFinder)
 
-    hook_path = win_file.replace('\\', '/') + '/subpkg'
-    result = finder._path_hook(hook_path)
-    assert rebuilt
-    assert isinstance(result, _editable.MesonpyPathFinder)
-
+        names = {module.name for module in pkgutil.iter_modules([altsep_path])}
+        assert 'more' in names
+    finally:
+        del sys.meta_path[0]
+        del sys.path_hooks[0]
+        for name in list(sys.modules):
+            if name == 'complex' or name.startswith('complex.'):
+                del sys.modules[name]
