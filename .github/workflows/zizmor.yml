@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+name: zizmor
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/*
+  pull_request:
+    branches:
+      - main
+      - release-*
+    paths:
+      - .github/workflows/*
+
+permissions: {}
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: python -m pip install zizmor==1.29.0
+      - run: zizmor .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

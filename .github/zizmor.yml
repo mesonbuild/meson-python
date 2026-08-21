@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        actions/*: ref-pin
