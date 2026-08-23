@@ -13,6 +13,7 @@ import sys
 from contextlib import redirect_stdout
 
 import pytest
+import wheel.wheelfile
 
 import mesonpy
 
@@ -188,6 +189,21 @@ def test_importlib_resources(tmp_path):
 def test_editable_install(venv, editable_simple):
     venv.pip('install', os.fspath(editable_simple))
     assert venv.python('-c', 'import simple; print(simple.data())').strip() == 'ABC'
+
+
+def test_editable_contents(editable_simple):
+    artifact = wheel.wheelfile.WheelFile(editable_simple)
+
+    impl = 'start' if sys.version_info >= (3, 15) else 'pth'
+    expecting = {
+        'simple-1.0.0.dist-info/METADATA',
+        'simple-1.0.0.dist-info/RECORD',
+        'simple-1.0.0.dist-info/WHEEL',
+        '_simple_editable_loader.py',
+        f'simple-editable.{impl}',
+    }
+
+    assert set(artifact.namelist()) == expecting
 
 
 def test_editble_reentrant(venv, editable_imports_itself_during_build):
