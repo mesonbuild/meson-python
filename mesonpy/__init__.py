@@ -553,18 +553,28 @@ class _EditableWheelBuilder(_WheelBuilder):
             whl.writestr(
                 f'{loader_module_name}.py',
                 importlib.resources.files('mesonpy').joinpath('_editable.py').read_bytes() + textwrap.dedent(f'''
-                   install(
-                       {self._metadata.name!r},
-                       {self._top_level_modules!r},
-                       {os.fspath(build_dir)!r},
-                       {build_command!r},
-                       {verbose!r},
-                   )''').encode('utf-8'))
+                   def init():
+                       finder = MesonpyMetaFinder(
+                           {self._metadata.name!r},
+                           {self._top_level_modules!r},
+                           {os.fspath(build_dir)!r},
+                           {build_command!r},
+                           {verbose!r},
+                       )
+                       sys.meta_path.insert(0, finder)
+                       sys.path_hooks.insert(0, finder._path_hook)
+                   ''').encode('utf-8'))
 
-            # install .pth file
-            whl.writestr(
-                f'{self._metadata.canonical_name}-editable.pth',
-                f'import {loader_module_name}'.encode('utf-8'))
+            if sys.version_info >= (3, 15):
+                # install .start file
+                whl.writestr(
+                    f'{self._metadata.canonical_name}-editable.start',
+                    f'{loader_module_name}:init'.encode('utf-8'))
+            else:
+                # install .pth file
+                whl.writestr(
+                    f'{self._metadata.canonical_name}-editable.pth',
+                    f'import {loader_module_name}; {loader_module_name}.init()'.encode('utf-8'))
 
         return wheel_file
 

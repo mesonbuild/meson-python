@@ -410,9 +410,3 @@ class MesonpyPathFinder(importlib.abc.PathEntryFinder):
             elif modname and '.' not in modname:
                 yielded.add(modname)
                 yield prefix + modname, False
-
-
-def install(package: str, names: Set[str], path: str, cmd: List[str], verbose: bool) -> None:
-    finder = MesonpyMetaFinder(package, names, path, cmd, verbose)
-    sys.meta_path.insert(0, finder)
-    sys.path_hooks.insert(0, finder._path_hook)
