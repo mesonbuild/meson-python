@@ -411,5 +411,5 @@ def test_limited_api_free_threaded(wheel_limited_api_free_threaded):
     artifact = wheel.wheelfile.WheelFile(wheel_limited_api_free_threaded)
     name = artifact.parsed_filename
     assert name.group('pyver') == INTERPRETER
-    assert name.group('abi') == 'abi3.abi3t' if FREE_THREADED_BUILD else 'abi3'
+    assert name.group('abi') == ('abi3.abi3t' if FREE_THREADED_BUILD else 'abi3')
     assert name.group('plat') == PLATFORM
