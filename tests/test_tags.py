@@ -54,6 +54,7 @@ def get_abi3_suffix():
 
 SUFFIX = sysconfig.get_config_var('EXT_SUFFIX')
 ABI3SUFFIX = get_abi3_suffix()
+STABLE_ABI_KIND = 'abi3t' if FREE_THREADED_BUILD and sys.version_info >= (3, 15) else 'abi3'
 
 
 def test_wheel_tag():
@@ -162,3 +163,16 @@ def test_tag_mixed_abi():
     }, pure=False, limited_api=True)
     with pytest.raises(mesonpy.BuildError, match='The package declares compatibility with Python limited API but '):
         assert str(builder.tag) == f'{INTERPRETER}-abi3-{PLATFORM}'
+
+
+@pytest.mark.skipif(not ABI3SUFFIX, reason='interpreter does not support the stable ABI')
+def test_tag_stable_abi_multiarch():
+    # Python 3.15 and later append the multiarch tuple to the stable ABI
+    # filename suffix. Verify that it is ignored rather than causing the
+    # module to be rejected: when cross compiling it differs from the one
+    # of the build interpreter.
+    builder = wheel_builder_test_factory({
+        'platlib': [f'extension.{STABLE_ABI_KIND}-aarch64-linux-gnu.so'],
+    }, pure=False, limited_api=True)
+    abi = 'abi3.abi3t' if STABLE_ABI_KIND == 'abi3t' else 'abi3'
+    assert str(builder.tag) == f'{INTERPRETER}-{abi}-{PLATFORM}'
