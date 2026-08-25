@@ -11,6 +11,21 @@
 Changelog
 +++++++++
 
+0.21.0
+======
+
+- Add support for the stable ABI for free-threaded interpreters (``abi3t``).
+- Add support for the stable ABI extension modules' platform-specific filename
+  suffixes introduced in Python 3.15.
+- Allow specifying ``editable-verbose`` in ``pyproject.toml``.
+- Improve the default behavior of editable installs by capturing and reporting
+  build errors when rebuilding.
+- Use ``.start`` files (PEP 829) instead of ``.pth`` files to implement editable
+  wheels for Python 3.15 and later.
+
+Daniele Nicolodi, Michał Górny, Ralf Gommers --- 25-08-2026.
+
+
 0.20.0
 ======
 
