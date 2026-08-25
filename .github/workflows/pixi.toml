@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2025 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+
+[workspace]
+name = "meson-python"
+description = "The Python build backend for Meson projects"
+license = "MIT"
+documentation = "https://mesonbuild.com/meson-python"
+repository = "https://github.com/mesonbuild/meson-python"
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-aarch64"]
+
+[dependencies]
+meson = "*"
+packaging = ">=24.2"
+pyproject-metadata = ">=0.9.0"
+ninja = "*"
+pkg-config = "*"
+cmake = "*"
+patchelf = "*"
+c-compiler = "*"
+cxx-compiler = "*"
+pip = "*"
+python-build = "*"
+cython = "*"
+pytest = "*"
+pytest-mock = "*"
+wheel = "*"
+
+[tasks]
+test = { cmd = "pytest", cwd = "../.." }

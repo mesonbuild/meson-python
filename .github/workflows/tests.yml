@@ -337,3 +337,21 @@ jobs:
 
       - name: Run mypy
         run: mypy -p mesonpy
+
+  pixi:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: prefix-dev/setup-pixi@f00437f565399d418b0acc85936d12c1fb668347 # v0.10.1
+        with:
+          pixi-version: v0.77.1
+          manifest-path: .github/workflows/pixi.toml
+          cache: false
+
+      - name: Run tests
+        working-directory: .github/workflows
+        run: pixi run test
