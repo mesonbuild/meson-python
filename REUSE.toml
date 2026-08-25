@@ -5,7 +5,10 @@
 version = 1
 
 [[annotations]]
-path = ".github/workflows/pixi.lock"
-precedence = "aggregate"
+path = [
+    ".github/workflows/pixi.lock",
+    "tests/packages/install-data/data.txt",
+    "tests/packages/simple/data.txt",
+]
 SPDX-FileCopyrightText = "2026 The meson-python developers"
 SPDX-License-Identifier = "MIT"
