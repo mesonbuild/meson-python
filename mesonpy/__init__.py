@@ -85,7 +85,7 @@ if typing.TYPE_CHECKING:  # pragma: no cover
     Path = Union[str, os.PathLike[str]]
 
 
-__version__ = '0.21.0.dev0'
+__version__ = '0.21.0'
 
 
 _PYPROJECT_METADATA_VERSION = tuple(map(int, pyproject_metadata.__version__.split('.')[:2]))
