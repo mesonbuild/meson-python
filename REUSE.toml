@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 The meson-python developers
+
+# SPDX-License-Identifier: MIT
+
+version = 1
+
+[[annotations]]
+path = ".github/workflows/pixi.lock"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The meson-python developers"
+SPDX-License-Identifier = "MIT"
