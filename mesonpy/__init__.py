@@ -131,13 +131,15 @@ class _Entry(typing.NamedTuple):
 
 def _map_to_wheel(
     sources: Dict[str, Dict[str, Any]],
-    exclude: List[str], include: List[str]
+    exclude: List[str], include: List[str],
+    sbom_files: List[str],
 ) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
+    is_sbom = _compile_patterns(sbom_files)
 
     for key, group in sources.items():
         for src, target in group.items():
@@ -182,8 +184,13 @@ def _map_to_wheel(
                         relpath = os.path.relpath(filesrc, src)
                         if relpath in exclude_files:
                             continue
+                        if is_sbom(os.path.join(target_destination, relpath)):
+                            wheel_files['mesonpy-sboms'].append(_Entry(pathlib.Path(name), filesrc))
+                            continue
                         filedst = dst / relpath
                         wheel_files[path].append(_Entry(filedst, filesrc))
+            elif is_sbom(target_destination):
+                wheel_files['mesonpy-sboms'].append(_Entry(pathlib.Path(destination.name), src))
             else:
                 wheel_files[path].append(_Entry(dst, src))
 
@@ -505,6 +512,7 @@ class _WheelBuilder():
             with _clicounter(sum(len(x) for x in self._manifest.values())) as counter:
 
                 root = 'purelib' if self._pure else 'platlib'
+                sboms: Dict[str, str] = {}
 
                 for path, entries in self._manifest.items():
                     for dst, src in entries:
@@ -515,6 +523,15 @@ class _WheelBuilder():
                         elif path == 'mesonpy-libs':
                             # custom installation path for bundled libraries
                             dst = pathlib.Path(self._libs_dir, dst)
+                        elif path == 'mesonpy-sboms':
+                            # PEP-770 SBOM files go into the .dist-info/sboms/ directory
+                            dst = pathlib.Path(self._distinfo_dir, 'sboms', dst)
+                            other = sboms.setdefault(dst.as_posix(), str(src))
+                            if other != str(src):
+                                raise BuildError(
+                                    f'Two files matching "tool.meson-python.sbom-files" patterns '
+                                    f'would be installed at {dst.as_posix()!r} in the wheel: '
+                                    f'{other!r} and {str(src)!r}')
                         else:
                             dst = pathlib.Path(self._data_dir, path, dst)
 
@@ -616,6 +633,7 @@ def _validate_pyproject_config(pyproject: Dict[str, Any]) -> Dict[str, Any]:
         'limited-api': _bool,
         'allow-windows-internal-shared-libs': _bool,
         'args': _table(dict.fromkeys(_MESON_ARGS_KEYS, _strings)),
+        'sbom-files': _strings,
         'wheel': _table({
             'exclude': _strings,
             'include': _strings,
@@ -920,6 +938,10 @@ class Project():
         self._excluded_files = pyproject_config.get('wheel', {}).get('exclude', [])
         self._included_files = pyproject_config.get('wheel', {}).get('include', [])
 
+        # PEP-770 SBOM files to be moved to the .dist-info/sboms/ directory in the wheel
+        self._sbom_files = pyproject_config.get(
+            'sbom-files', ['{datadir}/' + self._metadata.canonical_name + '/sboms/*'])
+
     def _run(self, cmd: Sequence[str]) -> None:
         """Invoke a subprocess."""
         # Flush the line to ensure that the log line with the executed
@@ -1006,7 +1028,7 @@ class Project():
                 sources[key][target] = details
 
         # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources, self._excluded_files, self._included_files)
+        return _map_to_wheel(sources, self._excluded_files, self._included_files, self._sbom_files)
 
     @property
     def _meson_name(self) -> str:

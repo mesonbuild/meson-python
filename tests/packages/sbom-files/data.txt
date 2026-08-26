@@ -1,0 +1,1 @@
+Regular data file that must stay in the wheel data directory.

@@ -70,6 +70,19 @@ use them and examples.
 
    Extra arguments to be passed to the ``meson install`` command.
 
+.. option:: tool.meson-python.sbom-files
+
+   List of glob patterns matching paths of `PEP 770`_ SBOM files. Files
+   installed by the Meson project at a location matching one of the
+   patterns are moved to the ``sboms/`` subdirectory of the wheel's
+   ``.dist-info/`` directory. The accepted glob patterns and the paths
+   they are matched against are the same as for
+   :option:`tool.meson-python.wheel.exclude`. It defaults to
+   ``['{datadir}/{name}/sboms/*']``, with ``{name}`` the normalized
+   project name. Set it to an empty list to disable the special
+   handling of SBOM files. See the :ref:`how-to-guides-sboms` guide
+   for details.
+
 .. option:: tool.meson-python.wheel.exclude
 
    List of glob patterns matching paths of files that must be excluded from
@@ -99,6 +112,7 @@ use them and examples.
    pattern that matches too many files.
 
 .. _python limited api: https://docs.python.org/3/c-api/stable.html?highlight=limited%20api#stable-application-binary-interface
+.. _pep 770: https://peps.python.org/pep-0770/
 .. _extension_module(): `https://mesonbuild.com/Python-module.html#extension_module
 .. _meson introspection data: https://mesonbuild.com/IDE-integration.html#install-plan
 
