@@ -33,11 +33,12 @@ use them and examples.
    modules can be compiled for the Python limited API specifying the
    ``limited_api`` argument to the |extension_module()|_ function
    in the Meson Python module.  When this setting is set to true, the
-   value ``abi3`` is used for the Python wheel filename ABI tag.
-
-   This setting is automatically reverted to false when the
+   Python wheel filename ABI tag is set to ``abi3``, or ``abi3.abi3t``
+   when building with free-threaded CPython 3.15 or later.  This
+   setting is automatically reverted to false when the
    ``-Dpython.allow_limited_api=false`` option is passed to ``meson
-   setup``.
+   setup``. See :ref:`howto-limited-api` for more information on limited
+   API builds.
 
 .. option:: tool.meson-python.meson
 
@@ -91,7 +92,7 @@ use them and examples.
    glob pattern is useful exclusively to limit the effect of an exclude
    pattern that matches too many files.
 
-.. _python limited api: https://docs.python.org/3/c-api/stable.html?highlight=limited%20api#stable-application-binary-interface
+.. _python limited api: https://docs.python.org/3/c-api/stable.html#stable-application-binary-interface
 .. _extension_module(): `https://mesonbuild.com/Python-module.html#extension_module
 .. _meson introspection data: https://mesonbuild.com/IDE-integration.html#install-plan
 
