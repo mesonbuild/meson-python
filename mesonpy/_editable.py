@@ -13,6 +13,7 @@ import importlib.machinery
 import importlib.util
 import inspect
 import json
+import locale
 import os
 import pathlib
 import subprocess
@@ -37,6 +38,12 @@ if sys.version_info >= (3, 12):
     from importlib.resources.abc import Traversable, TraversableResources
 else:
     from importlib.abc import Traversable, TraversableResources
+
+if sys.version_info >= (3, 11):
+    getencoding = locale.getencoding
+else:
+    def getencoding() -> str:
+        return locale.getpreferredencoding(False)
 
 
 MARKER = 'MESONPY_EDITABLE_SKIP'
@@ -341,13 +348,20 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
             else:
                 # Redirect build log to file.
                 log_path = os.path.join(self._build_path, 'meson-logs', 'meson-python-build-log.txt')
+                # It does not matter if the log file is opened in text or
+                # binary mode: `subprocess.run()` directly connects the
+                # underlying file descriptor to the child process stdout.
                 with open(log_path, 'w') as log:
                     subprocess.run(self._build_cmd, cwd=self._build_path, env=env, check=True,
                                    stderr=subprocess.STDOUT, stdout=log)
         except subprocess.CalledProcessError as err:
             msg = f'rebuilding the "{self._name}" editable package failed'
             if log_path:
-                with open(log_path, 'r', encoding='utf8') as log:
+                # Compiler and other tools are expected to write log
+                # messages using the environment default text encoding.
+                # Since Python 3.15, UTF-8 mode is the default, thus
+                # explicitly set the encoding.
+                with open(log_path, 'r', encoding=getencoding(), errors='backslashreplace') as log:
                     # Skip to the error.
                     for line in log:
                         if line.startswith('FAILED: '):
