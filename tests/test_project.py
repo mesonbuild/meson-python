@@ -9,6 +9,7 @@ import shutil
 import sys
 import sysconfig
 import textwrap
+import types
 
 from unittest.mock import Mock
 
@@ -26,6 +27,7 @@ import mesonpy
 from mesonpy._util import chdir
 
 from .conftest import MESON_VERSION, in_git_repo_context, metadata, package_dir
+from .test_tags import SYSTEM_BUILD_DETAILS
 
 
 def test_unsupported_python_version(package_unsupported_python_version):
@@ -358,7 +360,7 @@ def test_archflags_envvar_parsing(package_purelib_and_platlib, monkeypatch, arch
         monkeypatch.setenv('ARCHFLAGS', archflags)
         arch = archflags.split()[-1]
         with mesonpy._project():
-            assert mesonpy._tags.Tag().platform.endswith(arch)
+            assert mesonpy._tags.Tag(build_details=SYSTEM_BUILD_DETAILS).platform.endswith(arch)
     finally:
         # revert environment variable setting done by the in-process build
         os.environ.pop('_PYTHON_HOST_PLATFORM', None)
@@ -438,6 +440,10 @@ def test_ios_project(package_simple, monkeypatch, multiarch, tmp_path):
     subsystem = 'ios-simulator' if abi == 'iphonesimulator' else 'ios'
 
     # Mock being on iOS
+    monkeypatch.setattr(
+        sys, 'implementation',
+        types.SimpleNamespace(**(sys.implementation.__dict__ | {'_multiarch': multiarch}))
+    )
     monkeypatch.setattr(sys, 'platform', 'ios')
     monkeypatch.setattr(platform, 'machine', Mock(return_value=arch))
     monkeypatch.setattr(sysconfig, 'get_platform', Mock(return_value=f'ios-13.0-{multiarch}'))
