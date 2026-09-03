@@ -22,8 +22,9 @@ Changelog
   build errors when rebuilding.
 - Use ``.start`` files (PEP 829) instead of ``.pth`` files to implement editable
   wheels for Python 3.15 and later.
+- From this release onwards, SSH keys used to sign release tags.
 
-Daniele Nicolodi, Michał Górny, Ralf Gommers --- 25-08-2026.
+Daniele Nicolodi, Michał Górny, Ralf Gommers --- 07-09-2026.
 
 
 0.20.0
