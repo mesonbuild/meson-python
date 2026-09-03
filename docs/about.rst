@@ -49,13 +49,29 @@ supported Python versions.
 
 Distributors are recommended to fetch release sources from the
 corresponding tags on the Git repository_ or from source distributions
-on `PyPI`_. Git tags are PGP-signed with one of the following keys:
+on `PyPI`_. Git tags are signed by a maintainer, using either a PGP or an
+SSH signing key.
+
+Tags from ``0.21.0`` onwards are SSH-signed. The SSH signing keys are published
+at |rgommers-ssh-signing-keys|_ (Ralf Gommers). An SSH-signed tag can be
+verified using the ``allowed_signers`` file shipped in the repository:
+
+.. code-block:: console
+
+   $ git config gpg.ssh.allowedSignersFile .github/allowed_signers
+   $ git verify-tag X.Y.Z
+
+Tags up to and including ``0.20.0`` are PGP-signed with one of the following
+keys:
 
 - |3DCE51D60930EBA47858BA4146F633CBB0EB4BF2|_ Filipe Laíns
 - |52BDC33FD1FBAB569D47FFA923D9E5499A08BDC5|_ Ralf Gommers
 
 .. _repository: https://github.com/mesonbuild/meson-python
 .. _PyPI: https://pypi.org/project/meson-python/
+
+.. |rgommers-ssh-signing-keys| replace:: ``https://api.github.com/users/rgommers/ssh_signing_keys``
+.. _rgommers-ssh-signing-keys: https://api.github.com/users/rgommers/ssh_signing_keys
 
 .. |3DCE51D60930EBA47858BA4146F633CBB0EB4BF2| replace:: ``3DCE51D60930EBA47858BA4146F633CBB0EB4BF2``
 .. _3DCE51D60930EBA47858BA4146F633CBB0EB4BF2: https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3dce51d60930eba47858ba4146f633cbb0eb4bf2
