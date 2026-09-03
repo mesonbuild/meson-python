@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 The meson-python developers
+#
+# SPDX-License-Identifier: MIT
+#
+# SSH allowed signers for verifying signed git tags.
+#
+# Verify a release tag with:
+#   git config gpg.ssh.allowedSignersFile .github/allowed_signers
+#   git verify-tag X.Y.Z
+#
+# Each entry maps a maintainer's git identity (email) to the SSH signing
+# public key they use for `git tag -s`. Keys are also published at
+# https://api.github.com/users/<user>/ssh_signing_keys
+
+ralf.gommers@gmail.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJs4By1YLtDpC0xqbj3CqIk6cbb7MWyKJp15tuYOjXMQ

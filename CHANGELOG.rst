@@ -22,8 +22,11 @@ Changelog
   build errors when rebuilding.
 - Use ``.start`` files (PEP 829) instead of ``.pth`` files to implement editable
   wheels for Python 3.15 and later.
+- Release tags are now SSH-signed. Tags up to and including ``0.20.0`` are
+  PGP-signed. See the signing keys and verification instructions in the
+  documentation.
 
-Daniele Nicolodi, Michał Górny, Ralf Gommers --- 25-08-2026.
+Daniele Nicolodi, Michał Górny, Ralf Gommers --- 03-09-2026.
 
 
 0.20.0
