@@ -55,6 +55,7 @@ test = [
   'pytest-cov',
   'pytest-mock',
   'cython >= 3.0.3', # required for Python 3.12 support
+  'setuptools-scm', # used by the version-setuptools-scm test package
   'wheel',
 ]
 docs = [
