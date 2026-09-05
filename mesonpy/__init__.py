@@ -52,6 +52,7 @@ import packaging.version
 import pyproject_metadata
 
 import mesonpy._rpath
+import mesonpy._substitutions
 import mesonpy._tags
 import mesonpy._util
 import mesonpy._wheelfile
@@ -710,7 +711,11 @@ class Project():
         # load meson args from pyproject.toml
         pyproject_config = _validate_pyproject_config(pyproject)
         for key, value in pyproject_config.get('args', {}).items():
-            self._meson_args[key].extend(value)
+            try:
+                self._meson_args[key] = [mesonpy._substitutions.eval(x) for x in value]
+            except ValueError as exc:
+                raise ConfigError(
+                    f'Cannot evaluate "tool.meson-python.args.{key}" configuration entry: {exc.args[0]}') from None
 
         # editable-verbose setting from build options takes precedence over
         # setting in pyproject.toml
