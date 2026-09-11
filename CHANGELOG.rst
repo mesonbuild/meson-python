@@ -11,6 +11,14 @@
 Changelog
 +++++++++
 
+0.21.1
+======
+
+- Restore compatibility with Python interpreters not implementing PEP 3149.
+
+Daniele Nicolodi, Ralf Gommers --- 11-09-2026.
+
+
 0.21.0
 ======
 
