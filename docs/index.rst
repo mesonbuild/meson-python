@@ -55,7 +55,8 @@ can be overridden and extended using the standard package metadata format in the
    version = '1.0.0'
    description = 'Example package using the meson-python build backend'
    readme = 'README.rst'
-   license = {file = 'LICENSE.txt'}
+   license = 'MIT'
+   license-files = ['LICENSE.txt']
    authors = [
      {name = 'Au Thor', email = 'author@example.com'},
    ]

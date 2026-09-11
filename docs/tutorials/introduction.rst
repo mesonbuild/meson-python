@@ -139,7 +139,8 @@ self-explanatory:
    description = 'Our first Python project, using meson-python!'
    readme = 'README.md'
    requires-python = '>=3.8'
-   license = {file = 'LICENSE.txt'}
+   license = 'MIT'
+   license-files = ['LICENSE.txt']
    authors = [
      {name = 'Bowsette Koopa', email = 'bowsette@example.com'},
    ]
