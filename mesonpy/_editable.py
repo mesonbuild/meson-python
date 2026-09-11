@@ -301,12 +301,9 @@ class MesonpyMetaFinder(importlib.abc.MetaPathFinder):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self._name!r}, {self._build_path!r})'
 
-    def find_spec(
-            self,
-            fullname: str,
-            path: Optional[Sequence[Union[bytes, str]]] = None,
-            target: Optional[ModuleType] = None
-    ) -> Optional[importlib.machinery.ModuleSpec]:
+    def find_spec(self, fullname: str,
+                  path: Optional[Sequence[Union[bytes, str]]] = None,
+                  target: Optional[ModuleType] = None) -> Optional[importlib.machinery.ModuleSpec]:
         if fullname.split('.', 1)[0] not in self._top_level_modules:
             return None
         if self._build_path in os.environ.get(MARKER, '').split(os.pathsep):

@@ -129,10 +129,8 @@ class _Entry(typing.NamedTuple):
     src: str
 
 
-def _map_to_wheel(
-    sources: Dict[str, Dict[str, Any]],
-    exclude: List[str], include: List[str]
-) -> DefaultDict[str, List[_Entry]]:
+def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
+                  exclude: List[str], include: List[str]) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
@@ -229,14 +227,8 @@ def _log(string: str, **kwargs: Any) -> None:
     print(string, **kwargs)
 
 
-def _showwarning(
-    message: Union[Warning, str],
-    category: Type[Warning],
-    filename: str,
-    lineno: int,
-    file: Optional[TextIO] = None,
-    line: Optional[str] = None,
-) -> None:  # pragma: no cover
+def _showwarning(message: Union[Warning, str], category: Type[Warning], filename: str, lineno: int,
+                 file: Optional[TextIO] = None, line: Optional[str] = None) -> None:  # pragma: no cover
     """Callable to override the default warning handler, to have colored output."""
     _log(f'{style.WARNING}meson-python: warning:{style.RESET} {message}')
 
@@ -288,12 +280,10 @@ class Metadata(pyproject_metadata.StandardMetadata):
         super().__init__(name, *args, **kwargs)
 
     @classmethod
-    def from_pyproject(  # type: ignore[override]
-        cls,
-        data: Mapping[str, Any],
-        project_dir: Path = os.path.curdir,
-        metadata_version: Optional[str] = None
-    ) -> Self:
+    def from_pyproject(cls,   # type: ignore[override]
+                       data: Mapping[str, Any],
+                       project_dir: Path = os.path.curdir,
+                       metadata_version: Optional[str] = None) -> Self:
         metadata = super().from_pyproject(data, project_dir, metadata_version)
 
         # Check for unsupported dynamic fields.
@@ -690,13 +680,12 @@ def _validate_config_settings(config_settings: Dict[str, Any]) -> Dict[str, Any]
 class Project():
     """Meson project wrapper to generate Python artifacts."""
 
-    def __init__(
-        self,
-        source_dir: Path,
-        build_dir: Path,
-        meson_args: Optional[MesonArgs] = None,
-        editable_verbose: Optional[bool] = None,
-    ) -> None:
+    def __init__(self,
+                 source_dir: Path,
+                 build_dir: Path,
+                 meson_args: Optional[MesonArgs] = None,
+                 editable_verbose: Optional[bool] = None) -> None:
+
         self._source_dir = pathlib.Path(source_dir).absolute()
         self._build_dir = pathlib.Path(build_dir).absolute()
         self._meson_native_file = self._build_dir / 'meson-python-native-file.ini'
@@ -1195,9 +1184,7 @@ def _parse_version_string(string: str) -> Tuple[int, ...]:
         return (0, )
 
 
-def _get_meson_command(
-        meson: Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION
-    ) -> List[str]:
+def _get_meson_command(meson: Optional[str] = None, *, version: str = _MESON_REQUIRED_VERSION) -> List[str]:
     """Return the command to invoke meson."""
 
     # The MESON env var, if set, overrides the config value from pyproject.toml.
@@ -1300,35 +1287,26 @@ get_requires_for_build_editable = get_requires_for_build_wheel
 
 
 @_pyproject_hook
-def build_sdist(
-    sdist_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
-) -> str:
-
+def build_sdist(sdist_directory: str,
+                config_settings: Optional[Dict[Any, Any]] = None) -> str:
     out = pathlib.Path(sdist_directory)
     with _project(config_settings) as project:
         return project.sdist(out).name
 
 
 @_pyproject_hook
-def build_wheel(
-    wheel_directory: str, config_settings:
-    Optional[Dict[Any, Any]] = None,
-    metadata_directory: Optional[str] = None,
-) -> str:
-
+def build_wheel(wheel_directory: str,
+                config_settings: Optional[Dict[Any, Any]] = None,
+                metadata_directory: Optional[str] = None) -> str:
     out = pathlib.Path(wheel_directory)
     with _project(config_settings) as project:
         return project.wheel(out).name
 
 
 @_pyproject_hook
-def build_editable(
-    wheel_directory: str,
-    config_settings: Optional[Dict[Any, Any]] = None,
-    metadata_directory: Optional[str] = None,
-) -> str:
-
+def build_editable(wheel_directory: str,
+                   config_settings: Optional[Dict[Any, Any]] = None,
+                   metadata_directory: Optional[str] = None) -> str:
     # Force set a permanent build directory.
     if not config_settings:
         config_settings = {}
