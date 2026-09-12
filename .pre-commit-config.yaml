@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+# 'pre-commit' is not a project dependency -- if needed, users may choose to install it
+
 ci:
   autofix_prs: false
   autoupdate_commit_msg: 'MAINT: bump pre-commit dependencies'

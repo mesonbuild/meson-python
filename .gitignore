@@ -10,3 +10,4 @@ docs/_build
 dist/
 .coverage
 tests/packages/**/.wraplock
+*.lock

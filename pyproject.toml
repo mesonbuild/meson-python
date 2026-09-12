@@ -64,6 +64,10 @@ docs = [
   'sphinx-design >= 0.1.0',
   'sphinxext-opengraph >= 0.7.0',
 ]
+# uv includes by default the dev dependency group in the environment
+dev = [
+  {include-group = 'test'},
+]
 
 
 [tool.mypy]
