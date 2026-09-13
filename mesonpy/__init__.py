@@ -1087,11 +1087,11 @@ class Project():
                             f'symbolic link pointing to a directory ignored: {name}', stacklevel=1)
                         break
 
-                # Copy `member` before starting to modify it
-                member = copy.copy(member)
-
                 if member.isfile():
                     file = meson_dist.extractfile(member.name)
+
+                    # Copy ``member`` before starting to modify it
+                    member = copy.copy(member)
 
                     # Reset pax extended header.  The tar archive member may be
                     # using pax headers to store some file metadata.  The pax
