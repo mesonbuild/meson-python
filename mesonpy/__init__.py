@@ -1063,24 +1063,31 @@ class Project():
 
         with tarfile.open(meson_dist_path, 'r:gz') as meson_dist, mesonpy._util.create_targz(sdist_path) as sdist:
             for member in meson_dist.getmembers():
+                # Record the original member name.  The symbolic link
+                # resolution loop will make ``member`` point to the link
+                # target, but it needs to be archived under the original name.
+                # Symbolic link target resolution must be relative to
+                # ``member.name``, which therefore cannot be updated in the
+                # symbolic link resolution loop.
+                name = member.name
+
                 # Recursively resolve symbolic links.  The source distribution
                 # archive format specification allows for symbolic links as
                 # long as the target path does not include a '..' component.
                 # This makes symbolic links support unusable in most cases,
                 # therefore include the symbolic link targets as regular files
                 # in all cases.
+                visited = set()
                 while member.issym():
-                    name = member.name
+                    # Detect symbolic link chains resulting in a cycle.
+                    if member.name in visited:
+                        warnings.warn(
+                            f'symbolic link resulting in a cycle ignored: {name}', stacklevel=1)
+                        break
+                    visited.add(member.name)
                     target = posixpath.normpath(posixpath.join(posixpath.dirname(member.name), member.linkname))
                     try:
-                        # This can be implemented using the .replace() method
-                        # in Python 3.12 and later. The .replace() method was
-                        # added as part of PEP 706 and back-ported to Python
-                        # 3.9 and later in patch releases, thus it cannot be
-                        # relied upon until the minimum supported Python
-                        # version is 3.12.
-                        member = copy.copy(meson_dist.getmember(target))
-                        member.name = name
+                        member = meson_dist.getmember(target)
                     except KeyError:
                         warnings.warn(
                             'symbolic link with absolute path target, pointing outside the '
@@ -1089,6 +1096,7 @@ class Project():
                     if member.isdir():
                         warnings.warn(
                             f'symbolic link pointing to a directory ignored: {name}', stacklevel=1)
+                        break
 
                 # Copy `member` before starting to modify it
                 member = copy.copy(member)
@@ -1113,7 +1121,7 @@ class Project():
                     member.pax_headers = {}
 
                     # Rewrite the path to match the sdist distribution name.
-                    stem = member.name.split('/', 1)[1]
+                    stem = name.split('/', 1)[1]
                     member.name = '/'.join((dist_name, stem))
 
                     if stem == 'pyproject.toml':
