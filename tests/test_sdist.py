@@ -237,6 +237,7 @@ def test_symlinks(tmp_path, sdist_symlinks):
         'symlinks-1.0.0/meson.build',
         'symlinks-1.0.0/pyproject.toml',
         'symlinks-1.0.0/__init__.py',
+        'symlinks-1.0.0/ccc.py',
         'symlinks-1.0.0/submodule/__init__.py',
         'symlinks-1.0.0/submodule/aaa.py',
         'symlinks-1.0.0/submodule/bbb.py',
