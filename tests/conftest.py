@@ -218,11 +218,11 @@ def meson_fatal_warnings():
                 # toolchains.
                 'cmake-subproject',
 
-                # The ``link-against-local-lib`` package uses linker arguments
-                # to add RPATH entries. This functionality is deprecated in
-                # Meson but it is used in the wild thus we should make sure it
-                # keeps working.
+                # These packages use linker arguments to add RPATH entries.
+                # This functionality is deprecated in Meson but it is used
+                # in the wild thus we should make sure it keeps working.
                 'link-against-local-lib',
+                'sharedlib-in-package',
 
         }:
             if meson_args is None:
