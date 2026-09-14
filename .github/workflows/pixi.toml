@@ -26,6 +26,7 @@ python-build = "*"
 cython = "*"
 pytest = "*"
 pytest-mock = "*"
+vcs_versioning = "*"
 wheel = "*"
 
 [tasks]
