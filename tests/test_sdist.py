@@ -97,13 +97,13 @@ def test_dynamic_version_from_script(sdist_dynamic_version_from_script):
     assert 'dynamic_version_from_script-1.2.3/dynamic_version_from_script/_version.py' in names
 
 
-def test_version_setuptools_scm(sdist_version_setuptools_scm):
-    with tarfile.open(sdist_version_setuptools_scm, 'r:gz') as sdist:
-        sdist_pkg_info = sdist.extractfile('version_setuptools_scm-1.2.3/PKG-INFO').read()
+def test_version_vcs_versioning(sdist_version_vcs_versioning):
+    with tarfile.open(sdist_version_vcs_versioning, 'r:gz') as sdist:
+        sdist_pkg_info = sdist.extractfile('version_vcs_versioning-1.2.3/PKG-INFO').read()
 
     assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\
         Metadata-Version: 2.1
-        Name: version-setuptools-scm
+        Name: version-vcs-versioning
         Version: 1.2.3
     '''))
 

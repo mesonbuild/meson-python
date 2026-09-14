@@ -152,28 +152,28 @@ Derive version from latest git tag
 
 When the version is encoded in git tags rather than in source files, the
 build system has to query git at configure time. There are a number of
-packages that provide this functionality - e.g., ``setuptools-scm`` as the most
-popular one - and that can be used together with ``meson-python``. The
+packages that provide this functionality, including ``vcs-versioning``,
+that can be used together with ``meson-python``. The
 integration principle is the same as above: use a ``run_command()`` call inside
 ``project()`` (either directly or through a small wrapper script like
 ``get_version.py`` higher up) that prints the version and (optionally) writes
 out a file to disk that can be included in the sdist.
 
-The example below uses ``setuptools-scm``; the same approach applies
+The example below uses ``vcs-versioning``; the same approach applies
 to the other tools - only the wrapper script differs. Declare it as a build
 requirement in ``pyproject.toml``:
 
 
-.. literalinclude:: ../../tests/packages/version-setuptools-scm/pyproject.toml
+.. literalinclude:: ../../tests/packages/version-vcs-versioning/pyproject.toml
    :language: toml
    :lines: 5-12
 
-In ``meson.build``, invoke ``setuptools-scm`` to compute the version:
+In ``meson.build``, invoke ``vcs-versioning`` to compute the version:
 
-.. literalinclude:: ../../tests/packages/version-setuptools-scm/meson.build
+.. literalinclude:: ../../tests/packages/version-vcs-versioning/meson.build
    :language: meson
    :lines: 5-
 
-That's it. You can use ``setuptools-scm`` config options as explained in its docs.
+That's it. You can use ``vcs-versioning`` config options as explained in its docs.
 If you do want to store a generated file ``.py`` file with versioning metadata,
 use ``meson.add_dist_script()`` as explained higher up.

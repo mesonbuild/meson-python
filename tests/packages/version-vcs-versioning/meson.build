@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 project(
-    'version-setuptools-scm',
+    'version-vcs-versioning',
     version: run_command(
-        [find_program('python3', 'python'), '-m', 'setuptools_scm'],
+        [find_program('python3', 'python'), '-m', 'vcs_versioning'],
         check: true,
     ).stdout().strip(),
 )

@@ -76,8 +76,6 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/pytest-mock-3.15.1-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/python-build-1.5.0-pyhc364b38_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/python_abi-3.14-8_cp314.conda
-      - conda: https://prefix.dev/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
-      - conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.3-pyh5ded981_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/sysroot_linux-aarch64-2.28-h585391f_9.conda
       - conda: https://prefix.dev/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
@@ -886,32 +884,6 @@ packages:
   run_exports: {}
   size: 6989
   timestamp: 1752805904792
-- conda: https://prefix.dev/conda-forge/noarch/setuptools-84.0.0-pyh332efcf_0.conda
-  sha256: 9e200ee5f9ff19a4d94e4b51c4856d53dec849f91032f345cf0c6bc3d51a7183
-  md5: 62ac906f1cd582c6c264c95625cb9d6f
-  depends:
-  - python >=3.10
-  license: MIT
-  license_family: MIT
-  run_exports: {}
-  size: 524488
-  timestamp: 1786282924579
-- conda: https://prefix.dev/conda-forge/noarch/setuptools-scm-10.2.3-pyh5ded981_0.conda
-  sha256: cbb240e92689692f03de519f2bb4e565aca4ae2203ddae1ea10544389b257fa5
-  md5: 0191420c6b62796bfb7081a40f3d0873
-  depends:
-  - python >=3.11
-  - vcs_versioning >=2.3.2.dev0,<3
-  - packaging >=20
-  - setuptools
-  - tomli >=1
-  - typing_extensions >=4.1
-  - python
-  license: MIT
-  license_family: MIT
-  run_exports: {}
-  size: 29794
-  timestamp: 1788451083485
 - conda: https://prefix.dev/conda-forge/noarch/sysroot_linux-aarch64-2.28-h585391f_9.conda
   sha256: 1bd2db6b2e451247bab103e4a0128cf6c7595dd72cb26d70f7fadd9edd1d1bc3
   md5: fdf07ab944a222ff28c754914fdb0740

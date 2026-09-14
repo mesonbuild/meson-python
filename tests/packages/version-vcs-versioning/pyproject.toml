@@ -4,13 +4,13 @@
 
 [build-system]
 build-backend = 'mesonpy'
-requires = ['meson-python', 'setuptools-scm[simple]']
+requires = ['meson-python', 'vcs-versioning']
 
 [project]
-name = 'version-setuptools-scm'
+name = 'version-vcs-versioning'
 dynamic = ['version']
 
-[tool.setuptools_scm]
+[tool.vcs-versioning]
 # Configured like this to have a reproducible sdist/wheel filename for tests
 fallback_version = '1.2.3'
 local_scheme = 'no-local-version'
