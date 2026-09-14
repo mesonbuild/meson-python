@@ -256,6 +256,18 @@ def _showwarning(message: Union[Warning, str], category: Type[Warning], filename
     _log(f'{style.WARNING}meson-python: warning:{style.RESET} {message}')
 
 
+def _windows_interpreter_arch() -> str:
+    """Return the Windows architecture for which the Python interpreter has been compiled."""
+    match sysconfig.get_platform():
+        case 'win32':
+            return 'x86'
+        case 'win-amd64':
+            return 'amd64'
+        case 'win-arm64':
+            return 'arm64'
+    raise ValueError
+
+
 class _clicounter:
     def __init__(self, total: int) -> None:
         self._total = total
@@ -845,6 +857,13 @@ class Project():
             ''')
             self._meson_cross_file.write_text(cross_file_data, encoding='utf-8')
             self._meson_args['setup'].extend(('--cross-file', os.fspath(self._meson_cross_file)))
+
+        elif sys.platform == 'win32':
+            arch = _windows_interpreter_arch()
+            nativearch = platform.machine().lower()
+
+            if arch != nativearch:
+                pass
 
         # write the native file
         native_file_data = textwrap.dedent(f'''
