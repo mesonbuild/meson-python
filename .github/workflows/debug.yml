@@ -26,14 +26,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-11-arm
-        python:
-          - '3.14'
-        architecture:
-          - x64
-          - arm64
-          
+        include:
+          - os: windows-11-arm
+            python: '3.14'
+            architecture: x64
+          - os: windows-11-arm
+            python: '3.14'
+            architecture: arm64
+          - os: windows-latest
+            python: '3.14'
+          - os: windows-latest
+            python: '3.14'
+            architecture: x86
+            
     steps:
       - uses: actions/checkout@v7
         with:
