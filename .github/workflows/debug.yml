@@ -49,4 +49,4 @@ jobs:
 
       - run: python -c 'import sysconfig; print(sysconfig.get_platform())'
       - run: python -c 'import platform; print(platform.machine())'
-      - run: python -c 'import mesonpy._windows as w; print(w.platform())'
+      - run: python -c 'import mesonpy._windows as w; print(w.platform()); print(w.pp())'

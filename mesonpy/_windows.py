@@ -34,3 +34,13 @@ def platform():
         raise ctypes.WinError(ctypes.get_last_error())
     
     return native.value, process.value, MACHINE[native.value], MACHINE[process.value]
+
+
+def pp():
+    import subprocess
+
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_Processor).Architecture"],
+        capture_output=True, text=True, check=True)
+
+    return result
