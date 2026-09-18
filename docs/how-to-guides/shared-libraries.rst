@@ -67,11 +67,7 @@ is to be used inside the Python package being built, then it is best to modify
 the install location, via the ``install_dir`` argument, to be within
 the Python package itself:
 
-.. TODO update the text block below to 'meson' when
-.. meson lexer is updated to fix
-.. https://github.com/pygments/pygments/issues/2918
-
-.. code-block:: text
+.. code-block:: meson
 
     example_lib = shared_library(
         'example',
