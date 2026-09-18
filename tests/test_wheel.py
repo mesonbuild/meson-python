@@ -168,6 +168,14 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+def test_sharedlib_in_package_legacy(venv, wheel_sharedlib_in_package_legacy):
+    venv.pip('install', wheel_sharedlib_in_package_legacy)
+    output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
+    assert int(output) == 7
+    output = venv.python('-c', 'import mypkg; print(mypkg.example_prod(6, 7))')
+    assert int(output) == 42
+
+
 def test_sharedlib_in_package(venv, wheel_sharedlib_in_package):
     venv.pip('install', wheel_sharedlib_in_package)
     output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')
