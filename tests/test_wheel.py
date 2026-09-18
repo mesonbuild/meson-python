@@ -171,6 +171,8 @@ def test_local_lib(venv, wheel_link_against_local_lib):
     assert int(output) == 3
 
 
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
+@pytest.mark.filterwarnings('ignore:translated "install_rpath" argument for ')
 def test_sharedlib_in_package_legacy(venv, wheel_sharedlib_in_package_legacy):
     venv.pip('install', wheel_sharedlib_in_package_legacy)
     output = venv.python('-c', 'import mypkg; print(mypkg.example_sum(2, 5))')

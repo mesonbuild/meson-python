@@ -32,7 +32,7 @@ py.extension_module(
     include_directories: 'sub',
     install: true,
     subdir: 'mypkg',
-    install_rpath: '$ORIGIN',
+    install_rpath: '$ORIGIN:$ORIGIN/sub',
 )
 
 py.install_sources(
