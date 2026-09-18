@@ -124,6 +124,17 @@ def _compile_patterns(patterns: List[str]) -> Callable[[str], bool]:
     return typing.cast('Callable[[str], bool]', func)
 
 
+def _translate_rpath(path: str, dst: pathlib.Path) -> str:
+    root, sep, stem = path.partition('/')
+    if root == '$ORIGIN':
+        translated = f'@loader_path{sep}{stem}'
+        warnings.warn(
+            f'translated "install_rpath" argument for {str(dst)!r} '
+            f'from {path!r} to {translated!r}', stacklevel=2)
+        path = translated
+    return path
+
+
 class _Entry(typing.NamedTuple):
     dst: pathlib.Path
     src: str
@@ -188,6 +199,13 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
                 rpath = target.get('install_rpath')
                 install_rpath = rpath.split(':') if rpath else []
                 build_rpath = target.get('build_rpaths') or []
+
+                # Translate ``$ORIGIN`` to ``@loader_path`` in ``install_rpath``
+                # arguments on macOS.  This is better done here to be able to
+                # emit a meaningful warning.
+                if sys.platform == 'darwin':
+                    install_rpath = [_translate_rpath(path, dst) for path in install_rpath]
+
                 wheel_files[path].append(_Entry(dst, src, install_rpath, build_rpath))
 
     return wheel_files
