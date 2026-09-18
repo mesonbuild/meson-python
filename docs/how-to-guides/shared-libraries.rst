@@ -76,8 +76,9 @@ the Python package itself:
         install_dir: py.get_install_dir() / 'mypkg/subdir',
     )
 
-Then an extension module in the same install directory can link against the
-shared library in a portable manner by using ``install_rpath``:
+On Linux, macOS, and in general on all systems except Windows, an extension
+module can dynamically link against a shared library installed in the same
+package by using ``install_rpath`` with a relative path:
 
 .. code-block:: meson
 
@@ -86,12 +87,17 @@ shared library in a portable manner by using ``install_rpath``:
         link_with: example_lib,
         install: true,
         subdir: 'mypkg/subdir',
-        install_rpath: '$ORIGIN'
+        install_rpath: host_machine.system() == 'darwin' ? '@loader_path' : '$ORIGIN'
     )
 
-The above method will work as advertised on macOS and Linux; ``meson-python`` does
-nothing special for this case. Windows needs some special handling though, due to
-the lack of RPATH support:
+Note that Mach-O binaries on macOS use the ``@loader_path`` token to indicate
+the location of the current executable or shared library while ELF binaries use
+the ``$ORIGIN`` token.  For backward compatibility, ``meson-python`` translates
+the more common ``$ORIGIN`` token to the macOS-specific ``@loader_path`` token
+when building on macOS. However, Meson itself does not, thus relying on this
+translation is discouraged.
+
+Windows needs some special handling though, due to the lack of RPATH support:
 
 .. literalinclude:: ../../tests/packages/sharedlib-in-package/mypkg/__init__.py
    :start-after: start-literalinclude
