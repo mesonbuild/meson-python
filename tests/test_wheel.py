@@ -309,6 +309,23 @@ def test_rpath_install_precedence(venv, wheel_same_name_sharedlibs, tmp_path):
     assert int(output) == 42
 
 
+@pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+@pytest.mark.filterwarnings('ignore:translated "install_rpath" argument for ')
+def test_rpath_transitive_lookup(venv, wheel_sharedlib_chain, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_sharedlib_chain)
+    artifact.extractall(tmp_path)
+
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'chainhead' / f'chain{EXT_SUFFIX}')
+    assert f'{origin}/lib' in rpath
+
+    venv.pip('install', wheel_sharedlib_chain)
+    # RUNPATH cannot supply the extension's search path to its indirect dependency on glibc.
+    output = venv.python('-c', 'from chainhead import chain; print(chain.value())')
+    assert int(output) == 8
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires executable bit support')
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
