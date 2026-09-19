@@ -294,6 +294,21 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
         assert origin not in path
 
 
+@pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
+@pytest.mark.filterwarnings('ignore:translated "install_rpath" argument for ')
+def test_rpath_install_precedence(venv, wheel_same_name_sharedlibs, tmp_path):
+    artifact = wheel.wheelfile.WheelFile(wheel_same_name_sharedlibs)
+    artifact.extractall(tmp_path)
+
+    origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
+    rpath = mesonpy._rpath.get_rpath(tmp_path / 'same_name' / f'choice{EXT_SUFFIX}')
+    assert rpath.index(f'{origin}/private') < rpath.index(f'{origin}/competing')
+
+    venv.pip('install', wheel_same_name_sharedlibs)
+    output = venv.python('-c', 'from same_name import choice; print(choice.value())')
+    assert int(output) == 42
+
+
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires executable bit support')
 def test_executable_bit(wheel_executable_bit):
     artifact = wheel.wheelfile.WheelFile(wheel_executable_bit)
