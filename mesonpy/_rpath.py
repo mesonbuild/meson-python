@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import typing
@@ -59,13 +60,13 @@ class _MacOS(RPATH):
     def get_rpath(filepath: Path) -> list[str]:
         rpath = []
         r = subprocess.run(['otool', '-l', os.fspath(filepath)], capture_output=True, text=True)
-        rpath_tag = False
-        for line in [x.split() for x in r.stdout.split('\n')]:
-            if line == ['cmd', 'LC_RPATH']:
-                rpath_tag = True
-            elif len(line) >= 2 and line[0] == 'path' and rpath_tag:
-                rpath.append(line[1])
-                rpath_tag = False
+        lines = iter(r.stdout.splitlines())
+        for line in lines:
+            if line.strip().startswith('cmd LC_RPATH'):
+                for line in lines:
+                    if m := re.match(r'^\s*path (.+) \(offset \d+\)$', line):
+                        rpath.append(m.group(1))
+                        break
         return rpath
 
     @staticmethod

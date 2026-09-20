@@ -37,3 +37,19 @@ def test_rpath_get_set(wheel_sharedlib_in_package, tmp_path):
     set_rpath(obj, rpath, new_rpath)
     rpath = get_rpath(obj)
     assert rpath == new_rpath
+
+    new_rpath = [
+        'with two  or three   spaces',
+        'trailing space ',
+        '/some funny absolute path/(library)',
+        '@loader_path/Mach-O relative',
+        '$ORIGIN/ELF relative',
+    ]
+    set_rpath(obj, rpath, new_rpath)
+    rpath = get_rpath(obj)
+    assert rpath == new_rpath
+
+    new_rpath = ['alpha', 'beta']
+    set_rpath(obj, rpath, new_rpath)
+    rpath = get_rpath(obj)
+    assert rpath == new_rpath
