@@ -11,6 +11,19 @@
 Changelog
 +++++++++
 
+0.22.0
+======
+
+- Add support for adding RPATH entries specified with ``install_rpath``
+  argument to Meson functions that accept it.
+- Add support for removing build RPATH entries added by Meson to allow
+  executing parts of the project from the build directory.
+- Fix corner cases in handling RPATH entries and relocation of shared
+  libraries distributed as part of Python packages.
+
+Daniele Nicolodi, Mike Taves, Nathan Goldbaum, Ralf Gommers --- 25-09-2026.
+
+
 0.21.1
 ======
 
