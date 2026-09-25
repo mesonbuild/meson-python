@@ -104,6 +104,10 @@ class _MacOS(RPATH):
         add = rpath[keep:]
 
         if delete:
+            # ``install_name_tool`` does not accept repeated ``-delete_rpath``
+            # arguments. There should not be duplicated in the existing RPATH,
+            # but the assert should make this occurrence easier to debug.
+            assert unique(delete) == delete
             args = [a for p in delete for a in ('-delete_rpath', p)]
             subprocess.run(['install_name_tool', *args, os.fspath(filepath)], check=True)
 
