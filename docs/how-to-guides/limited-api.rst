@@ -4,9 +4,9 @@
 
 .. _howto-limited-api:
 
-***********************************
-Targeting the CPython Limited C API
-***********************************
+***************************
+Targeting the Limited C API
+***************************
 
 This page describes how to configure your package to build against the
 CPython `limited API`_ and build `stable ABI`_ wheels. Limited API builds
