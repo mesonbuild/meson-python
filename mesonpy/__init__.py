@@ -146,6 +146,7 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
                   exclude: List[str], include: List[str]) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
+    packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
 
@@ -163,6 +164,19 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
             path = _INSTALLATION_PATH_MAP.get(anchor)
             if path is None:
                 raise BuildError(f'Could not map installation path to an equivalent wheel directory: {str(destination)!r}')
+
+            if path == 'purelib' or path == 'platlib':
+                package = destination.parts[1]
+                other = packages.setdefault(package, path)
+                if other != path:
+                    this = os.fspath(pathlib.Path(path, *destination.parts[1:]))
+                    module = next((entry.dst for entry in wheel_files[other] if entry.dst.parts[0] == destination.parts[1]),
+                                  pathlib.Path(package))
+                    that = os.fspath(other / module)
+                    raise BuildError(
+                        f'The {package} package is split between {path} and {other}: '
+                        f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                        f'It is recommended to set it in "import(\'python\').find_installation()"')
 
             if key == 'install_subdirs' or key == 'targets' and os.path.isdir(src):
                 exclude_files = {os.path.normpath(x) for x in target.get('exclude_files', [])}
@@ -194,17 +208,6 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
                     install_rpath = [_translate_rpath(path, dst) for path in install_rpath]
 
                 wheel_files[path].append(_Entry(dst, src, install_rpath, build_rpath))
-
-    purelib = {entry.dst.parts[0]: entry.dst for entry in wheel_files.get('purelib', [])}
-    for entry in wheel_files.get('platlib', []):
-        package = entry.dst.parts[0]
-        if package in purelib:
-            this = os.fspath('platlib' / entry.dst)
-            that = os.fspath('purelib' / purelib[package])
-            raise BuildError(
-                f'The {package} package is split between platlib and purelib: '
-                f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
-                f'It is recommended to set it in "import(\'python\').find_installation()"')
 
     return wheel_files
 
