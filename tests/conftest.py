@@ -220,6 +220,10 @@ def meson_fatal_warnings():
                 'sharedlib-in-package',
                 'same-name-sharedlibs',
 
+                # The ``rust-pyo3`` package bumps into this Meson
+                # warning: ``WARNING: Library entry portable_atomic
+                # has unexpected keys "doc-scrape-examples"``.
+                'rust-pyo3',
         }:
             if meson_args is None:
                 meson_args = {}
