@@ -35,3 +35,23 @@ def test_ndebug(package_purelib_and_platlib, tmp_path, args, expected):
             ['ninja', '-C', os.fspath(project._build_dir), '-t', 'commands', '../plat.c^'],
             stdout=subprocess.PIPE, check=True).stdout
         assert (b'-DNDEBUG' in command) == expected
+
+
+def test_default_options(package_purelib_and_platlib, tmp_path, mocker):
+    meson = mocker.spy(mesonpy.Project, '_run')
+
+    project = mesonpy.Project(package_purelib_and_platlib, tmp_path)
+
+    mesonpy_default_options = {'-Dbuildtype=release', '-Db_ndebug=if-release', '-Db_vscrt=md'}
+    # Check if default options were passed
+    assert mesonpy_default_options.issubset(meson.call_args_list[0][0][1])
+
+    options = {opt['name']: opt['value'] for opt in project._info('intro-buildoptions')}
+
+    # Check if default options have taken effect
+    assert options['buildtype'] == 'release'
+    assert options['b_ndebug'] == 'if-release'
+
+    compilers = project._info('intro-compilers')
+    if compilers['build']['c']['id'] in {'msvc', 'clang-cl', 'intel-cl'}:
+        assert options['b_vscrt'] == 'md'
