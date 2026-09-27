@@ -6,13 +6,15 @@ project('purelib-platlib-split', version: '1.0.0')
 
 py = import('python').find_installation()
 
-py.install_sources(
-    'pure.py',
-    subdir: 'purelib-platlib-split',
+install_subdir(
+    'pure',
+    strip_directory: true,
+    exclude_files: get_option('empty') ? ['pure.py'] : [],
+    install_dir: py.get_install_dir() / 'purelib-platlib-split',
 )
 
-py.install_sources(
-    'plat.py',
-    subdir: 'purelib-platlib-split',
-    pure: false,
+install_subdir(
+    'plat',
+    strip_directory: true,
+    install_dir: py.get_install_dir(pure: false) / 'purelib-platlib-split',
 )

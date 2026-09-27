@@ -195,18 +195,16 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
 
                 wheel_files[path].append(_Entry(dst, src, install_rpath, build_rpath))
 
-    packages: Dict[str, Tuple[str, pathlib.Path]] = {}
-    for path in ('purelib', 'platlib'):
-        for entry in wheel_files.get(path, []):
-            package = entry.dst.parts[0]
-            other, module = packages.setdefault(package, (path, entry.dst))
-            if other != path:
-                this = os.fspath(path / entry.dst)
-                that = os.fspath(other / module)
-                raise BuildError(
-                    f'The {package} package is split between {path} and {other}: '
-                    f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
-                    f'It is recommended to set it in "import(\'python\').find_installation()"')
+    purelib = {entry.dst.parts[0]: entry.dst for entry in wheel_files.get('purelib', [])}
+    for entry in wheel_files.get('platlib', []):
+        package = entry.dst.parts[0]
+        if package in purelib:
+            this = os.fspath('platlib' / entry.dst)
+            that = os.fspath('purelib' / purelib[package])
+            raise BuildError(
+                f'The {package} package is split between platlib and purelib: '
+                f'{this!r} and {that!r}, a "pure: false" argument may be missing in meson.build. '
+                f'It is recommended to set it in "import(\'python\').find_installation()"')
 
     return wheel_files
 
