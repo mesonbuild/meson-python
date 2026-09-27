@@ -371,6 +371,38 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
             project.wheel(tmp_path)
 
 
+@pytest.mark.skipif(MESON_VERSION < (1, 2, 0), reason='meson too old to report excluded files')
+@pytest.mark.parametrize('empty_first', [True, False])
+def test_purelib_platlib_empty_subdir(tmp_path, empty_first):
+    source = tmp_path / 'src'
+    source.mkdir()
+    (source / 'pyproject.toml').write_text('')
+    for name in ('excluded', 'included'):
+        (source / name).mkdir()
+        (source / name / 'module.py').write_text('value = 42\n')
+    installs = [
+        "install_subdir('excluded', strip_directory: true, exclude_files: 'module.py', "
+        "install_dir: py.get_install_dir(pure: true) / 'example')",
+        "install_subdir('included', strip_directory: true, "
+        "install_dir: py.get_install_dir(pure: false) / 'example')",
+    ]
+    if not empty_first:
+        installs.reverse()
+    (source / 'meson.build').write_text(
+        "project('empty-subdir', version: '1.0')\n"
+        "py = import('python').find_installation()\n" + '\n'.join(installs))
+
+    project = mesonpy.Project(source, tmp_path / 'build')
+    filename = project.wheel(tmp_path)
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        'empty_subdir-1.0.dist-info/METADATA',
+        'empty_subdir-1.0.dist-info/RECORD',
+        'empty_subdir-1.0.dist-info/WHEEL',
+        'example/module.py',
+    }
+
+
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
 @pytest.mark.parametrize('arch', ['x86_64', 'arm64'])
 def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, arch):
