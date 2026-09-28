@@ -460,7 +460,7 @@ def test_install_subdir(wheel_install_subdir):
     # Meson 1.1.0, see https://github.com/mesonbuild/meson/pull/11432.
     # Run the test anyway to ensure that meson-python can produce a
     # wheel also for older versions of Meson.
-    if MESON_VERSION >= (1, 1, 99):
+    if MESON_VERSION >= (1, 1, 0):
         assert set(artifact.namelist()) == {
             'install_subdir-1.0.0.dist-info/METADATA',
             'install_subdir-1.0.0.dist-info/RECORD',
