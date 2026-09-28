@@ -371,7 +371,7 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
             project.wheel(tmp_path)
 
 
-@pytest.mark.skipif(MESON_VERSION < (1, 2, 0), reason='meson too old to report excluded files')
+@pytest.mark.skipif(MESON_VERSION < (1, 1, 0), reason='meson too old to report excluded files')
 def test_purelib_platlib_empty_subdir(package_purelib_platlib_split, tmp_path):
     filename = mesonpy.build_wheel(tmp_path, {'setup-args': ['-Dempty=true']})
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)

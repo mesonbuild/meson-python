@@ -13,8 +13,9 @@ install_subdir(
     install_dir: py.get_install_dir() / 'purelib-platlib-split',
 )
 
-py.install_sources(
-    'plat.py',
-    subdir: 'purelib-platlib-split',
-    pure: false,
+# Use install_subdir() so this entry follows purelib in the install plan.
+install_subdir(
+    'plat',
+    strip_directory: true,
+    install_dir: py.get_install_dir(pure: false) / 'purelib-platlib-split',
 )
