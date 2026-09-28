@@ -25,3 +25,25 @@ install_subdir(
   exclude_files: 'deep/excluded.py',
   install_dir: py.get_install_dir(pure: false),
 )
+
+# The two install_subdir() below are used to verify package split checks in
+# presence of install_subdir() that do not result in any file added to the
+# wheel.
+
+# Due to the exclude_files argument, this install_subdir() does not result
+# into any file installed, however, this is supported only with Meson 1.1.0
+# and later.  For simplicity, leave it out on older Meson versions.
+if meson.version().version_compare('>= 1.1')
+    install_subdir(
+        'purelib',
+        strip_directory: true,
+        exclude_files: 'excluded.py',
+        install_dir: py.get_install_dir(pure: true) / 'example',
+    )
+endif
+
+install_subdir(
+    'platlib',
+    strip_directory: true,
+    install_dir: py.get_install_dir(pure: false) / 'example',
+)
