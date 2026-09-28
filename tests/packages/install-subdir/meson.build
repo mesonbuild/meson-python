@@ -7,23 +7,23 @@ project('install-subdir', version: '1.0.0')
 py = import('python').find_installation()
 
 install_subdir(
-  'subdir',
-  exclude_files: 'excluded.py',
-  exclude_directories: 'excluded',
-  install_dir: py.get_install_dir(pure: false),
+    'subdir',
+    exclude_files: 'excluded.py',
+    exclude_directories: 'excluded',
+    install_dir: py.get_install_dir(pure: false),
 )
 
 install_subdir(
-  'strip',
-  strip_directory: true,
-  exclude_files: 'excluded.py',
-  install_dir: py.get_install_dir(pure: false) / 'test',
+    'strip',
+    strip_directory: true,
+    exclude_files: 'excluded.py',
+    install_dir: py.get_install_dir(pure: false) / 'test',
 )
 
 install_subdir(
-  'nested',
-  exclude_files: 'deep/excluded.py',
-  install_dir: py.get_install_dir(pure: false),
+    'nested',
+    exclude_files: 'deep/excluded.py',
+    install_dir: py.get_install_dir(pure: false),
 )
 
 # The two install_subdir() below are used to verify package split checks in
