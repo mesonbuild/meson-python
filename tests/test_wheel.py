@@ -446,6 +446,7 @@ def test_install_subdir(wheel_install_subdir):
             'install_subdir-1.0.0.dist-info/METADATA',
             'install_subdir-1.0.0.dist-info/RECORD',
             'install_subdir-1.0.0.dist-info/WHEEL',
+            'example/lib.py',
             'subdir/__init__.py',
             'subdir/test.py',
             'test/module.py',
