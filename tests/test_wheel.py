@@ -37,14 +37,6 @@ PLATFORM = adjust_packaging_platform_tag(tag.platform)
 BUILD_RPATH_SUPPORT = MESON_VERSION >= (1, 9)
 
 
-def wheel_contents(artifact):
-    # Sometimes directories have entries, sometimes not, so we filter them out.
-    return {
-        entry for entry in artifact.namelist()
-        if not entry.endswith('/')
-    }
-
-
 def test_scipy_like(wheel_scipy_like):
     # This test is meant to exercise features commonly needed by a regular
     # Python package for scientific computing or data science:
@@ -73,7 +65,7 @@ def test_scipy_like(wheel_scipy_like):
             f'mypkg/extmod{EXT_IMP_SUFFIX}',
             f'mypkg/cy_extmod{EXT_IMP_SUFFIX}',
         })
-    assert wheel_contents(artifact) == expecting
+    assert set(artifact.namelist()) == expecting
 
     name = artifact.parsed_filename
     assert name.group('pyver') == INTERPRETER
@@ -99,13 +91,13 @@ def test_purelib_and_platlib(wheel_purelib_and_platlib):
             f'plat{EXT_IMP_SUFFIX}'
         })
 
-    assert wheel_contents(artifact) == expecting
+    assert set(artifact.namelist()) == expecting
 
 
 def test_pure(wheel_pure):
     artifact = wheel.wheelfile.WheelFile(wheel_pure)
 
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'pure-1.0.0.dist-info/METADATA',
         'pure-1.0.0.dist-info/RECORD',
         'pure-1.0.0.dist-info/WHEEL',
@@ -116,7 +108,7 @@ def test_pure(wheel_pure):
 def test_configure_data(wheel_configure_data):
     artifact = wheel.wheelfile.WheelFile(wheel_configure_data)
 
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'configure_data.py',
         'configure_data-1.0.0.dist-info/METADATA',
         'configure_data-1.0.0.dist-info/RECORD',
@@ -133,7 +125,7 @@ def test_contents_license_file(wheel_license_file):
 def test_license_pep639(wheel_license_pep639):
     artifact = wheel.wheelfile.WheelFile(wheel_license_pep639)
 
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'license_pep639-1.0.0.dist-info/METADATA',
         'license_pep639-1.0.0.dist-info/RECORD',
         'license_pep639-1.0.0.dist-info/WHEEL',
@@ -155,7 +147,7 @@ def test_license_pep639(wheel_license_pep639):
 def test_contents(package_library, wheel_library):
     artifact = wheel.wheelfile.WheelFile(wheel_library)
 
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         f'.library.mesonpy.libs/libexample{LIB_SUFFIX}',
         'library-1.0.0.data/headers/examplelib.h',
         'library-1.0.0.data/scripts/example',
@@ -387,7 +379,7 @@ def test_archflags_envvar(package_purelib_and_platlib, monkeypatch, tmp_path, ar
 def test_subprojects(package_subproject, tmp_path):
     filename = mesonpy.build_wheel(tmp_path)
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'subproject-1.0.0.dist-info/METADATA',
         'subproject-1.0.0.dist-info/RECORD',
         'subproject-1.0.0.dist-info/WHEEL',
@@ -402,7 +394,7 @@ def test_subprojects(package_subproject, tmp_path):
 def test_skip_subprojects(package_subproject, tmp_path, arg):
     filename = mesonpy.build_wheel(tmp_path, {'install-args': [arg]})
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'subproject-1.0.0.dist-info/METADATA',
         'subproject-1.0.0.dist-info/RECORD',
         'subproject-1.0.0.dist-info/WHEEL',
@@ -450,7 +442,7 @@ def test_install_subdir(wheel_install_subdir):
     # Run the test anyway to ensure that meson-python can produce a
     # wheel also for older versions of Meson.
     if MESON_VERSION >= (1, 1, 99):
-        assert wheel_contents(artifact) == {
+        assert set(artifact.namelist()) == {
             'install_subdir-1.0.0.dist-info/METADATA',
             'install_subdir-1.0.0.dist-info/RECORD',
             'install_subdir-1.0.0.dist-info/WHEEL',
@@ -472,7 +464,7 @@ def test_encoding(package_encoding, tmp_path):
     with mesonpy._project() as project:
         wheelname = project.wheel(tmp_path)
     artifact = wheel.wheelfile.WheelFile(tmp_path / wheelname)
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'encoding-1.0.0.dist-info/METADATA',
         'encoding-1.0.0.dist-info/RECORD',
         'encoding-1.0.0.dist-info/WHEEL',
@@ -483,7 +475,7 @@ def test_encoding(package_encoding, tmp_path):
 def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
     filename = mesonpy.build_wheel(tmp_path)
     artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'custom_target_dir-1.0.0.dist-info/METADATA',
         'custom_target_dir-1.0.0.dist-info/RECORD',
         'custom_target_dir-1.0.0.dist-info/WHEEL',
@@ -496,7 +488,7 @@ def test_custom_target_install_dir(package_custom_target_dir, tmp_path):
 @pytest.mark.skipif(sys.platform not in {'linux', 'darwin'}, reason='Not supported on this platform')
 def test_cmake_subproject(wheel_cmake_subproject):
     artifact = wheel.wheelfile.WheelFile(wheel_cmake_subproject)
-    assert wheel_contents(artifact) == {
+    assert set(artifact.namelist()) == {
         'cmake_subproject-1.dist-info/METADATA',
         'cmake_subproject-1.dist-info/RECORD',
         'cmake_subproject-1.dist-info/WHEEL',
