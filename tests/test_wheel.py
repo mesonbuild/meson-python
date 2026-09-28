@@ -372,10 +372,16 @@ def test_purelib_platlib_split(package_purelib_platlib_split, tmp_path):
 
 
 @pytest.mark.skipif(MESON_VERSION < (1, 2, 0), reason='meson too old to report excluded files')
-def test_purelib_platlib_empty_subdir(package_purelib_platlib_split, tmp_path):
-    with pytest.raises(mesonpy.BuildError, match='The purelib-platlib-split package is split'):
-        with mesonpy._project({'setup-args': ['-Dempty=true']}) as project:
-            project.wheel(tmp_path)
+@pytest.mark.parametrize('empty', ['pure', 'plat'])
+def test_purelib_platlib_empty_subdir(package_purelib_platlib_split, tmp_path, empty):
+    filename = mesonpy.build_wheel(tmp_path, {'setup-args': [f'-Dempty={empty}']})
+    artifact = wheel.wheelfile.WheelFile(tmp_path / filename)
+    assert wheel_contents(artifact) == {
+        'purelib_platlib_split-1.0.0.dist-info/METADATA',
+        'purelib_platlib_split-1.0.0.dist-info/RECORD',
+        'purelib_platlib_split-1.0.0.dist-info/WHEEL',
+        f'purelib-platlib-split/{"plat" if empty == "pure" else "pure"}.py',
+    }
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='macOS specific test')
