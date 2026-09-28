@@ -284,7 +284,7 @@ def test_link_against_local_lib_rpath_ldflags(package_link_against_local_lib, tm
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
-def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
+def test_unneeded_rpath(wheel_purelib_and_platlib, tmp_path):
     artifact = wheel.wheelfile.WheelFile(wheel_purelib_and_platlib)
     artifact.extractall(tmp_path)
 
