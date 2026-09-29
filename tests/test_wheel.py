@@ -290,8 +290,10 @@ def test_uneeded_rpath(wheel_purelib_and_platlib, tmp_path):
 
     origin = '@loader_path' if sys.platform == 'darwin' else '$ORIGIN'
     rpath = mesonpy._rpath.get_rpath(tmp_path / f'plat{EXT_SUFFIX}')
-    for path in rpath:
-        assert origin not in path
+
+    assert not any(path.startswith(origin) for path in rpath)
+    assert '/usr/local/lib' in rpath
+    assert not any(path.endswith('private') for path in rpath) or not BUILD_RPATH_SUPPORT
 
 
 @pytest.mark.skipif(sys.platform in {'win32', 'cygwin'}, reason='requires RPATH support')
