@@ -19,14 +19,21 @@ ninja = "*"
 pkg-config = "*"
 cmake = "*"
 patchelf = "*"
-c-compiler = "*"
-cxx-compiler = "*"
+geos = "*"
 pip = "*"
 python-build = "*"
 cython = "*"
 pytest = "*"
 pytest-mock = "*"
 wheel = "*"
+
+[feature.compilers.dependencies]
+c-compiler = "*"
+cxx-compiler = "*"
+
+[environments]
+default = { features = ["compilers"], solve-group = "test" }
+system-compilers = { features = [], solve-group = "test" }
 
 [tasks]
 test = { cmd = "pytest", cwd = "../.." }
