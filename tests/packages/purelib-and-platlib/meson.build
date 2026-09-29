@@ -16,4 +16,5 @@ py.extension_module(
     'plat.c',
     install: true,
     install_tag: 'platlib',
+    build_rpath: ':'.join(['/usr/local/lib', meson.current_build_dir() / 'private']),
 )
