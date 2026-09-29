@@ -143,12 +143,15 @@ class _Entry(typing.NamedTuple):
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
-                  exclude: List[str], include: List[str]) -> DefaultDict[str, List[_Entry]]:
+                  exclude: List[str], include: List[str],
+                  build_dir: str) -> DefaultDict[str, List[_Entry]]:
     """Map files to the wheel, organized by wheel installation directory."""
     wheel_files: DefaultDict[str, List[_Entry]] = collections.defaultdict(list)
     packages: Dict[str, str] = {}
     excluded = _compile_patterns(exclude)
     included = _compile_patterns(include)
+    build_dir = os.path.normpath(build_dir)
+    assert os.path.isabs(build_dir)
 
     for key, group in sources.items():
         for src, target in group.items():
@@ -205,6 +208,25 @@ def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
                 # emit a meaningful warning.
                 if sys.platform == 'darwin':
                     install_rpath = [_translate_rpath(path, dst) for path in install_rpath]
+
+                # ``build_rpath`` lists the RPATH entries to remove from the
+                # binary.  Meson automatically adds RPATH entries for shared
+                # libraries built as part of the project, using relative paths
+                # anchored at ``$ORIGIN`` or ``@loader_path``, and for shared
+                # libraries from dependencies installed in non-standard
+                # locations, using absolute paths.  Installed binaries need
+                # the absolute paths to find their external dependencies, so
+                # we drop them from the list.  The relative paths are only
+                # meaningful inside the build tree, so we leave them in the
+                # list to be removed.  Additional entries can be added with
+                # the ``build_rpath`` argument passed to Meson functions.  The
+                # most common use case for these is to point at directories
+                # inside the build directory.  These may be absolute paths,
+                # but they are irrelevant for installed binaries, so we leave
+                # them too in the list to be removed.
+                build_rpath = [path for path in build_rpath
+                               if not path.startswith('/')
+                               or os.path.commonpath((os.path.normpath(path), build_dir)) == build_dir]
 
                 wheel_files[path].append(_Entry(dst, src, install_rpath, build_rpath))
 
@@ -1015,7 +1037,7 @@ class Project():
                 sources[key][target] = details
 
         # Map Meson installation locations to wheel paths.
-        return _map_to_wheel(sources, self._excluded_files, self._included_files)
+        return _map_to_wheel(sources, self._excluded_files, self._included_files, str(self._build_dir))
 
     @property
     def _meson_name(self) -> str:
