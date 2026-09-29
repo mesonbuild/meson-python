@@ -336,7 +336,16 @@ jobs:
         run: mypy -p mesonpy
 
   pixi:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: pixi
+            environment: default
+          - name: pixi-system-compilers
+            environment: system-compilers
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -347,11 +356,12 @@ jobs:
         with:
           pixi-version: v0.77.1
           manifest-path: .github/workflows/pixi.toml
+          environments: ${{ matrix.environment }}
           cache: false
 
       - name: Run tests
         working-directory: .github/workflows
-        run: pixi run test
+        run: pixi run --environment ${{ matrix.environment }} test
 
   uv-sync:
     runs-on: ubuntu-latest
