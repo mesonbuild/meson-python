@@ -11,6 +11,16 @@
 Changelog
 +++++++++
 
+0.22.1
+======
+
+- Do not remove absolute build RPATH entries, unless pointing within the
+  build directory. Fixes an issue when using system compilers in a conda
+  environment.
+
+Daniele Nicolodi, Ralf Gommers --- 01-10-2026.
+
+
 0.22.0
 ======
 
