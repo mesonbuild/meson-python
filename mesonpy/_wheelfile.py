@@ -42,7 +42,7 @@ class WheelFile:
 
     @staticmethod
     def timestamp(mtime: Optional[float] = None) -> Tuple[int, int, int, int, int, int]:
-        timestamp = int(os.environ.get('SOURCE_DATE_EPOCH', mtime or time.time()))
+        timestamp = int(os.environ.get('SOURCE_DATE_EPOCH', mtime if mtime is not None else time.time()))
         # The ZIP file format does not support timestamps before 1980.
         timestamp = max(timestamp, MIN_TIMESTAMP)
         return time.gmtime(timestamp)[0:6]

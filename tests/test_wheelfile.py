@@ -6,6 +6,7 @@ import contextlib
 import time
 import zipfile
 
+import pytest
 import wheel.wheelfile
 
 import mesonpy._wheelfile
@@ -42,6 +43,12 @@ def test_source_date_epoch(tmp_path, monkeypatch):
     with wheel.wheelfile.WheelFile(path, 'r') as w:
         for entry in w.infolist():
             assert entry.date_time == time.gmtime(epoch)[:6]
+
+
+@pytest.mark.parametrize('mtime', [0, 283993200, 1668871912])
+def test_timestamp(monkeypatch, mtime):
+    monkeypatch.delenv('SOURCE_DATE_EPOCH', raising=False)
+    assert mesonpy._wheelfile.WheelFile.timestamp(mtime) == max(time.gmtime(mtime)[:6], (1980, 1, 1, 0, 0, 0))
 
 
 def test_compression(tmp_path):
