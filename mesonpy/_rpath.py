@@ -37,7 +37,7 @@ class RPATH:
         old_rpath = cls.get_rpath(filepath)
 
         # Prepend install_rpath entries.
-        new_rpath = install_rpath
+        new_rpath = install_rpath[:]
 
         # Merge with existing entries, excluding build_rpath entries.  Meson
         # adds a padding entry to RPATH composed of enough ``X`` characters
