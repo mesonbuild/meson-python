@@ -12,6 +12,7 @@ import typing
 
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
     Path = str | os.PathLike[str]
     T = typing.TypeVar('T')
 
@@ -33,11 +34,12 @@ class RPATH:
         raise NotImplementedError
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: list[str], build_rpath: list[str], libs_path: str | None) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: Sequence[str],
+                  build_rpath: Sequence[str], libs_path: str | None) -> None:
         old_rpath = cls.get_rpath(filepath)
 
         # Prepend install_rpath entries.
-        new_rpath = install_rpath
+        new_rpath = list(install_rpath)
 
         # Merge with existing entries, excluding build_rpath entries.  Meson
         # adds a padding entry to RPATH composed of enough ``X`` characters
@@ -66,7 +68,8 @@ class RPATH:
 class _Windows(RPATH):
 
     @classmethod
-    def fix_rpath(cls, filepath: Path, install_rpath: list[str], build_rpath: list[str], libs_path: str | None) -> None:
+    def fix_rpath(cls, filepath: Path, install_rpath: Sequence[str],
+                  build_rpath: Sequence[str], libs_path: str | None) -> None:
         pass
 
 

@@ -138,8 +138,8 @@ def _translate_rpath(path: str, dst: pathlib.Path) -> str:
 class _Entry(typing.NamedTuple):
     dst: pathlib.Path
     src: str
-    install_rpath: List[str] = []
-    build_rpath: List[str] = []
+    install_rpath: Sequence[str] = ()
+    build_rpath: Sequence[str] = ()
 
 
 def _map_to_wheel(sources: Dict[str, Dict[str, Any]],
@@ -490,7 +490,7 @@ class _WheelBuilder():
 
     def _install_path(self, wheel_file: mesonpy._wheelfile.WheelFile,
                       origin: Path, destination: pathlib.Path,
-                      install_rpath: List[str], build_rpath: List[str]) -> None:
+                      install_rpath: Sequence[str], build_rpath: Sequence[str]) -> None:
         """Add a file to the wheel."""
 
         if self._has_internal_libs and _is_native(origin):
