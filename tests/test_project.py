@@ -332,6 +332,35 @@ def test_invalid_build_dir(package_pure, tmp_path, mocker):
     assert '--reconfigure' not in meson.call_args_list[0].args[1]
     project.build()
 
+def test_reconfigure_preserves_config(package_simple, tmp_path):
+    # initial configuration
+    project = mesonpy.Project(package_simple, tmp_path, meson_args={
+        'setup': ['-Dbuildtype=debug', '-Dwarning_level=2'],
+    })
+
+    initial_options = {opt['name']: opt['value'] for opt in project._info('intro-buildoptions')}
+
+    assert initial_options['buildtype'] == 'debug'
+    assert initial_options['debug'] is True
+    assert initial_options['warning_level'] == '2'
+
+    # reconfiguration with a new option
+    project = mesonpy.Project(package_simple, tmp_path, meson_args={
+        'setup': ['-Doptimization=2'],
+    })
+
+    reconfigure_options = {opt['name']: opt['value'] for opt in project._info('intro-buildoptions')}
+
+    assert reconfigure_options['buildtype'] == 'debug'
+    assert reconfigure_options['debug'] is True
+    assert reconfigure_options['warning_level'] == '2'
+
+    assert initial_options != reconfigure_options
+
+    initial_options['optimization'] = '2'
+    assert initial_options == reconfigure_options
+
+
 
 @pytest.mark.skipif(not os.getenv('CI') or sys.platform != 'win32', reason='requires MSVC')
 def test_compiler(venv, package_detect_compiler, tmp_path):
