@@ -34,6 +34,27 @@ def test_unsupported_python_version(package_unsupported_python_version):
             pass
 
 
+def test_prerelease_python_version(tmp_path, monkeypatch):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+        requires-python = '>=3.9'
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', version: '1.0.0')
+    '''), encoding='utf8')
+
+    monkeypatch.setattr(platform, 'python_version', lambda: '3.12.0rc1')
+
+    mesonpy.Project(tmp_path, tmp_path / 'build')
+
+
 def test_missing_meson_version(package_missing_meson_version):
     with pytest.raises(pyproject_metadata.ConfigurationError, match='Section "project" missing in pyproject.toml'):
         with mesonpy._project():

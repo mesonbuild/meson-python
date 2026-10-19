@@ -925,8 +925,7 @@ class Project():
 
         # verify that we are running on a supported interpreter
         if self._metadata.requires_python:
-            self._metadata.requires_python.prereleases = True
-            if platform.python_version().rstrip('+') not in self._metadata.requires_python:
+            if not self._metadata.requires_python.contains(platform.python_version().rstrip('+'), prereleases=True):
                 raise MesonBuilderError(
                     f'The package requires Python version {self._metadata.requires_python}, '
                     f'running on {platform.python_version()}')
