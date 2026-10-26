@@ -39,7 +39,17 @@ the ``-C`` short command line option:
                -Csetup-args="-Dvalue=1" \
                -Ccompile-args="-j6"
 
-Refer to the `build`_ and `pip`_ documentation for details.  This
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel \
+               -Csetup-args="-Doption=true" \
+               -Csetup-args="-Dvalue=1" \
+               -Ccompile-args="-j6"
+
+Refer to the `build`_, `pip`_, and `uv`_ documentation for details.  This
 example uses the ``python -m pip wheel`` command to build a Python wheel
 that can be later installed or distributed. To build a package and
 immediately install it, replace ``wheel`` with ``install``.  See the
@@ -60,6 +70,7 @@ immediately install it, replace ``wheel`` with ``install``.  See the
 
 .. _build: https://pypa-build.readthedocs.io/en/stable/
 .. _pip: https://pip.pypa.io/
+.. _uv: https://docs.astral.sh/uv/
 
 
 Using a persistent build directory
@@ -87,6 +98,13 @@ For example:
        .. code-block:: console
 
           $ python -m pip install . -Cbuild-dir=build
+
+    .. tab-item:: uv
+       :sync: key_uv
+
+       .. code-block:: console
+
+          $ uv build --wheel -Cbuild-dir=build
 
 After running this command, the ``build`` directory will contain all
 the build artifacts and support files created by ``meson``, ``ninja``

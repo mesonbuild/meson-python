@@ -92,6 +92,13 @@ To set this option temporarily at build-time:
 
          $ python -m pip wheel -Csetup-args="--default-library=static" .
 
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel -Csetup-args="--default-library=static" .
+
 
 Select the build targets to include in the wheel
 ------------------------------------------------
@@ -134,6 +141,13 @@ To set this option temporarily at build-time:
 
          $ python -m pip wheel -Cinstall-args="--tags=runtime,python-runtime" .
 
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel -Cinstall-args="--tags=runtime,python-runtime" .
+
 
 Set the build optimization level
 --------------------------------
@@ -166,6 +180,13 @@ To set this option temporarily at build-time:
       .. code-block:: console
 
          $ python -m pip wheel -Csetup-args="-Doptimization=3" .
+
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel -Csetup-args="-Doptimization=3" .
 
 
 .. _vsenv-example:
@@ -215,3 +236,10 @@ To set this option temporarily at build-time:
       .. code-block:: console
 
          $ python -m pip wheel -Csetup-args="--vsenv" .
+
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel -Csetup-args="--vsenv" .
