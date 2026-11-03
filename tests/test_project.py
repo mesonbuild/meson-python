@@ -28,10 +28,24 @@ from mesonpy._util import chdir
 from .conftest import MESON_VERSION, in_git_repo_context, metadata, package_dir
 
 
-def test_unsupported_python_version(package_unsupported_python_version):
+def test_unsupported_python_version(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        version = '1.0.0'
+        requires-python = '==1.0.0'
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', version: '1.0.0')
+    '''), encoding='utf8')
+
     with pytest.raises(mesonpy.MesonBuilderError, match='The package requires Python version ==1.0.0'):
-        with mesonpy._project():
-            pass
+        mesonpy.Project(tmp_path, tmp_path / 'build')
 
 
 def test_prerelease_python_version(tmp_path, monkeypatch):
@@ -55,16 +69,38 @@ def test_prerelease_python_version(tmp_path, monkeypatch):
     mesonpy.Project(tmp_path, tmp_path / 'build')
 
 
-def test_missing_meson_version(package_missing_meson_version):
+def test_missing_meson_version(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test')
+    '''), encoding='utf8')
+
     with pytest.raises(pyproject_metadata.ConfigurationError, match='Section "project" missing in pyproject.toml'):
-        with mesonpy._project():
-            pass
+        mesonpy.Project(tmp_path, tmp_path / 'build')
 
 
-def test_missing_dynamic_version(package_missing_dynamic_version):
+def test_missing_dynamic_version(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'test'
+        dynamic = ['version']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test')
+    '''), encoding='utf8')
+
     with pytest.raises(pyproject_metadata.ConfigurationError, match='Field "version" declared as dynamic but'):
-        with mesonpy._project():
-            pass
+        mesonpy.Project(tmp_path, tmp_path / 'build')
 
 
 @pytest.mark.skipif(MESON_VERSION < (1, 6, 0), reason='meson too old')
@@ -196,7 +232,23 @@ def test_dynamic_license_files(tmp_path):
     '''))
 
 
-def test_user_args(package_user_args, tmp_path, monkeypatch):
+def test_user_args(tmp_path, monkeypatch):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [tool.meson-python.args]
+        dist = ['config-dist']
+        setup = ['config-setup']
+        compile = ['config-compile']
+        install = ['--skip-subprojects=config']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('test', version: '1.0.0')
+    '''), encoding='utf8')
+
     project_run = mesonpy.Project._run
     cmds = []
     args = []
@@ -227,9 +279,9 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         'compile-args': ('cli-compile',),
     }
 
-    with in_git_repo_context():
-        mesonpy.build_sdist(tmp_path, config_settings)
-        mesonpy.build_wheel(tmp_path, config_settings)
+    with chdir(tmp_path), in_git_repo_context():
+        mesonpy.build_sdist(tmp_path / 'dist', config_settings)
+        mesonpy.build_wheel(tmp_path / 'dist', config_settings)
 
     # check that the right commands are executed, namely that 'meson
     # compile' is used on Windows rather than a 'ninja' direct
@@ -256,10 +308,32 @@ def test_user_args(package_user_args, tmp_path, monkeypatch):
         assert expected_args.issubset(cmd_args)
 
 
-@pytest.mark.parametrize('package', ('top-level', 'meson-args'))
-def test_unknown_user_args(package, tmp_path_session):
+def test_unknown_user_args_key(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [tool.meson-python]
+        unknown = {}
+    '''), encoding='utf8')
+
     with pytest.raises(mesonpy.ConfigError):
-        mesonpy.Project(package_dir / f'unknown-user-args-{package}', tmp_path_session)
+        mesonpy.Project(tmp_path, tmp_path / 'build')
+
+
+def test_unknown_meson_args_key(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [tool.meson-python.args]
+        unknown = []
+    '''), encoding='utf8')
+
+    with pytest.raises(mesonpy.ConfigError):
+        mesonpy.Project(tmp_path, tmp_path / 'build')
 
 
 def test_install_tags(package_purelib_and_platlib, tmp_path_session):
