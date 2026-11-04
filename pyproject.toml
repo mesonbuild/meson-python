@@ -55,6 +55,7 @@ test = [
   'pytest-cov',
   'pytest-mock',
   'cython >= 3.0.3', # required for Python 3.12 support
+  'vcs-versioning', # used by the version-vcs-versioning test package
   'wheel',
 ]
 docs = [
