@@ -101,6 +101,13 @@ To build a stable ABI wheel, explicitly enable limited API builds:
 
          $ python -m pip wheel -Csetup-args="-Dpython.allow_limited_api=true" .
 
+   .. tab-item:: uv
+      :sync: key_uv
+
+      .. code-block:: console
+
+         $ uv build --wheel -Csetup-args="-Dpython.allow_limited_api=true" .
+
 
 .. _limited-api-wheel-tags:
 

@@ -11,3 +11,5 @@ dist/
 .coverage
 tests/packages/**/.wraplock
 *.lock
+config.bat
+node_modules

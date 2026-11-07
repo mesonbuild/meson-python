@@ -11,6 +11,7 @@ Implements PEP 517 hooks.
 
 from __future__ import annotations
 
+import utils.session
 import argparse
 import collections
 import contextlib
