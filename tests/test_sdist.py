@@ -13,6 +13,8 @@ import pytest
 
 import mesonpy
 
+from mesonpy._util import chdir
+
 from .conftest import MESON_VERSION, in_git_repo_context, metadata
 
 
@@ -72,8 +74,25 @@ def test_pep621_metadata(sdist_full_metadata):
     '''))
 
 
-def test_dynamic_version(sdist_dynamic_version):
-    with tarfile.open(sdist_dynamic_version, 'r:gz') as sdist:
+def test_dynamic_version(tmp_path):
+    tmp_path.joinpath('pyproject.toml').write_text(textwrap.dedent('''
+        [build-system]
+        build-backend = 'mesonpy'
+        requires = ['meson-python']
+
+        [project]
+        name = 'dynamic-version'
+        dynamic = ['version']
+    '''), encoding='utf8')
+
+    tmp_path.joinpath('meson.build').write_text(textwrap.dedent('''
+        project('dynamic-version', version: '1.0.0')
+    '''), encoding='utf8')
+
+    with chdir(tmp_path), in_git_repo_context():
+        archive = mesonpy.build_sdist(tmp_path / 'dist', {})
+
+    with tarfile.open(tmp_path / 'dist' / archive, 'r:gz') as sdist:
         sdist_pkg_info = sdist.extractfile('dynamic_version-1.0.0/PKG-INFO').read()
 
     assert metadata(sdist_pkg_info) == metadata(textwrap.dedent('''\

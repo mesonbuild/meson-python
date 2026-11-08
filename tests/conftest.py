@@ -166,7 +166,6 @@ def generate_wheel_fixture(package):
 def generate_editable_fixture(package):
     @pytest.fixture(scope='session')
     def fixture(tmp_path_session):
-        shutil.rmtree(package_dir / package / '.mesonpy' / 'editable', ignore_errors=True)
         with chdir(package_dir / package):
             return tmp_path_session / mesonpy.build_editable(tmp_path_session)
     return fixture
