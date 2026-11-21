@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
+import shutil
 import stat
+import subprocess
 import sys
 import tarfile
 import textwrap
@@ -12,6 +14,8 @@ import time
 import pytest
 
 import mesonpy
+
+from mesonpy._util import chdir
 
 from .conftest import MESON_VERSION, in_git_repo_context, metadata
 
@@ -118,6 +122,37 @@ def test_contents_subdirs(sdist_subdirs):
 
     # All the archive members have a valid mtime.
     assert 0 not in mtimes
+
+
+@pytest.mark.parametrize('from_sdist', [False, True], ids=['checkout', 'sdist'])
+def test_native_library_bindings(package_native_library, tmp_path, venv, from_sdist):
+    source = shutil.copytree(package_native_library, tmp_path / 'source')
+    bindings = source / 'python'
+    link = bindings / 'subprojects' / 'examplelib'
+    if sys.platform == 'win32':
+        # A directory junction works without Windows Developer Mode.
+        subprocess.run(['cmd', '/c', 'mklink', '/J', link, source], check=True)
+    else:
+        link.symlink_to('../..', target_is_directory=True)
+
+    if from_sdist:
+        with in_git_repo_context(source), chdir(bindings):
+            sdist = tmp_path / mesonpy.build_sdist(tmp_path)
+        # A wheel built from the sdist must not depend on the original checkout.
+        source.rename(tmp_path / 'original-checkout')
+        with tarfile.open(sdist) as archive:
+            native = 'example-1.0.0/subprojects/examplelib/'
+            for name in ('meson.build', 'src/example.c', 'src/example.h'):
+                assert archive.getmember(native + name).isreg()
+            if hasattr(tarfile, 'data_filter'):
+                archive.extraction_filter = tarfile.data_filter
+            archive.extractall(tmp_path)
+        bindings = tmp_path / 'example-1.0.0'
+
+    with chdir(bindings):
+        wheel = tmp_path / mesonpy.build_wheel(tmp_path, config_settings={'setup-args': '--wrap-mode=nodownload'})
+    venv.pip('install', '--no-index', '--no-deps', str(wheel))
+    assert venv.python('-I', '-c', 'import example; print(example.add(19, 23))').strip() == '42'
 
 
 def test_contents_unstaged(package_pure, tmp_path):
