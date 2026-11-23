@@ -272,6 +272,31 @@ to build in, it must be activated (otherwise ``meson`` or another executable
 may not be found).
 
 
+Installing generated Python files
+---------------------------------
+
+If you generate a Python file with Meson's ``configure_file()``, pass a
+directory from the Python installation object to ``install_dir``. For
+example, given a ``config.py.in`` template containing ``DEBUG = @DEBUG@``:
+
+.. code-block:: meson
+
+   py = import('python').find_installation()
+   values = configuration_data()
+   values.set('DEBUG', 'False')
+   configure_file(
+       input: 'config.py.in',
+       output: 'config.py',
+       configuration: values,
+       install_dir: py.get_install_dir(subdir: 'mypkg'),
+   )
+
+The resulting wheel includes ``mypkg/config.py``. To construct the same
+destination with a path expression, use ``py.get_install_dir() / 'mypkg'``.
+Appending a subdirectory with the string operator ``+`` loses the install
+path information that ``meson-python`` uses to map the file into the wheel.
+
+
 Distributing the project
 ------------------------
 
