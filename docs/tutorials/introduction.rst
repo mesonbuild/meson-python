@@ -272,6 +272,31 @@ to build in, it must be activated (otherwise ``meson`` or another executable
 may not be found).
 
 
+Generated Cython include files
+------------------------------
+
+If a Cython module includes a generated ``.pxi`` file, give its generating
+target to the extension as a dependency. For example:
+
+.. code-block:: meson
+
+   generated = custom_target(
+     'values-pxi',
+     output: 'values.pxi',
+     command: [py, files('generate.py'), '@OUTPUT@'],
+   )
+   py.extension_module(
+     '_demo',
+     '_demo.pyx',
+     dependencies: declare_dependency(sources: generated),
+     cython_args: ['-I', meson.current_build_dir()],
+     install: true,
+   )
+
+The dependency makes the generated file available before Cython runs. The
+include argument lets Cython find it in the build directory when
+``_demo.pyx`` uses ``include "values.pxi"``.
+
 Distributing the project
 ------------------------
 
