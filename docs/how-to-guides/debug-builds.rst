@@ -25,6 +25,23 @@ We can do all that with the following ``pip`` invocation:
         -Csetup-args=-Dbuildtype=debug \
         -Cbuild-dir=build-dbg
 
+Keeping the build directory for a debug wheel
+---------------------------------------------
+
+If you need a regular wheel rather than an editable install, set the
+same build options on the wheel build:
+
+.. code-block:: console
+
+    $ python -m build --wheel \
+        -Csetup-args=-Dbuildtype=debug \
+        -Cbuild-dir=build-dbg
+
+This prevents a new temporary build directory from changing the path a
+compiler can embed in its debug information on each build. Compilers can
+still record absolute paths, so a fixed build directory alone does not
+make wheels reproducible across different checkout locations.
+
 This debug build of your package will work with either a regular or debug build
 of your Python interpreter. A debug Python interpreter isn't necessary, but may
 be useful. It can be built from source, or you may be able to get it from your
