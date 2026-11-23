@@ -108,6 +108,34 @@ An alternative build directory can be specified using the
 :option:`build-dir` config setting.
 
 
+Testing a package with native extensions
+----------------------------------------
+
+If pytest imports tests as part of the package directly from the source
+tree, that package path may not contain the compiled extensions. Keep
+tests outside the import package when you do not want to install them.
+For example:
+
+.. code-block:: text
+
+   meson.build
+   pyproject.toml
+   src/
+       package/
+           __init__.py
+           _native.pyx
+   tests/
+       test_package.py
+
+Do not add ``tests/`` to the Meson install rules. The tests can import the
+package by name. In the development environment, install the project
+in editable mode and then run pytest from the project root:
+
+.. code-block:: console
+
+   $ python -m pip install --no-build-isolation --editable .
+   $ python -m pytest tests
+
 Data files
 ----------
 
