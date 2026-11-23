@@ -89,6 +89,12 @@ the use of ``meson-python`` and Meson for Python packaging.
    projects-using-meson-python
 
 .. toctree::
+   :caption: Building a package
+   :hidden:
+
+   explanations/building-a-package
+
+.. toctree::
    :caption: Reference
    :hidden:
 
