@@ -246,6 +246,18 @@ Note that by default, ``python -m build`` builds an sdist first, and then a
 wheel from the sdist. If you only want one artifact, add ``--sdist`` or
 ``--wheel`` to the invocation.
 
+
+If you already use `uv <https://docs.astral.sh/uv/guides/package/>`_, you can
+build the same two types of artifact with:
+
+.. code-block:: console
+
+   $ uv build
+
+Like ``python -m build``, this builds an sdist and then a wheel from it by
+default. Use ``uv build --wheel`` to build just the wheel from the source
+tree, or ``uv build --sdist`` for just the source distribution.
+
 .. admonition:: Building wheels for multiple platforms
    :class: tip
 
@@ -261,7 +273,7 @@ wheel from the sdist. If you only want one artifact, add ``--sdist`` or
 Build isolation
 ```````````````
 
-Building with ``python -m build`` or with ``pip`` uses build isolation by
+Building with ``python -m build``, ``uv build`` or ``pip`` uses build isolation by
 default. I.e., the build frontend creates a new, temporary virtual environment
 with all build dependencies before calling ``meson-python`` to build a wheel.
 
