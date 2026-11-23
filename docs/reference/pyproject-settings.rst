@@ -104,3 +104,42 @@ use them and examples.
 .. _meson introspection data: https://mesonbuild.com/IDE-integration.html#install-plan
 
 .. |extension_module()| replace:: ``extension_module()``
+
+.. _wheel-install-paths:
+
+How install paths map into a wheel
+==================================
+
+The destination in Meson's install plan starts with a placeholder such as
+``{py_purelib}``. meson-python uses that first component to select a wheel
+installation scheme and keeps the remaining path relative to it.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Meson destination prefix
+     - Wheel installation scheme
+   * - ``{py_purelib}``
+     - ``purelib``
+   * - ``{py_platlib}`` or ``{moduledir_shared}``
+     - ``platlib``
+   * - ``{bindir}``
+     - ``scripts``
+   * - ``{includedir}``
+     - ``headers``
+   * - ``{datadir}``
+     - ``data``
+
+The wheel root represents ``purelib`` for a pure wheel or ``platlib`` for a
+platform wheel. Files for the other schemes go under
+``<distribution>-<version>.data/<scheme>/`` and are moved by the installer.
+For example, a file destined for ``{datadir}/sample/example.txt`` appears in
+the wheel under ``.data/data/sample/example.txt``, with the distribution and
+version prefix on ``.data``.
+
+Internal shared libraries destined for ``{libdir}`` or
+``{libdir_shared}`` use a separate bundled-library directory. See
+:ref:`internal-shared-libraries`. A destination prefix that meson-python
+cannot map causes a build error. Inspect
+``meson-info/intro-install_plan.json`` in the build directory to check the
+destination before choosing a different install location.
