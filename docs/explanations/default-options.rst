@@ -48,6 +48,15 @@ The options that ``meson-python`` specifies by default are:
    front-end. Meson would otherwise look for the first Python
    interpreter on the ``$PATH``, which may not be the same.
 
+   For portable build definitions, use
+   ``import('python').find_installation()`` (or pass keywords such as
+   ``pure: false``) without naming a Python binary. The native file
+   supplies the interpreter automatically. An explicit path is not a
+   reliable way to select a different Python for the wheel: for example,
+   Meson 1.12 still uses the native-file interpreter when the call names
+   another executable. Run the build front-end with the intended Python
+   instead.
+
    Additional ``--native-file`` options can be passed to ``meson
    setup`` if further adjustments to the native environment need to be
    made. Meson will merge the contents of all machine files. To ensure
