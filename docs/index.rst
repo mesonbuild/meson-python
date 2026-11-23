@@ -96,6 +96,7 @@ the use of ``meson-python`` and Meson for Python packaging.
    reference/pyproject-settings
    reference/environment-variables
    explanations/default-options
+   explanations/editable-loader
    reference/meson-compatibility
 
 .. toctree::
