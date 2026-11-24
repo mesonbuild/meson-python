@@ -25,6 +25,15 @@ We can do all that with the following ``pip`` invocation:
         -Csetup-args=-Dbuildtype=debug \
         -Cbuild-dir=build-dbg
 
+If you use a Meson native file to group build settings, keep
+``-Csetup-args=-Dbuildtype=debug`` on the build frontend command line.
+A ``buildtype = 'debug'`` entry under ``[built-in options]`` in the
+native file is overridden by the ``-Dbuildtype=release`` argument
+that :ref:`meson-python supplies by default <explanations-default-options>`.
+Meson gives ``-D`` arguments precedence over machine file options.
+The explicit ``-Dbuildtype=debug`` in the command above is passed after
+that default.
+
 This debug build of your package will work with either a regular or debug build
 of your Python interpreter. A debug Python interpreter isn't necessary, but may
 be useful. It can be built from source, or you may be able to get it from your
